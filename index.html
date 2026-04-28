@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>CRM Pro | Supabase 雲端版</title>
+    <title>銷售智庫 CRM Pro | Supabase 雲端版</title>
+    <!-- 修正：確保 Supabase SDK 載入順序在最前面 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -62,783 +63,139 @@
             transition: transform 0.3s ease;
             overflow-y: auto;
         }
-        .sidebar-logo {
-            padding: 20px 18px;
-            border-bottom: 1px solid var(--border-color);
-            flex-shrink: 0;
-        }
-        .sidebar-logo h1 {
-            font-size: 1.2rem;
-            font-weight: 700;
-            background: var(--gradient-purple);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .sidebar-logo .logo-icon {
-            width: 34px;
-            height: 34px;
-            background: var(--gradient-purple);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            -webkit-text-fill-color: white;
-            flex-shrink: 0;
-        }
-        .sidebar-nav {
-            flex: 1;
-            padding: 12px 10px;
-            overflow-y: auto;
-        }
-        .nav-section {
-            margin-bottom: 16px;
-        }
-        .nav-section-title {
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-secondary);
-            padding: 6px 12px;
-            margin-bottom: 2px;
-            font-weight: 600;
-        }
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-bottom: 2px;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-        }
-        .nav-item:hover {
-            background: var(--hover-bg);
-            color: var(--text-primary);
-        }
-        .nav-item.active {
-            background: var(--gradient-purple);
-            color: white;
-            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
-        }
-        .nav-item .nav-icon {
-            font-size: 1rem;
-            width: 20px;
-            text-align: center;
-            flex-shrink: 0;
-        }
-        .nav-badge {
-            margin-left: auto;
-            background: var(--accent-orange);
-            color: #000;
-            font-size: 0.6rem;
-            padding: 2px 7px;
-            border-radius: 20px;
-            font-weight: 700;
-            flex-shrink: 0;
-        }
-        .sidebar-footer {
-            padding: 14px;
-            border-top: 1px solid var(--border-color);
-            flex-shrink: 0;
-        }
-        .user-info-sidebar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            border-radius: 10px;
-            background: var(--hover-bg);
-        }
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--gradient-purple);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.85rem;
-            flex-shrink: 0;
-        }
-        .user-details {
-            flex: 1;
-            min-width: 0;
-        }
-        .user-details .user-name {
-            font-weight: 600;
-            font-size: 0.8rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .user-details .user-role {
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-        }
-        .logout-btn-side {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            padding: 5px 10px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.7rem;
-            transition: 0.2s;
-            flex-shrink: 0;
-        }
-        .logout-btn-side:hover {
-            background: var(--accent-red);
-            border-color: var(--accent-red);
-            color: white;
-        }
+        .sidebar-logo { padding: 20px 18px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+        .sidebar-logo h1 { font-size: 1.2rem; font-weight: 700; background: var(--gradient-purple); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 10px; }
+        .sidebar-logo .logo-icon { width: 34px; height: 34px; background: var(--gradient-purple); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; -webkit-text-fill-color: white; flex-shrink: 0; }
+        .sidebar-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+        .nav-section { margin-bottom: 16px; }
+        .nav-section-title { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); padding: 6px 12px; margin-bottom: 2px; font-weight: 600; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: all 0.2s; color: var(--text-secondary); font-size: 0.85rem; font-weight: 500; margin-bottom: 2px; border: none; background: none; width: 100%; text-align: left; }
+        .nav-item:hover { background: var(--hover-bg); color: var(--text-primary); }
+        .nav-item.active { background: var(--gradient-purple); color: white; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4); }
+        .nav-item .nav-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+        .nav-badge { margin-left: auto; background: var(--accent-orange); color: #000; font-size: 0.6rem; padding: 2px 7px; border-radius: 20px; font-weight: 700; flex-shrink: 0; }
+        .sidebar-footer { padding: 14px; border-top: 1px solid var(--border-color); flex-shrink: 0; }
+        .user-info-sidebar { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; background: var(--hover-bg); }
+        .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--gradient-purple); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+        .user-details { flex: 1; min-width: 0; }
+        .user-details .user-name { font-weight: 600; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-details .user-role { font-size: 0.65rem; color: var(--text-secondary); }
+        .logout-btn-side { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 5px 10px; border-radius: 20px; cursor: pointer; font-size: 0.7rem; transition: 0.2s; flex-shrink: 0; }
+        .logout-btn-side:hover { background: var(--accent-red); border-color: var(--accent-red); color: white; }
 
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 999;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .sidebar-overlay.active {
-            opacity: 1;
-        }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 999; opacity: 0; transition: opacity 0.3s; }
+        .sidebar-overlay.active { opacity: 1; }
 
-        .main-content {
-            flex: 1;
-            margin-left: var(--sidebar-width);
-            padding: 20px 24px;
-            min-height: 100vh;
-            width: calc(100% - var(--sidebar-width));
-            transition: margin-left 0.3s, width 0.3s;
-            overflow-x: hidden;
-        }
+        .main-content { flex: 1; margin-left: var(--sidebar-width); padding: 20px 24px; min-height: 100vh; width: calc(100% - var(--sidebar-width)); transition: margin-left 0.3s, width 0.3s; overflow-x: hidden; }
 
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-        .page-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            line-height: 1.2;
-        }
-        .page-subtitle {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: 2px;
-        }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-title { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+        .page-subtitle { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
 
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 10px 18px;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.82rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-            white-space: nowrap;
-            justify-content: center;
-        }
-        .btn-primary {
-            background: var(--gradient-purple);
-            color: white;
-            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
-        }
-        .btn-primary:hover {
-            box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
-            transform: translateY(-1px);
-        }
-        .btn-secondary {
-            background: var(--hover-bg);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-        .btn-sm {
-            padding: 5px 12px;
-            font-size: 0.7rem;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            border: none;
-            transition: 0.2s;
-            white-space: nowrap;
-        }
-        .btn-edit {
-            background: rgba(124, 58, 237, 0.2);
-            color: #a78bfa;
-        }
-        .btn-danger {
-            background: rgba(239, 68, 68, 0.2);
-            color: #f87171;
-        }
-        .btn-info {
-            background: rgba(59, 130, 246, 0.2);
-            color: #60a5fa;
-        }
-        .btn-success {
-            background: rgba(16, 185, 129, 0.2);
-            color: #34d399;
-        }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; border: none; white-space: nowrap; justify-content: center; }
+        .btn-primary { background: var(--gradient-purple); color: white; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); }
+        .btn-primary:hover { box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5); transform: translateY(-1px); }
+        .btn-secondary { background: var(--hover-bg); color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-sm { padding: 5px 12px; font-size: 0.7rem; border-radius: 8px; font-weight: 500; cursor: pointer; border: none; transition: 0.2s; white-space: nowrap; }
+        .btn-edit { background: rgba(124, 58, 237, 0.2); color: #a78bfa; }
+        .btn-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .btn-info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .btn-success { background: rgba(16, 185, 129, 0.2); color: #34d399; }
 
-        .card {
-            background: var(--bg-card);
-            border-radius: var(--radius-lg);
-            padding: 20px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 16px;
-        }
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-        .card-header h3 {
-            font-size: 1rem;
-            font-weight: 600;
-        }
+        .card { background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px; border: 1px solid var(--border-color); margin-bottom: 16px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+        .card-header h3 { font-size: 1rem; font-weight: 600; }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 14px;
-            margin-bottom: 20px;
-        }
-        .stat-card {
-            background: var(--bg-card);
-            border-radius: var(--radius-lg);
-            padding: 16px 18px;
-            border: 1px solid var(--border-color);
-            position: relative;
-            overflow: hidden;
-        }
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: -25px;
-            right: -25px;
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            opacity: 0.08;
-        }
-        .stat-card.purple::before {
-            background: #7c3aed;
-        }
-        .stat-card.blue::before {
-            background: #3b82f6;
-        }
-        .stat-card.green::before {
-            background: #10b981;
-        }
-        .stat-card.orange::before {
-            background: #f59e0b;
-        }
-        .stat-label {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .stat-value {
-            font-size: 1.6rem;
-            font-weight: 700;
-            margin: 4px 0;
-            letter-spacing: -0.5px;
-        }
-        .stat-sub {
-            font-size: 0.68rem;
-            color: var(--text-secondary);
-        }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+        .stat-card { background: var(--bg-card); border-radius: var(--radius-lg); padding: 16px 18px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
+        .stat-card::before { content: ''; position: absolute; top: -25px; right: -25px; width: 70px; height: 70px; border-radius: 50%; opacity: 0.08; }
+        .stat-card.purple::before { background: #7c3aed; }
+        .stat-card.blue::before { background: #3b82f6; }
+        .stat-card.green::before { background: #10b981; }
+        .stat-card.orange::before { background: #f59e0b; }
+        .stat-label { font-size: 0.7rem; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { font-size: 1.6rem; font-weight: 700; margin: 4px 0; letter-spacing: -0.5px; }
+        .stat-sub { font-size: 0.68rem; color: var(--text-secondary); }
 
-        .table-wrapper {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.78rem;
-            min-width: 600px;
-        }
-        table th,
-        table td {
-            padding: 10px 12px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-            vertical-align: middle;
-        }
-        table th {
-            background: rgba(255, 255, 255, 0.02);
-            font-weight: 600;
-            color: var(--text-secondary);
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        table tbody tr:hover {
-            background: var(--hover-bg);
-        }
+        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 600px; }
+        table th, table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        table th { background: rgba(255, 255, 255, 0.02); font-weight: 600; color: var(--text-secondary); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        table tbody tr:hover { background: var(--hover-bg); }
 
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(6px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            padding: 16px;
-        }
-        .modal-content {
-            background: var(--bg-card);
-            max-width: 600px;
-            width: 100%;
-            border-radius: var(--radius-xl);
-            padding: 24px;
-            max-height: 85vh;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-card);
-        }
-        .modal-content h3 {
-            margin-bottom: 16px;
-            font-size: 1rem;
-        }
-        .form-group {
-            margin-bottom: 12px;
-        }
-        .form-group label {
-            font-weight: 500;
-            font-size: 0.72rem;
-            display: block;
-            margin-bottom: 4px;
-            color: var(--text-secondary);
-        }
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 9px 12px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            font-size: 0.8rem;
-            transition: border-color 0.2s;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-        .form-group select {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23a0a0b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            padding-right: 32px;
-        }
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: var(--accent-purple);
-        }
-        .form-row {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .form-row .form-group {
-            flex: 1;
-            min-width: 120px;
-        }
-        .modal-actions {
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-            margin-top: 16px;
-            flex-wrap: wrap;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
+        .modal-content { background: var(--bg-card); max-width: 600px; width: 100%; border-radius: var(--radius-xl); padding: 24px; max-height: 85vh; overflow-y: auto; border: 1px solid var(--border-color); box-shadow: var(--shadow-card); }
+        .modal-content h3 { margin-bottom: 16px; font-size: 1rem; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { font-weight: 500; font-size: 0.72rem; display: block; margin-bottom: 4px; color: var(--text-secondary); }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.8rem; transition: border-color 0.2s; -webkit-appearance: none; appearance: none; }
+        .form-group select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23a0a0b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--accent-purple); }
+        .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .form-row .form-group { flex: 1; min-width: 120px; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
 
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 0.62rem;
-            font-weight: 600;
-            margin: 1px;
-            white-space: nowrap;
-        }
-        .badge-purple {
-            background: rgba(124, 58, 237, 0.2);
-            color: #a78bfa;
-        }
-        .badge-blue {
-            background: rgba(59, 130, 246, 0.2);
-            color: #60a5fa;
-        }
-        .badge-green {
-            background: rgba(16, 185, 129, 0.2);
-            color: #34d399;
-        }
-        .badge-orange {
-            background: rgba(245, 158, 11, 0.2);
-            color: #fbbf24;
-        }
-        .badge-red {
-            background: rgba(239, 68, 68, 0.2);
-            color: #f87171;
-        }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.62rem; font-weight: 600; margin: 1px; white-space: nowrap; }
+        .badge-purple { background: rgba(124, 58, 237, 0.2); color: #a78bfa; }
+        .badge-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .badge-green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .badge-orange { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .badge-red { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
-        .module-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            padding: 4px 0;
-        }
-        .module-tag {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.68rem;
-            cursor: pointer;
-            background: var(--hover-bg);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
-            transition: 0.2s;
-            font-weight: 500;
-            user-select: none;
-        }
-        .module-tag.selected {
-            background: var(--gradient-purple);
-            color: white;
-            border-color: transparent;
-        }
+        .module-tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+        .module-tag { padding: 5px 12px; border-radius: 20px; font-size: 0.68rem; cursor: pointer; background: var(--hover-bg); color: var(--text-secondary); border: 1px solid var(--border-color); transition: 0.2s; font-weight: 500; user-select: none; }
+        .module-tag.selected { background: var(--gradient-purple); color: white; border-color: transparent; }
 
-        .filter-bar {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 14px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .filter-bar input,
-        .filter-bar select {
-            padding: 7px 12px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            font-size: 0.75rem;
-        }
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+        .filter-bar input, .filter-bar select { padding: 7px 12px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.75rem; }
 
-        .toggle-group {
-            display: flex;
-            background: var(--hover-bg);
-            border-radius: 10px;
-            padding: 2px;
-            flex-shrink: 0;
-        }
-        .toggle-btn {
-            padding: 5px 14px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.72rem;
-            font-weight: 500;
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            transition: 0.2s;
-        }
-        .toggle-btn.active {
-            background: var(--gradient-purple);
-            color: white;
-        }
+        .toggle-group { display: flex; background: var(--hover-bg); border-radius: 10px; padding: 2px; flex-shrink: 0; }
+        .toggle-btn { padding: 5px 14px; border-radius: 8px; cursor: pointer; font-size: 0.72rem; font-weight: 500; border: none; background: transparent; color: var(--text-secondary); transition: 0.2s; }
+        .toggle-btn.active { background: var(--gradient-purple); color: white; }
 
-        .login-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            width: 100%;
-            background: var(--bg-primary);
-            padding: 20px;
-        }
-        .login-card-full {
-            background: var(--bg-card);
-            max-width: 440px;
-            width: 100%;
-            padding: 36px 28px;
-            border-radius: var(--radius-xl);
-            text-align: center;
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-card);
-        }
-        .login-card-full h2 {
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        .login-card-full .login-sub {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-bottom: 24px;
-        }
-        .login-tabs {
-            display: flex;
-            background: var(--bg-secondary);
-            border-radius: 10px;
-            margin-bottom: 20px;
-            padding: 3px;
-        }
-        .login-tab {
-            flex: 1;
-            padding: 8px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            font-weight: 500;
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            transition: 0.2s;
-        }
-        .login-tab.active {
-            background: var(--gradient-purple);
-            color: white;
-        }
+        .login-wrapper { display: flex; align-items: center; justify-content: center; min-height: 100vh; width: 100%; background: var(--bg-primary); padding: 20px; }
+        .login-card-full { background: var(--bg-card); max-width: 440px; width: 100%; padding: 36px 28px; border-radius: var(--radius-xl); text-align: center; border: 1px solid var(--border-color); box-shadow: var(--shadow-card); }
+        .login-card-full h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+        .login-card-full .login-sub { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 24px; }
+        .login-tabs { display: flex; background: var(--bg-secondary); border-radius: 10px; margin-bottom: 20px; padding: 3px; }
+        .login-tab { flex: 1; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 500; border: none; background: transparent; color: var(--text-secondary); transition: 0.2s; }
+        .login-tab.active { background: var(--gradient-purple); color: white; }
 
-        .quick-add-toggle {
-            font-size: 0.7rem;
-            color: var(--accent-cyan);
-            cursor: pointer;
-            text-decoration: underline;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            margin-top: 4px;
-        }
-        .quick-add-customer-section {
-            border: 1px dashed var(--border-color);
-            border-radius: 12px;
-            padding: 14px;
-            margin: 8px 0 12px;
-            background: var(--bg-secondary);
-            display: none;
-        }
-        .quick-add-customer-section.show {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-8px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        .quick-add-toggle { font-size: 0.7rem; color: var(--accent-cyan); cursor: pointer; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; }
+        .quick-add-customer-section { border: 1px dashed var(--border-color); border-radius: 12px; padding: 14px; margin: 8px 0 12px; background: var(--bg-secondary); display: none; }
+        .quick-add-customer-section.show { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
-        .toast {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--gradient-purple);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            z-index: 3000;
-            animation: toastIn 0.3s ease, toastOut 0.3s ease 1.7s forwards;
-            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.5);
-            pointer-events: none;
-        }
-        @keyframes toastIn {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
-        }
-        @keyframes toastOut {
-            from {
-                opacity: 1;
-            }
-            to {
-                opacity: 0;
-            }
-        }
+        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--gradient-purple); color: white; padding: 10px 20px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; z-index: 3000; animation: toastIn 0.3s ease, toastOut 0.3s ease 1.7s forwards; box-shadow: 0 8px 24px rgba(124, 58, 237, 0.5); pointer-events: none; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
 
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 0.6s linear infinite;
-        }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
+        .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 0.6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .mobile-header {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: var(--header-height);
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border-color);
-            z-index: 800;
-            align-items: center;
-            padding: 0 16px;
-            gap: 12px;
-        }
-        .hamburger-btn {
-            background: none;
-            border: none;
-            color: var(--text-primary);
-            font-size: 1.3rem;
-            cursor: pointer;
-            padding: 4px;
-        }
-        .mobile-header-title {
-            font-weight: 700;
-            font-size: 1rem;
-            background: var(--gradient-purple);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .mobile-bottom-nav {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--bg-card);
-            border-top: 1px solid var(--border-color);
-            z-index: 900;
-            padding: 6px 4px;
-            padding-bottom: max(6px, env(safe-area-inset-bottom));
-        }
-        .mobile-bottom-nav-inner {
-            display: flex;
-            justify-content: space-around;
-        }
-        .mobile-nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            padding: 6px 4px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            color: var(--text-secondary);
-            font-size: 0.55rem;
-            font-weight: 500;
-            transition: 0.2s;
-            flex: 1;
-        }
-        .mobile-nav-item.active {
-            color: #a78bfa;
-        }
-        .mobile-nav-item .mobile-nav-icon {
-            font-size: 1.1rem;
-        }
+        .mobile-header { display: none; position: fixed; top: 0; left: 0; right: 0; height: var(--header-height); background: var(--bg-card); border-bottom: 1px solid var(--border-color); z-index: 800; align-items: center; padding: 0 16px; gap: 12px; }
+        .hamburger-btn { background: none; border: none; color: var(--text-primary); font-size: 1.3rem; cursor: pointer; padding: 4px; }
+        .mobile-header-title { font-weight: 700; font-size: 1rem; background: var(--gradient-purple); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        .mobile-bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border-color); z-index: 900; padding: 6px 4px; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+        .mobile-bottom-nav-inner { display: flex; justify-content: space-around; }
+        .mobile-nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; cursor: pointer; border: none; background: none; color: var(--text-secondary); font-size: 0.55rem; font-weight: 500; transition: 0.2s; flex: 1; }
+        .mobile-nav-item.active { color: #a78bfa; }
+        .mobile-nav-item .mobile-nav-icon { font-size: 1.1rem; }
 
         @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-                box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
-            }
-            .sidebar.open {
-                transform: translateX(0);
-            }
-            .sidebar-overlay.active {
-                display: block;
-            }
-            .main-content {
-                margin-left: 0;
-                width: 100%;
-                padding: 12px 14px;
-                padding-top: calc(var(--header-height) + 12px);
-                padding-bottom: 80px;
-            }
-            .mobile-header {
-                display: flex;
-            }
-            .mobile-bottom-nav {
-                display: block;
-            }
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 8px;
-            }
-            .stat-value {
-                font-size: 1.2rem;
-            }
-            .modal-content {
-                padding: 18px 14px;
-                border-radius: 18px;
-                max-height: 80vh;
-            }
-            .form-row {
-                flex-direction: column;
-                gap: 0;
-            }
-            .form-row .form-group {
-                min-width: 100%;
-            }
-            .btn {
-                padding: 8px 14px;
-                font-size: 0.75rem;
-            }
-            .page-title {
-                font-size: 1.2rem;
-            }
+            .sidebar { transform: translateX(-100%); box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5); }
+            .sidebar.open { transform: translateX(0); }
+            .sidebar-overlay.active { display: block; }
+            .main-content { margin-left: 0; width: 100%; padding: 12px 14px; padding-top: calc(var(--header-height) + 12px); padding-bottom: 80px; }
+            .mobile-header { display: flex; }
+            .mobile-bottom-nav { display: block; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .stat-value { font-size: 1.2rem; }
+            .modal-content { padding: 18px 14px; border-radius: 18px; max-height: 80vh; }
+            .form-row { flex-direction: column; gap: 0; }
+            .form-row .form-group { min-width: 100%; }
+            .btn { padding: 8px 14px; font-size: 0.75rem; }
+            .page-title { font-size: 1.2rem; }
         }
     </style>
 </head>
@@ -850,41 +207,34 @@
     </div>
     <div class="mobile-bottom-nav" id="mobileBottomNav">
         <div class="mobile-bottom-nav-inner">
-            <button class="mobile-nav-item active" data-page="dashboard">
-                <span class="mobile-nav-icon">📊</span>
-                <span>儀表板</span>
-            </button>
-            <button class="mobile-nav-item" data-page="meetings">
-                <span class="mobile-nav-icon">📅</span>
-                <span>會議</span>
-            </button>
-            <button class="mobile-nav-item" data-page="opportunities">
-                <span class="mobile-nav-icon">🎯</span>
-                <span>案件</span>
-            </button>
-            <button class="mobile-nav-item" data-page="reminders">
-                <span class="mobile-nav-icon">⏰</span>
-                <span>跟進</span>
-            </button>
-            <button class="mobile-nav-item" data-page="customers">
-                <span class="mobile-nav-icon">🏢</span>
-                <span>客戶</span>
-            </button>
+            <button class="mobile-nav-item active" data-page="dashboard"><span class="mobile-nav-icon">📊</span><span>儀表板</span></button>
+            <button class="mobile-nav-item" data-page="meetings"><span class="mobile-nav-icon">📅</span><span>會議</span></button>
+            <button class="mobile-nav-item" data-page="opportunities"><span class="mobile-nav-icon">🎯</span><span>案件</span></button>
+            <button class="mobile-nav-item" data-page="reminders"><span class="mobile-nav-icon">⏰</span><span>跟進</span></button>
+            <button class="mobile-nav-item" data-page="customers"><span class="mobile-nav-icon">🏢</span><span>客戶</span></button>
         </div>
     </div>
     <div id="app"></div>
 
     <script>
-        // ==================== 🔧 請在這裡填入您的 Supabase 設定 ====================
-const SUPABASE_URL = 'https://xdjzkcqhwamfajsjyclq.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkanprY3Fod2FtZmFqc2p5Y2xxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMTMzNjksImV4cCI6MjA5Mjc4OTM2OX0.-jQ0kcFD5CYWejJsg54BWogvr_upKwKWeDSaungnAo8';
-        // ========================================================================
-
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // ==================== Supabase 設定 ====================
+        const SUPABASE_URL = 'https://xdjzkcqhwamfajsjyclq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkanprY3Fod2FtZmFqc2p5Y2xxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMTMzNjksImV4cCI6MjA5Mjc4OTM2OX0.-jQ0kcFD5CYWejJsg54BWogvr_upKwKWeDSaungnAo8';
+        
+        // 初始化 Supabase 客戶端（確保只初始化一次）
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
         const MODULE_LIST = ['HRM', 'ERP', 'WORKFLOW', 'PMS', 'PPMS', 'CRM', 'SCM', 'BI', '其他'];
 
         let currentUser = null;
         let currentProfile = null;
+
+        // ==================== 快取資料 ====================
+        let cachedProfiles = [];
+        let cachedCustomers = [];
+        let cachedMeetings = [];
+        let cachedOpportunities = [];
+        let cachedReminders = [];
 
         // ==================== API 輔助函數 ====================
         async function fetchProfiles() {
@@ -895,9 +245,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function fetchCustomers() {
             let query = supabase.from('customers').select('*');
-            if (currentProfile && currentProfile.role !== 'admin') {
-                query = query.eq('sales_id', currentUser.id);
-            }
+            if (currentProfile && currentProfile.role !== 'admin') query = query.eq('sales_id', currentUser.id);
             const { data, error } = await query;
             if (error) { console.error('fetchCustomers:', error); return []; }
             return data || [];
@@ -905,9 +253,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function fetchMeetings() {
             let query = supabase.from('meetings').select('*');
-            if (currentProfile && currentProfile.role !== 'admin') {
-                query = query.eq('sales_id', currentUser.id);
-            }
+            if (currentProfile && currentProfile.role !== 'admin') query = query.eq('sales_id', currentUser.id);
             const { data, error } = await query.order('meeting_date', { ascending: false });
             if (error) { console.error('fetchMeetings:', error); return []; }
             return data || [];
@@ -915,9 +261,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function fetchOpportunities() {
             let query = supabase.from('opportunities').select('*');
-            if (currentProfile && currentProfile.role !== 'admin') {
-                query = query.eq('sales_id', currentUser.id);
-            }
+            if (currentProfile && currentProfile.role !== 'admin') query = query.eq('sales_id', currentUser.id);
             const { data, error } = await query;
             if (error) { console.error('fetchOpportunities:', error); return []; }
             return data || [];
@@ -925,136 +269,30 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function fetchReminders() {
             let query = supabase.from('reminders').select('*');
-            if (currentProfile && currentProfile.role !== 'admin') {
-                query = query.eq('sales_id', currentUser.id);
-            }
+            if (currentProfile && currentProfile.role !== 'admin') query = query.eq('sales_id', currentUser.id);
             const { data, error } = await query.order('reminder_date', { ascending: true });
             if (error) { console.error('fetchReminders:', error); return []; }
             return data || [];
         }
 
-        async function fetchActivities() {
-            let query = supabase.from('activities').select('*').order('created_at', { ascending: false }).limit(100);
-            if (currentProfile && currentProfile.role !== 'admin') {
-                query = query.eq('sales_id', currentUser.id);
-            }
-            const { data, error } = await query;
-            if (error) { console.error('fetchActivities:', error); return []; }
-            return data || [];
+        async function loadAllData() {
+            const [profiles, customers, meetings, opportunities, reminders] = await Promise.all([
+                fetchProfiles(), fetchCustomers(), fetchMeetings(), fetchOpportunities(), fetchReminders()
+            ]);
+            cachedProfiles = profiles;
+            cachedCustomers = customers;
+            cachedMeetings = meetings;
+            cachedOpportunities = opportunities;
+            cachedReminders = reminders;
         }
 
-        async function insertCustomer(customerData) {
-            const { data, error } = await supabase.from('customers').insert({
-                ...customerData,
-                created_by: currentUser.id,
-                sales_id: customerData.sales_id || currentUser.id
-            }).select().single();
-            if (error) { console.error('insertCustomer:', error); throw error; }
-            await addActivity(data.id, 'customer', `新增客戶: ${data.name}`);
-            return data;
+        function getSalesNameSync(salesId) {
+            const p = cachedProfiles.find(p => p.id === salesId);
+            return p ? p.full_name : '未知';
         }
 
-        async function updateCustomer(id, updates) {
-            updates.updated_at = new Date().toISOString();
-            const { data, error } = await supabase.from('customers').update(updates).eq('id', id).select()
-        .single();
-            if (error) { console.error('updateCustomer:', error); throw error; }
-            await addActivity(id, 'customer', `更新客戶資訊`);
-            return data;
-        }
-
-        async function insertMeeting(meetingData) {
-            const { data, error } = await supabase.from('meetings').insert({
-                ...meetingData,
-                created_by: currentUser.id,
-                sales_id: meetingData.sales_id || currentUser.id
-            }).select().single();
-            if (error) { console.error('insertMeeting:', error); throw error; }
-            await addActivity(meetingData.customer_id, 'meeting', `新增會議: ${meetingData.content || ''}`);
-            return data;
-        }
-
-        async function updateMeeting(id, updates) {
-            updates.updated_at = new Date().toISOString();
-            const { data, error } = await supabase.from('meetings').update(updates).eq('id', id).select()
-        .single();
-            if (error) { console.error('updateMeeting:', error); throw error; }
-            await addActivity(updates.customer_id || '', 'meeting', `更新會議`);
-            return data;
-        }
-
-        async function deleteMeeting(id) {
-            const { error } = await supabase.from('meetings').delete().eq('id', id);
-            if (error) { console.error('deleteMeeting:', error); throw error; }
-        }
-
-        async function insertOpportunity(oppData) {
-            const { data, error } = await supabase.from('opportunities').insert({
-                ...oppData,
-                created_by: currentUser.id,
-                sales_id: oppData.sales_id || currentUser.id
-            }).select().single();
-            if (error) { console.error('insertOpportunity:', error); throw error; }
-            await addActivity(oppData.customer_id, 'opportunity',
-                `新增案件: ${oppData.customer_name}，金額 ${oppData.expected_amount}`);
-            return data;
-        }
-
-        async function updateOpportunity(id, updates) {
-            updates.updated_at = new Date().toISOString();
-            const { data, error } = await supabase.from('opportunities').update(updates).eq('id', id).select()
-        .single();
-            if (error) { console.error('updateOpportunity:', error); throw error; }
-            await addActivity(updates.customer_id || '', 'opportunity', `更新案件`);
-            return data;
-        }
-
-        async function deleteOpportunity(id) {
-            const { error } = await supabase.from('opportunities').delete().eq('id', id);
-            if (error) { console.error('deleteOpportunity:', error); throw error; }
-        }
-
-        async function insertReminder(reminderData) {
-            const { data, error } = await supabase.from('reminders').insert({
-                ...reminderData,
-                created_by: currentUser.id,
-                sales_id: reminderData.sales_id || currentUser.id
-            }).select().single();
-            if (error) { console.error('insertReminder:', error); throw error; }
-            await addActivity(reminderData.customer_id, 'reminder', `新增提醒: ${reminderData.content || ''}`);
-            return data;
-        }
-
-        async function updateReminder(id, updates) {
-            updates.updated_at = new Date().toISOString();
-            const { data, error } = await supabase.from('reminders').update(updates).eq('id', id).select().single();
-            if (error) { console.error('updateReminder:', error); throw error; }
-            return data;
-        }
-
-        async function deleteReminder(id) {
-            const { error } = await supabase.from('reminders').delete().eq('id', id);
-            if (error) { console.error('deleteReminder:', error); throw error; }
-        }
-
-        async function addActivity(customerId, type, content) {
-            await supabase.from('activities').insert({
-                customer_id: customerId || null,
-                type,
-                content,
-                sales_id: currentUser.id
-            });
-        }
-
-        async function getSalesName(salesId) {
-            if (!salesId) return '未知';
-            const { data } = await supabase.from('profiles').select('full_name').eq('id', salesId).single();
-            return data?.full_name || '未知';
-        }
-
-        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;',
-                '>': '&gt;' }[m])); }
-
+        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
+        
         function showToast(message) {
             const existing = document.querySelector('.toast');
             if (existing) existing.remove();
@@ -1075,33 +313,6 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             const d = new Date(dateStr);
             const now = new Date();
             return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-        }
-
-        // ==================== 快取資料 ====================
-        let cachedProfiles = [];
-        let cachedCustomers = [];
-        let cachedMeetings = [];
-        let cachedOpportunities = [];
-        let cachedReminders = [];
-
-        async function loadAllData() {
-            const [profiles, customers, meetings, opportunities, reminders] = await Promise.all([
-                fetchProfiles(),
-                fetchCustomers(),
-                fetchMeetings(),
-                fetchOpportunities(),
-                fetchReminders()
-            ]);
-            cachedProfiles = profiles;
-            cachedCustomers = customers;
-            cachedMeetings = meetings;
-            cachedOpportunities = opportunities;
-            cachedReminders = reminders;
-        }
-
-        function getSalesNameSync(salesId) {
-            const p = cachedProfiles.find(p => p.id === salesId);
-            return p ? p.full_name : '未知';
         }
 
         // ==================== 渲染主應用 ====================
@@ -1137,13 +348,10 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 document.querySelectorAll('.login-tab').forEach(tab => {
                     tab.onclick = () => {
                         authMode = tab.dataset.mode;
-                        document.querySelectorAll('.login-tab').forEach(t => t.classList.remove(
-                            'active'));
+                        document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
                         tab.classList.add('active');
-                        document.getElementById('fullNameGroup').style.display = authMode ===
-                            'register' ? '' : 'none';
-                        document.getElementById('doAuthBtn').textContent = authMode === 'register' ?
-                            '註冊' : '登入';
+                        document.getElementById('fullNameGroup').style.display = authMode === 'register' ? '' : 'none';
+                        document.getElementById('doAuthBtn').textContent = authMode === 'register' ? '註冊' : '登入';
                         document.getElementById('authError').textContent = '';
                     };
                 });
@@ -1171,21 +379,17 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                             options: { data: { full_name: fullName } }
                         });
                         if (result.error) {
-                            document.getElementById('authError').textContent = result.error
-                                .message;
+                            document.getElementById('authError').textContent = result.error.message;
                             return;
                         }
                         if (result.data.user && result.data.session) {
-                            // Email 已確認或未開啟確認
                             currentUser = result.data.user;
                             await loadAllData();
-                            currentProfile = cachedProfiles.find(p => p.id === currentUser
-                                .id) || { role: 'sales', full_name: fullName };
+                            currentProfile = cachedProfiles.find(p => p.id === currentUser.id) || { role: 'sales', full_name: fullName };
                             renderApp();
                             return;
                         } else {
-                            document.getElementById('authError').textContent =
-                                '請檢查您的 Email 信箱並點擊確認連結後再登入。';
+                            document.getElementById('authError').textContent = '請檢查您的 Email 信箱並點擊確認連結後再登入。';
                             return;
                         }
                     } else {
@@ -1197,16 +401,14 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                     } else {
                         currentUser = result.data.user;
                         await loadAllData();
-                        currentProfile = cachedProfiles.find(p => p.id === currentUser.id) || { role: 'sales',
-                            full_name: currentUser.email };
+                        currentProfile = cachedProfiles.find(p => p.id === currentUser.id) || { role: 'sales', full_name: currentUser.email };
                         renderApp();
                     }
                 };
             } else {
                 currentUser = session.user;
                 await loadAllData();
-                currentProfile = cachedProfiles.find(p => p.id === currentUser.id) || { role: 'sales',
-                    full_name: currentUser.email };
+                currentProfile = cachedProfiles.find(p => p.id === currentUser.id) || { role: 'sales', full_name: currentUser.email };
                 const isAdmin = currentProfile.role === 'admin';
                 const pendingCount = cachedReminders.filter(r => r.status === 'pending').length;
 
@@ -1214,9 +416,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 document.getElementById('mobileBottomNav').style.display = '';
                 appDiv.innerHTML = `
                 <aside class="sidebar" id="sidebar">
-                    <div class="sidebar-logo">
-                        <h1><span class="logo-icon">📋</span>CRM Pro</h1>
-                    </div>
+                    <div class="sidebar-logo"><h1><span class="logo-icon">📋</span>CRM Pro</h1></div>
                     <nav class="sidebar-nav">
                         <div class="nav-section">
                             <div class="nav-section-title">主選單</div>
@@ -1252,11 +452,6 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                     await supabase.auth.signOut();
                     currentUser = null;
                     currentProfile = null;
-                    cachedProfiles = [];
-                    cachedCustomers = [];
-                    cachedMeetings = [];
-                    cachedOpportunities = [];
-                    cachedReminders = [];
                     renderApp();
                 };
 
@@ -1279,28 +474,11 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                     }
                 }
 
-                navItems.forEach(item => {
-                    item.onclick = () => navigateToPage(item.getAttribute('data-page'));
-                });
-                mobileNavItems.forEach(item => {
-                    item.onclick = () => navigateToPage(item.getAttribute('data-page'));
-                });
-
-                document.getElementById('hamburgerBtn').onclick = () => {
-                    sidebar.classList.toggle('open');
-                    overlay.classList.toggle('active');
-                };
-                overlay.onclick = () => {
-                    sidebar.classList.remove('open');
-                    overlay.classList.remove('active');
-                };
-
-                window.addEventListener('resize', () => {
-                    if (window.innerWidth > 768) {
-                        sidebar.classList.remove('open');
-                        overlay.classList.remove('active');
-                    }
-                });
+                navItems.forEach(item => item.onclick = () => navigateToPage(item.getAttribute('data-page')));
+                mobileNavItems.forEach(item => item.onclick = () => navigateToPage(item.getAttribute('data-page')));
+                document.getElementById('hamburgerBtn').onclick = () => { sidebar.classList.toggle('open'); overlay.classList.toggle('active'); };
+                overlay.onclick = () => { sidebar.classList.remove('open'); overlay.classList.remove('active'); };
+                window.addEventListener('resize', () => { if (window.innerWidth > 768) { sidebar.classList.remove('open'); overlay.classList.remove('active'); } });
 
                 switchPage('dashboard');
             }
@@ -1310,65 +488,41 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             const content = document.getElementById('mainContent');
             if (!content) return;
             switch (page) {
-                case 'dashboard':
-                    renderDashboard(content);
-                    break;
-                case 'meetings':
-                    renderMeetingsView(content);
-                    break;
-                case 'opportunities':
-                    renderOpportunitiesView(content);
-                    break;
-                case 'reminders':
-                    renderRemindersView(content);
-                    break;
-                case 'customers':
-                    renderCustomersView(content);
-                    break;
-                case 'salespeople':
-                    renderSalesPeopleView(content);
-                    break;
+                case 'dashboard': renderDashboard(content); break;
+                case 'meetings': renderMeetingsView(content); break;
+                case 'opportunities': renderOpportunitiesView(content); break;
+                case 'reminders': renderRemindersView(content); break;
+                case 'customers': renderCustomersView(content); break;
+                case 'salespeople': renderSalesPeopleView(content); break;
             }
         }
 
         // ==================== Dashboard ====================
-        async function renderDashboard(container) {
+        function renderDashboard(container) {
             const opps = cachedOpportunities;
             const customers = cachedCustomers;
             const reminders = cachedReminders.filter(r => r.status === 'pending');
-            const currentMonth = getCurrentMonth();
-
             const wonDeals = opps.filter(o => o.stage === 'won');
             const totalActualRevenue = wonDeals.reduce((s, o) => s + (Number(o.actual_revenue) || 0), 0);
-            const totalForecasted = opps.filter(o => o.stage !== 'lost' && o.stage !== 'won').reduce((s, o) => s + (
-                Number(o.expected_amount) || 0) * (Number(o.success_rate) || 0) / 100, 0);
-            const winRate = opps.filter(o => o.stage !== 'discovery').length > 0 ?
-                Math.round(wonDeals.length / opps.filter(o => o.stage !== 'discovery').length * 100) : 0;
+            const totalForecasted = opps.filter(o => o.stage !== 'lost' && o.stage !== 'won').reduce((s, o) => s + (Number(o.expected_amount) || 0) * (Number(o.success_rate) || 0) / 100, 0);
+            const winRate = opps.filter(o => o.stage !== 'discovery').length > 0 ? Math.round(wonDeals.length / opps.filter(o => o.stage !== 'discovery').length * 100) : 0;
             const newCustomersCount = customers.filter(c => c.created_at && isCurrentMonth(c.created_at)).length;
             const newOppsCount = opps.filter(o => o.created_at && isCurrentMonth(o.created_at)).length;
 
-            const monthlyTarget = 100000;
-            const monthlyActual = wonDeals.filter(o => o.won_date && isCurrentMonth(o.won_date)).reduce((s, o) => s + (
-                Number(o.actual_revenue) || 0), 0);
-
             container.innerHTML = `
             <div class="page-header">
-                <div><div class="page-title">📊 銷售儀表板</div><div class="page-subtitle">歡迎回來，${escapeHtml(currentProfile.full_name || currentUser.email)} | 雲端同步模式</div></div>
+                <div><div class="page-title">📊 銷售儀表板</div><div class="page-subtitle">歡迎，${escapeHtml(currentProfile.full_name || currentUser.email)} | 雲端同步</div></div>
                 <button class="btn btn-primary" onclick="switchPage('opportunities')">+ 新增案件</button>
             </div>
             <div class="stats-grid">
-                <div class="stat-card purple"><div class="stat-label">📈 預測收入 (加權)</div><div class="stat-value">$${Math.round(totalForecasted).toLocaleString()}</div><div class="stat-sub">Pipeline 中有 ${opps.filter(o => o.stage !== 'lost' && o.stage !== 'won').length} 件</div></div>
-                <div class="stat-card green"><div class="stat-label">💰 實際成交收入</div><div class="stat-value">$${totalActualRevenue.toLocaleString()}</div><div class="stat-sub">已成交: ${wonDeals.length} 件</div></div>
-                <div class="stat-card blue"><div class="stat-label">🎯 本月目標達成率</div><div class="stat-value">${Math.round(monthlyActual / monthlyTarget * 100)}%</div><div class="stat-sub">$${monthlyActual.toLocaleString()} / $${monthlyTarget.toLocaleString()}</div></div>
-                <div class="stat-card orange"><div class="stat-label">🏆 贏單率</div><div class="stat-value">${winRate}%</div><div class="stat-sub">${wonDeals.length} 贏</div></div>
+                <div class="stat-card purple"><div class="stat-label">📈 預測收入</div><div class="stat-value">$${Math.round(totalForecasted).toLocaleString()}</div></div>
+                <div class="stat-card green"><div class="stat-label">💰 實際成交</div><div class="stat-value">$${totalActualRevenue.toLocaleString()}</div></div>
+                <div class="stat-card blue"><div class="stat-label">🏆 贏單率</div><div class="stat-value">${winRate}%</div></div>
+                <div class="stat-card orange"><div class="stat-label">📋 本月案件</div><div class="stat-value">${newOppsCount}</div></div>
             </div>
             <div class="stats-grid">
-                <div class="stat-card cyan"><div class="stat-label" style="color:#22d3ee;">👥 本月新增客戶</div><div class="stat-value">${newCustomersCount}</div></div>
-                <div class="stat-card red"><div class="stat-label" style="color:#f87171;">📋 本月新增案件</div><div class="stat-value">${newOppsCount}</div></div>
-            </div>
-            <div class="card"><div class="card-header"><h3>⏰ 待跟進提醒</h3><span class="badge badge-orange">${reminders.length} 筆</span></div>
-            ${reminders.length === 0 ? '<div style="text-align:center;padding:20px;color:var(--text-secondary);">🎉 目前沒有待跟進項目</div>' :
-            reminders.slice(0,5).map(r => `<div style="padding:10px 0;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:600;font-size:0.8rem;">${escapeHtml(r.customer_name)}</div><div style="font-size:0.65rem;color:var(--text-secondary);">📅 ${r.reminder_date} | ${escapeHtml(r.content || '').substring(0,30)}...</div></div><span class="badge badge-orange">待跟進</span></div>`).join('')}
+                <div class="stat-card cyan"><div class="stat-label">👥 本月新客戶</div><div class="stat-value">${newCustomersCount}</div></div>
+                <div class="stat-card red"><div class="stat-label">⏰ 待跟進</div><div class="stat-value">${reminders.length}</div></div>
             </div>`;
         }
 
@@ -1377,84 +531,45 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             const meetings = cachedMeetings;
             container.innerHTML = `
             <div class="page-header">
-                <div><div class="page-title">📅 會議管理</div><div class="page-subtitle">${meetings.length} 筆會議記錄</div></div>
+                <div><div class="page-title">📅 會議管理</div><div class="page-subtitle">${meetings.length} 筆會議</div></div>
                 <button id="addMeetingBtn" class="btn btn-primary">+ 新增會議</button>
             </div>
             <div class="card">
-                <div class="filter-bar">
-                    <input type="text" id="searchKeyword" placeholder="🔍 客戶名稱/主題" style="min-width:140px;">
-                    <input type="date" id="searchDate" style="min-width:120px;">
-                    <button id="searchBtn" class="btn btn-sm btn-secondary">搜尋</button>
-                    <button id="resetBtn" class="btn btn-sm btn-secondary">重置</button>
-                </div>
                 <div class="table-wrapper"><table>
-                    <thead><tr><th>客戶</th><th>日期</th><th>時間</th><th>主題</th><th>潛質</th><th>銷售員</th><th>操作</th></tr></thead>
-                    <tbody id="meetingTableBody"></tbody>
+                    <thead><tr><th>客戶</th><th>日期</th><th>時間</th><th>主題</th><th>潛質</th><th>操作</th></tr></thead>
+                    <tbody id="meetingTableBody">${meetings.map(m => `<tr>
+                        <td><strong>${escapeHtml(m.customer_name)}</strong></td>
+                        <td>${m.meeting_date}</td><td>${m.start_time || ''}-${m.end_time || ''}</td>
+                        <td>${escapeHtml(m.content || '-')}</td>
+                        <td>${m.potential ? `<span class="badge badge-purple">${m.potential}</span>` : '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-edit edit-meeting" data-id="${m.id}">✏️</button>
+                            <button class="btn btn-sm btn-danger delete-meeting" data-id="${m.id}">🗑️</button>
+                        </td>
+                    </tr>`).join('')}</tbody>
                 </table></div>
             </div>`;
 
-            const renderTable = (filtered) => {
-                const tbody = document.getElementById('meetingTableBody');
-                if (!tbody) return;
-                if (filtered.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;">暫無會議</td></tr>';
-                    return;
-                }
-                tbody.innerHTML = filtered.map(m => `<tr>
-                    <td><strong>${escapeHtml(m.customer_name)}</strong></td>
-                    <td>${m.meeting_date}</td>
-                    <td>${m.start_time || ''}${m.end_time ? '-' + m.end_time : ''}</td>
-                    <td>${escapeHtml(m.content || '-')}</td>
-                    <td>${m.potential ? `<span class="badge badge-purple">${m.potential}</span>` : '-'}</td>
-                    <td>${getSalesNameSync(m.sales_id)}</td>
-                    <td>
-                        <button class="btn btn-sm btn-edit edit-meeting" data-id="${m.id}">✏️</button>
-                        <button class="btn btn-sm btn-danger delete-meeting" data-id="${m.id}">🗑️</button>
-                    </td>
-                </tr>`).join('');
-                document.querySelectorAll('.edit-meeting').forEach(b => b.onclick = () => {
-                    const m = meetings.find(x => x.id === b.dataset.id);
-                    if (m) openMeetingModal(m);
-                });
-                document.querySelectorAll('.delete-meeting').forEach(b => b.onclick = async () => {
-                    if (confirm('刪除此會議？')) {
-                        await deleteMeeting(b.dataset.id);
-                        await loadAllData();
-                        renderMeetingsView(container);
-                        showToast('會議已刪除');
-                    }
-                });
-            };
-
-            const applyFilter = () => {
-                let filtered = [...meetings];
-                const kw = document.getElementById('searchKeyword')?.value.toLowerCase() || '';
-                const date = document.getElementById('searchDate')?.value || '';
-                if (kw) filtered = filtered.filter(m => (m.customer_name || '').toLowerCase().includes(kw) || (m
-                    .content || '').toLowerCase().includes(kw));
-                if (date) filtered = filtered.filter(m => m.meeting_date === date);
-                return filtered;
-            };
-
-            document.getElementById('searchBtn').onclick = () => renderTable(applyFilter());
-            document.getElementById('resetBtn').onclick = () => {
-                document.getElementById('searchKeyword').value = '';
-                document.getElementById('searchDate').value = '';
-                renderTable(meetings);
-            };
             document.getElementById('addMeetingBtn').onclick = () => openMeetingModal(null);
-            renderTable(meetings);
+            document.querySelectorAll('.edit-meeting').forEach(b => b.onclick = () => {
+                const m = meetings.find(x => x.id === b.dataset.id);
+                if (m) openMeetingModal(m);
+            });
+            document.querySelectorAll('.delete-meeting').forEach(b => b.onclick = async () => {
+                if (confirm('刪除此會議？')) {
+                    await supabase.from('meetings').delete().eq('id', b.dataset.id);
+                    await loadAllData();
+                    renderMeetingsView(container);
+                    showToast('已刪除');
+                }
+            });
         }
 
         function openMeetingModal(meeting) {
             const overlay = document.createElement('div');
             overlay.className = 'modal-overlay';
-            const mData = meeting || { id: null, customer_id: '', meeting_date: '', start_time: '', end_time: '',
-                content: '', summary: '', address: '', contact_person: '', contact_phone: '', source: '',
-                potential: '', remark: ''
-            };
-            const custOptions = cachedCustomers.map(c =>
-                `<option value="${c.id}" ${mData.customer_id === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
+            const mData = meeting || { id: null, customer_id: '', meeting_date: '', start_time: '', end_time: '', content: '', summary: '', address: '', contact_person: '', contact_phone: '', source: '', potential: '', remark: '' };
+            const custOptions = cachedCustomers.map(c => `<option value="${c.id}" ${mData.customer_id === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
 
             overlay.innerHTML = `<div class="modal-content" onclick="event.stopPropagation()">
                 <h3>${meeting ? '✏️ 編輯會議' : '➕ 新增會議'}</h3>
@@ -1463,16 +578,15 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                     <span class="quick-add-toggle" id="quickAddCustToggle">➕ 快速新增客戶</span>
                 </div>
                 <div id="quickAddCustSection" class="quick-add-customer-section">
-                    <div style="font-weight:600;margin-bottom:8px;font-size:0.75rem;">⚡ 快速新增客戶</div>
+                    <div style="font-weight:600;margin-bottom:8px;">⚡ 快速新增客戶</div>
                     <div class="form-group"><label>客戶名稱 *</label><input id="quickCustName" placeholder="輸入新客戶名稱" /></div>
                     <div class="form-row"><div class="form-group"><label>聯絡人</label><input id="quickCustContact" placeholder="聯絡人" /></div><div class="form-group"><label>電話</label><input id="quickCustPhone" placeholder="09xxxxxxxx" /></div></div>
                 </div>
                 <div class="form-group"><label>會議日期 *</label><input type="date" id="meetDate" value="${mData.meeting_date || ''}" /></div>
                 <div class="form-row"><div class="form-group"><label>開始時間</label><input type="time" id="meetStart" value="${mData.start_time || ''}" /></div><div class="form-group"><label>結束時間</label><input type="time" id="meetEnd" value="${mData.end_time || ''}" /></div></div>
-                <div class="form-group"><label>主題/內容</label><textarea id="meetContent" rows="2">${escapeHtml(mData.content || '')}</textarea></div>
-                <div class="form-group"><label>會議地址</label><input id="meetAddress" value="${escapeHtml(mData.address || '')}" /></div>
+                <div class="form-group"><label>主題</label><textarea id="meetContent" rows="2">${escapeHtml(mData.content || '')}</textarea></div>
+                <div class="form-group"><label>地址</label><input id="meetAddress" value="${escapeHtml(mData.address || '')}" /></div>
                 <div class="form-row"><div class="form-group"><label>來源</label><input id="meetSource" value="${escapeHtml(mData.source || '')}" /></div><div class="form-group"><label>潛質</label><select id="meetPotential"><option value="">請選擇</option><option ${mData.potential==='高'?'selected':''}>高</option><option ${mData.potential==='中'?'selected':''}>中</option><option ${mData.potential==='低'?'selected':''}>低</option></select></div></div>
-                <div class="form-group"><label>備註</label><textarea id="meetRemark" rows="2">${escapeHtml(mData.remark || '')}</textarea></div>
                 <div class="modal-actions"><button id="modalCancelBtn" class="btn btn-secondary">取消</button><button id="modalConfirmBtn" class="btn btn-primary">儲存</button></div>
             </div>`;
             document.body.appendChild(overlay);
@@ -1500,14 +614,13 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 if (quickAddMode) {
                     const qName = document.getElementById('quickCustName').value.trim();
                     if (!qName) { alert('請輸入客戶名稱'); return; }
-                    const newCust = await insertCustomer({
+                    const { data: newCust } = await supabase.from('customers').insert({
                         name: qName,
                         contact_person: document.getElementById('quickCustContact').value || '未填寫',
                         phone: document.getElementById('quickCustPhone').value || '未填寫',
-                        address: document.getElementById('meetAddress').value || '未填寫',
-                        score: 50,
-                        grade: 'B'
-                    });
+                        sales_id: currentUser.id,
+                        created_by: currentUser.id
+                    }).select().single();
                     custId = newCust.id;
                     custName = newCust.name;
                     showToast(`✅ 客戶「${custName}」已建立！`);
@@ -1521,26 +634,25 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
                 const date = document.getElementById('meetDate').value;
                 if (!date) { alert('請填寫會議日期'); return; }
+
                 const meetingData = {
                     customer_id: custId,
                     customer_name: custName,
+                    sales_id: currentUser.id,
+                    created_by: currentUser.id,
                     meeting_date: date,
                     start_time: document.getElementById('meetStart').value,
                     end_time: document.getElementById('meetEnd').value,
                     content: document.getElementById('meetContent').value,
-                    summary: document.getElementById('meetSummary')?.value || '',
                     address: document.getElementById('meetAddress').value,
-                    contact_person: document.getElementById('quickAddCustToggle') ? '' : '',
-                    contact_phone: '',
                     source: document.getElementById('meetSource').value,
-                    potential: document.getElementById('meetPotential').value,
-                    remark: document.getElementById('meetRemark').value
+                    potential: document.getElementById('meetPotential').value
                 };
 
                 if (meeting) {
-                    await updateMeeting(meeting.id, meetingData);
+                    await supabase.from('meetings').update(meetingData).eq('id', meeting.id);
                 } else {
-                    await insertMeeting(meetingData);
+                    await supabase.from('meetings').insert(meetingData);
                 }
                 await loadAllData();
                 overlay.remove();
@@ -1560,42 +672,34 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 <button id="addOppBtn" class="btn btn-primary">+ 新增案件</button>
             </div>
             <div class="card">
-                <div class="filter-bar">
-                    <input type="text" id="oppSearch" placeholder="🔍 搜尋客戶" style="min-width:140px;">
-                    <button id="searchOppBtn" class="btn btn-sm btn-secondary">搜尋</button>
-                </div>
                 <div class="table-wrapper"><table>
-                    <thead><tr><th>客戶</th><th>模塊</th><th>預期金額</th><th>預算</th><th>成功率</th><th>預期成交日</th><th>階段</th><th>銷售員</th><th>操作</th></tr></thead>
+                    <thead><tr><th>客戶</th><th>模塊</th><th>預期金額</th><th>成功率</th><th>預期成交日</th><th>階段</th><th>操作</th></tr></thead>
                     <tbody id="oppTableBody">${opps.map(o => `<tr>
                         <td><strong>${escapeHtml(o.customer_name)}</strong></td>
-                        <td>${(o.modules || []).map(m => `<span class="badge badge-purple" style="margin:1px;">${m}</span>`).join('') || '-'}</td>
+                        <td>${(o.modules || []).map(m => `<span class="badge badge-purple">${m}</span>`).join('') || '-'}</td>
                         <td>$${(Number(o.expected_amount)||0).toLocaleString()}</td>
-                        <td>$${(Number(o.budget)||0).toLocaleString()}</td>
                         <td>${o.success_rate||0}%</td>
                         <td>${o.expected_date||'-'}</td>
                         <td><span class="badge ${o.stage==='won'?'badge-green':o.stage==='lost'?'badge-red':'badge-blue'}">${o.stage||'discovery'}</span></td>
-                        <td>${getSalesNameSync(o.sales_id)}</td>
-                        <td><button class="btn btn-sm btn-edit edit-opp" data-id="${o.id}">✏️</button> <button class="btn btn-sm btn-danger delete-opp" data-id="${o.id}">🗑️</button></td>
+                        <td>
+                            <button class="btn btn-sm btn-edit edit-opp" data-id="${o.id}">✏️</button>
+                            <button class="btn btn-sm btn-danger delete-opp" data-id="${o.id}">🗑️</button>
+                        </td>
                     </tr>`).join('')}</tbody>
                 </table></div>
             </div>`;
+
             document.getElementById('addOppBtn').onclick = () => openOpportunityModal(null);
-            document.getElementById('searchOppBtn').onclick = () => {
-                const kw = document.getElementById('oppSearch').value.toLowerCase();
-                document.querySelectorAll('#oppTableBody tr').forEach(r => {
-                    r.style.display = r.cells[0]?.innerText.toLowerCase().includes(kw) ? '' : 'none';
-                });
-            };
             document.querySelectorAll('.edit-opp').forEach(b => b.onclick = () => {
                 const o = opps.find(x => x.id === b.dataset.id);
                 if (o) openOpportunityModal(o);
             });
             document.querySelectorAll('.delete-opp').forEach(b => b.onclick = async () => {
                 if (confirm('刪除此案件？')) {
-                    await deleteOpportunity(b.dataset.id);
+                    await supabase.from('opportunities').delete().eq('id', b.dataset.id);
                     await loadAllData();
                     renderOpportunitiesView(container);
-                    showToast('案件已刪除');
+                    showToast('已刪除');
                 }
             });
         }
@@ -1603,15 +707,10 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         function openOpportunityModal(opp) {
             const overlay = document.createElement('div');
             overlay.className = 'modal-overlay';
-            const d = opp || { id: null, customer_id: '', expected_amount: '', budget: '', success_rate: 50,
-                expected_date: '', modules: [], stage: 'discovery', competitor: '', last_summary: '',
-                actual_revenue: 0, won_date: ''
-            };
-            const custOptions = cachedCustomers.map(c =>
-                `<option value="${c.id}" ${d.customer_id === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
+            const d = opp || { id: null, customer_id: '', expected_amount: '', budget: '', success_rate: 50, expected_date: '', modules: [], stage: 'discovery', competitor: '', last_summary: '' };
+            const custOptions = cachedCustomers.map(c => `<option value="${c.id}" ${d.customer_id === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
             const selMods = new Set(d.modules || []);
-            const moduleTagsHtml = MODULE_LIST.map(m =>
-                `<span class="module-tag ${selMods.has(m) ? 'selected' : ''}" data-module="${m}">${m}</span>`).join('');
+            const moduleTagsHtml = MODULE_LIST.map(m => `<span class="module-tag ${selMods.has(m) ? 'selected' : ''}" data-module="${m}">${m}</span>`).join('');
 
             overlay.innerHTML = `<div class="modal-content" onclick="event.stopPropagation()">
                 <h3>${opp ? '✏️ 編輯案件' : '➕ 新增案件'}</h3>
@@ -1626,7 +725,6 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                     <option value="won" ${d.stage==='won'?'selected':''}>已成交</option>
                     <option value="lost" ${d.stage==='lost'?'selected':''}>輸單</option>
                 </select></div>
-                <div class="form-row"><div class="form-group"><label>競爭對手</label><input id="oppCompetitor" value="${escapeHtml(d.competitor||'')}" /></div><div class="form-group"><label>實際成交金額</label><input type="number" id="oppActualRevenue" value="${d.actual_revenue||0}" /></div></div>
                 <div class="form-group"><label>備註</label><textarea id="oppSummary" rows="2">${escapeHtml(d.last_summary||'')}</textarea></div>
                 <div class="modal-actions"><button id="modalCancelBtn" class="btn btn-secondary">取消</button><button id="modalConfirmBtn" class="btn btn-primary">儲存</button></div>
             </div>`;
@@ -1646,25 +744,23 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 const cust = cachedCustomers.find(c => c.id === cid);
                 if (!cust) return;
                 if (selMods.size === 0) { alert('請至少選擇一個模塊'); return; }
-                const stage = document.getElementById('oppStage').value;
                 const oppData = {
                     customer_id: cid,
                     customer_name: cust.name,
+                    sales_id: currentUser.id,
+                    created_by: currentUser.id,
                     expected_amount: parseFloat(document.getElementById('oppAmount').value) || 0,
                     budget: parseFloat(document.getElementById('oppBudget').value) || 0,
                     success_rate: parseInt(document.getElementById('oppRate').value) || 0,
                     expected_date: document.getElementById('oppDate').value,
                     modules: Array.from(selMods),
-                    stage,
-                    competitor: document.getElementById('oppCompetitor').value,
-                    last_summary: document.getElementById('oppSummary').value,
-                    actual_revenue: parseFloat(document.getElementById('oppActualRevenue').value) || 0,
-                    won_date: stage === 'won' ? (opp?.won_date || new Date().toISOString().slice(0, 10)) : null
+                    stage: document.getElementById('oppStage').value,
+                    last_summary: document.getElementById('oppSummary').value
                 };
                 if (opp) {
-                    await updateOpportunity(opp.id, oppData);
+                    await supabase.from('opportunities').update(oppData).eq('id', opp.id);
                 } else {
-                    await insertOpportunity(oppData);
+                    await supabase.from('opportunities').insert(oppData);
                 }
                 await loadAllData();
                 overlay.remove();
@@ -1687,22 +783,13 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                     <td>📅 ${r.reminder_date}</td>
                     <td>${escapeHtml(r.content || '')}</td>
                     <td><span class="badge badge-orange">待跟進</span></td>
-                    <td><button class="btn btn-sm btn-success complete-reminder" data-id="${r.id}">✅ 完成</button>
-                    <button class="btn btn-sm btn-danger delete-reminder" data-id="${r.id}">🗑️</button></td>
+                    <td><button class="btn btn-sm btn-success complete-reminder" data-id="${r.id}">✅</button></td>
                 </tr>`).join('')}</tbody>
             </table></div></div>`;
             document.querySelectorAll('.complete-reminder').forEach(b => b.onclick = async () => {
-                await updateReminder(b.dataset.id, { status: 'completed' });
+                await supabase.from('reminders').update({ status: 'completed' }).eq('id', b.dataset.id);
                 await loadAllData();
                 renderRemindersView(container);
-                showToast('提醒已完成');
-            });
-            document.querySelectorAll('.delete-reminder').forEach(b => b.onclick = async () => {
-                if (confirm('刪除此提醒？')) {
-                    await deleteReminder(b.dataset.id);
-                    await loadAllData();
-                    renderRemindersView(container);
-                }
             });
         }
 
@@ -1711,23 +798,15 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             const customers = cachedCustomers;
             container.innerHTML = `
             <div class="page-header"><div><div class="page-title">🏢 客戶管理</div><div class="page-subtitle">${customers.length} 位客戶</div></div></div>
-            <div class="card"><div class="filter-bar"><input type="text" id="searchCustomer" placeholder="🔍 搜尋客戶" style="min-width:140px;"><button id="searchCustBtn" class="btn btn-sm btn-secondary">搜尋</button></div>
-            <div class="table-wrapper"><table>
-                <thead><tr><th>客戶名稱</th><th>聯絡人</th><th>電話</th><th>評分</th><th>等級</th><th>負責銷售</th><th>操作</th></tr></thead>
+            <div class="card"><div class="table-wrapper"><table>
+                <thead><tr><th>客戶名稱</th><th>聯絡人</th><th>電話</th><th>評分</th><th>等級</th><th>操作</th></tr></thead>
                 <tbody>${customers.map(c => `<tr>
                     <td><strong>${escapeHtml(c.name)}</strong></td>
                     <td>${escapeHtml(c.contact_person)}</td><td>${c.phone}</td><td>${c.score||0}</td>
                     <td><span class="badge ${c.grade==='A'?'badge-green':c.grade==='B'?'badge-blue':'badge-orange'}">${c.grade||'B'}</span></td>
-                    <td>${getSalesNameSync(c.sales_id)}</td>
                     <td><button class="btn btn-sm btn-edit edit-customer" data-id="${c.id}">✏️</button></td>
                 </tr>`).join('')}</tbody>
             </table></div></div>`;
-            document.getElementById('searchCustBtn').onclick = () => {
-                const kw = document.getElementById('searchCustomer').value.toLowerCase();
-                document.querySelectorAll('#customerTableBody tr').forEach(r => {
-                    r.style.display = r.cells[0]?.innerText.toLowerCase().includes(kw) ? '' : 'none';
-                });
-            };
             document.querySelectorAll('.edit-customer').forEach(b => b.onclick = () => {
                 const c = customers.find(x => x.id === b.dataset.id);
                 if (c) openEditCustomerModal(c);
@@ -1741,7 +820,6 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 <h3>✏️ 編輯客戶 - ${escapeHtml(customer.name)}</h3>
                 <div class="form-group"><label>客戶名稱</label><input id="editCustName" value="${escapeHtml(customer.name)}" /></div>
                 <div class="form-row"><div class="form-group"><label>聯絡人</label><input id="editCustContact" value="${escapeHtml(customer.contact_person)}" /></div><div class="form-group"><label>電話</label><input id="editCustPhone" value="${customer.phone || ''}" /></div></div>
-                <div class="form-group"><label>地址</label><input id="editCustAddress" value="${escapeHtml(customer.address || '')}" /></div>
                 <div class="form-row"><div class="form-group"><label>評分</label><input type="number" id="editCustScore" value="${customer.score || 50}" /></div><div class="form-group"><label>等級</label><select id="editCustGrade"><option ${customer.grade==='A'?'selected':''}>A</option><option ${customer.grade==='B'?'selected':''}>B</option><option ${customer.grade==='C'?'selected':''}>C</option></select></div></div>
                 <div class="modal-actions"><button id="cancelEditBtn" class="btn btn-secondary">取消</button><button id="saveEditBtn" class="btn btn-primary">儲存</button></div>
             </div>`;
@@ -1749,14 +827,13 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             document.getElementById('saveEditBtn').onclick = async () => {
                 const name = document.getElementById('editCustName').value.trim();
                 if (!name) { alert('客戶名稱不可為空'); return; }
-                await updateCustomer(customer.id, {
+                await supabase.from('customers').update({
                     name,
                     contact_person: document.getElementById('editCustContact').value,
                     phone: document.getElementById('editCustPhone').value,
-                    address: document.getElementById('editCustAddress').value,
                     score: parseInt(document.getElementById('editCustScore').value) || 50,
                     grade: document.getElementById('editCustGrade').value
-                });
+                }).eq('id', customer.id);
                 await loadAllData();
                 overlay.remove();
                 showToast('✅ 客戶已更新！');
@@ -1771,25 +848,19 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             container.innerHTML = `
             <div class="page-header"><div><div class="page-title">👥 銷售員管理</div></div></div>
             <div class="card"><div class="table-wrapper"><table>
-                <thead><tr><th>姓名</th><th>角色</th><th>Email</th></tr></thead>
-                <tbody>${cachedProfiles.filter(p => p.role === 'sales').map(p => `<tr>
-                    <td><strong>${escapeHtml(p.full_name)}</strong></td>
-                    <td><span class="badge badge-blue">銷售</span></td>
-                    <td>${escapeHtml(p.email || '')}</td>
-                </tr>`).join('')}</tbody>
+                <thead><tr><th>姓名</th><th>角色</th></tr></thead>
+                <tbody>${cachedProfiles.filter(p => p.role === 'sales').map(p => `<tr><td><strong>${escapeHtml(p.full_name)}</strong></td><td><span class="badge badge-blue">銷售</span></td></tr>`).join('')}</tbody>
             </table></div></div>`;
         }
 
         // ==================== 初始化 ====================
         renderApp();
 
-        // 監聽 Auth 狀態變化
         supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session) {
                 currentUser = session.user;
                 await loadAllData();
-                currentProfile = cachedProfiles.find(p => p.id === currentUser.id) || { role: 'sales',
-                    full_name: currentUser.email };
+                currentProfile = cachedProfiles.find(p => p.id === currentUser.id) || { role: 'sales', full_name: currentUser.email };
                 renderApp();
             }
             if (event === 'SIGNED_OUT') {
