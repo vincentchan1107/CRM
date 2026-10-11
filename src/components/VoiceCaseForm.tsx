@@ -56,7 +56,14 @@ export function VoiceCaseForm() {
   const [savedId, setSavedId] = useState<string | null>(null);
   const [supported, setSupported] = useState(true);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const transcriptRef = useRef<HTMLTextAreaElement | null>(null);
   const finalBuffer = useRef("");
+
+  function readTranscript(): string {
+    const fromState = transcript.trim();
+    const fromDom = transcriptRef.current?.value?.trim() || "";
+    return fromState || fromDom;
+  }
 
   useEffect(() => {
     const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -153,27 +160,39 @@ export function VoiceCaseForm() {
     });
   }
 
-  async function submit() {
-    if (!form.customerName.trim()) {
+  async function submit(e?: React.FormEvent<HTMLFormElement>) {
+    const fd = e ? new FormData(e.currentTarget) : null;
+    const customerName =
+      form.customerName.trim() ||
+      String(fd?.get("customerName") || "").trim();
+    const partner =
+      form.partner || String(fd?.get("partner") || "直銷").trim();
+    const requirements =
+      form.requirements || String(fd?.get("requirements") || "").trim();
+    const quantity =
+      form.quantity || String(fd?.get("quantity") || "").trim();
+    const budgetRaw = form.budget || String(fd?.get("budget") || "");
+    if (!customerName) {
       setStatus("請先填寫客戶名稱");
       return;
     }
     setSaving(true);
     setStatus("提交中…");
     try {
+      const noteText = readTranscript();
       const res = await fetch("/api/cases", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          customerName: form.customerName,
-          partner: form.partner,
+          customerName,
+          partner,
           systems: form.systems,
-          requirements: form.requirements,
-          quantity: form.quantity,
-          budget: Number(form.budget) || 0,
-          amount: Number(form.budget) || 0,
+          requirements,
+          quantity,
+          budget: Number(budgetRaw) || 0,
+          amount: Number(budgetRaw) || 0,
           stage: "first_interview",
-          notes: transcript ? `語音原文：${transcript}` : "",
+          notes: noteText ? `語音原文：${noteText}` : "",
         }),
       });
       const data = await res.json();
@@ -229,17 +248,28 @@ export function VoiceCaseForm() {
             )}
           </div>
           <textarea
+            ref={transcriptRef}
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
+            onInput={(e) =>
+              setTranscript((e.target as HTMLTextAreaElement).value)
+            }
             rows={3}
             placeholder="例如：客戶係新里程製造，來自 Partner A，用緊 ERP 同 SCM，需求係整合庫存，數量三個模組，budget 大約四十五萬"
             className="w-full resize-none bg-transparent text-sm outline-none"
           />
           <button
             type="button"
-            onClick={() => void parseTranscript(transcript)}
-            disabled={!transcript.trim()}
-            className="mt-2 text-xs font-semibold text-teal disabled:opacity-40"
+            onClick={() => {
+              const text = readTranscript();
+              setTranscript(text);
+              if (!text) {
+                setStatus("請先輸入或講出案件內容");
+                return;
+              }
+              void parseTranscript(text);
+            }}
+            className="mt-2 rounded-full bg-teal/10 px-3 py-1.5 text-xs font-semibold text-teal"
           >
             解析並填入表格
           </button>
@@ -250,11 +280,12 @@ export function VoiceCaseForm() {
         className="animate-rise-delay mt-4 space-y-3 rounded-panel border border-white/80 bg-white/85 p-5 shadow-soft backdrop-blur"
         onSubmit={(e) => {
           e.preventDefault();
-          void submit();
+          void submit(e);
         }}
       >
         <Field label="客戶名稱">
           <input
+            name="customerName"
             value={form.customerName}
             onChange={(e) =>
               setForm((p) => ({ ...p, customerName: e.target.value }))
@@ -267,6 +298,7 @@ export function VoiceCaseForm() {
 
         <Field label="來自邊個 Partner">
           <select
+            name="partner"
             value={form.partner}
             onChange={(e) => setForm((p) => ({ ...p, partner: e.target.value }))}
             className="w-full rounded-2xl border border-line bg-[#f8fbfc] px-3.5 py-3 outline-none focus:border-teal/60 focus:ring-4 focus:ring-teal/10"
@@ -303,6 +335,7 @@ export function VoiceCaseForm() {
 
         <Field label="需求">
           <textarea
+            name="requirements"
             value={form.requirements}
             onChange={(e) =>
               setForm((p) => ({ ...p, requirements: e.target.value }))
@@ -316,6 +349,7 @@ export function VoiceCaseForm() {
         <div className="grid grid-cols-2 gap-3">
           <Field label="數量">
             <input
+              name="quantity"
               value={form.quantity}
               onChange={(e) =>
                 setForm((p) => ({ ...p, quantity: e.target.value }))
@@ -326,6 +360,7 @@ export function VoiceCaseForm() {
           </Field>
           <Field label="Budget (HKD)">
             <input
+              name="budget"
               type="number"
               inputMode="decimal"
               value={form.budget}
