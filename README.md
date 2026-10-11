@@ -24,7 +24,9 @@ npm run dev
 
 ## Scripts
 
-- `npm run dev` — 開發伺服器
+- `npm run dev` — 開發伺服器（webpack；避免 Turbopack hydration 問題）
 - `npm run build` — 正式建置
 - `npm run start` — 啟動正式伺服器
+- `npm run test:voice` — 語音解析單元檢查
+- `npm run demo:e2e` — Playwright 端到端（需先 `npm run build && npm start`）
 - `npm run lint` — ESLint
