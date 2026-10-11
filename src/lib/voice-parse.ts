@@ -63,7 +63,7 @@ export function parseVoiceTranscript(transcript: string): VoiceParseResult {
     customerName: cleanName(customerName),
     partner: cleanPartner(partner),
     systems: systems.length ? systems : undefined,
-    requirements: requirements?.trim(),
+    requirements: requirements?.trim().replace(/[，,；;]+$/g, ""),
     quantity: quantityText,
     budget: budgetRaw ? parseMoney(budgetRaw) : undefined,
   };
