@@ -219,25 +219,31 @@ export function VoiceCaseForm() {
 
         <p className="mt-3 text-sm leading-relaxed text-muted">{status}</p>
 
-        {(transcript || !supported) && (
-          <div className="mt-4 rounded-2xl border border-line bg-paper/80 p-3">
-            <div className="mb-1 text-xs font-semibold text-muted">語音／文字</div>
-            <textarea
-              value={transcript}
-              onChange={(e) => setTranscript(e.target.value)}
-              rows={3}
-              placeholder="例如：客戶係新里程製造，來自 Partner A，用緊 ERP 同 SCM，需求係整合庫存，數量三個模組，budget 大約四十五萬"
-              className="w-full resize-none bg-transparent text-sm outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => void parseTranscript(transcript)}
-              className="mt-2 text-xs font-semibold text-teal"
-            >
-              解析並填入表格
-            </button>
+        <div className="mt-4 rounded-2xl border border-line bg-paper/80 p-3">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-muted">語音／文字輸入</span>
+            {!supported && (
+              <span className="text-[10px] font-semibold text-amber">
+                此瀏覽器無麥克風語音，可用文字解析
+              </span>
+            )}
           </div>
-        )}
+          <textarea
+            value={transcript}
+            onChange={(e) => setTranscript(e.target.value)}
+            rows={3}
+            placeholder="例如：客戶係新里程製造，來自 Partner A，用緊 ERP 同 SCM，需求係整合庫存，數量三個模組，budget 大約四十五萬"
+            className="w-full resize-none bg-transparent text-sm outline-none"
+          />
+          <button
+            type="button"
+            onClick={() => void parseTranscript(transcript)}
+            disabled={!transcript.trim()}
+            className="mt-2 text-xs font-semibold text-teal disabled:opacity-40"
+          >
+            解析並填入表格
+          </button>
+        </div>
       </div>
 
       <form
