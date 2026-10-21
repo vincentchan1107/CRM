@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>見客通 CaseFlow CRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --ink: #0f1c24;
+      --ink-soft: #3d5160;
+      --muted: #6b7f8e;
+      --paper: #f3f7f8;
+      --panel: #ffffff;
+      --line: #d5e1e6;
+      --teal: #0f766e;
+      --teal-deep: #115e59;
+      --amber: #d97706;
+      --sky: #0369a1;
+      --rose: #be123c;
+      --shadow: 0 18px 50px rgba(15, 28, 36, 0.08);
+      --radius: 18px;
+      --font-display: Syne, "Noto Sans TC", sans-serif;
+      --font-body: "DM Sans", "Noto Sans TC", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: var(--font-body);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #c8ebe6, transparent 55%),
+        radial-gradient(900px 500px at 90% 0%, #f5e6d3, transparent 50%),
+        linear-gradient(180deg, #e8f0f4, var(--paper) 40%, #eef4f6);
+    }
+    a { color: inherit; text-decoration: none; }
+    button, input, select, textarea { font: inherit; }
+    .hidden { display: none !important; }
+    .app-header {
+      position: sticky; top: 0; z-index: 40;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 16px; border-bottom: 1px solid rgba(213,225,230,.8);
+      background: rgba(255,255,255,.82); backdrop-filter: blur(10px);
+    }
+    .brand { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; }
+    .nav-pills {
+      display: flex; gap: 4px; padding: 3px; border-radius: 999px; background: var(--paper);
+      overflow-x: auto; max-width: min(100%, 520px);
+    }
+    .nav-pills button {
+      border: 0; background: transparent; color: var(--muted);
+      padding: 7px 12px; border-radius: 999px; font-size: .78rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+    }
+    .nav-pills button.active { background: var(--ink); color: #fff; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 18px 16px 48px; }
+    .hero-card, .panel {
+      background: rgba(255,255,255,.86); border: 1px solid rgba(255,255,255,.8);
+      border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px;
+    }
+    h1, h2 { font-family: var(--font-display); margin: 0; }
+    .eyebrow { font-size: .7rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--teal); }
+    .muted { color: var(--muted); font-size: .9rem; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      border: 0; border-radius: 999px; padding: 11px 18px; font-weight: 600; font-size: .86rem; cursor: pointer;
+    }
+    .btn-teal { background: var(--teal); color: #fff; }
+    .btn-teal:hover { background: var(--teal-deep); }
+    .btn-ink { background: var(--ink); color: #fff; }
+    .btn-ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+    .btn-sm { padding: 6px 12px; font-size: .75rem; }
+    .grid-stats { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); margin: 16px 0; }
+    @media (min-width: 800px) { .grid-stats { grid-template-columns: repeat(4, 1fr); } }
+    .stat {
+      background: rgba(255,255,255,.85); border: 1px solid var(--line); border-radius: 16px; padding: 14px;
+    }
+    .stat .label { font-size: .68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .stat .value { font-family: var(--font-display); font-size: 1.45rem; font-weight: 800; margin-top: 4px; }
+    .field { display: block; margin-bottom: 12px; }
+    .field span { display: block; font-size: .72rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+    .field input, .field select, .field textarea {
+      width: 100%; border: 1px solid var(--line); background: #f8fbfc; border-radius: 14px;
+      padding: 10px 12px; outline: none;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: rgba(15,118,110,.55); box-shadow: 0 0 0 3px rgba(15,118,110,.12);
+    }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag {
+      border: 1px solid var(--line); background: var(--paper); color: var(--muted);
+      border-radius: 999px; padding: 6px 11px; font-size: .72rem; font-weight: 600; cursor: pointer;
+    }
+    .tag.on { background: var(--teal); color: #fff; border-color: transparent; }
+    .mic {
+      width: 64px; height: 64px; border-radius: 50%; border: 0; background: var(--teal); color: #fff; cursor: pointer;
+    }
+    .mic.listening { background: var(--rose); animation: pulse 1.4s ease-out infinite; }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(15,118,110,.45); }
+      70% { box-shadow: 0 0 0 18px rgba(15,118,110,0); }
+      100% { box-shadow: 0 0 0 0 rgba(15,118,110,0); }
+    }
+    .kanban {
+      display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px;
+    }
+    .col {
+      min-width: 240px; max-width: 270px; flex: 1;
+      background: rgba(255,255,255,.72); border: 1px solid var(--line); border-radius: 16px; padding: 10px;
+    }
+    .badge {
+      display: inline-block; border-radius: 999px; padding: 3px 9px; font-size: .68rem; font-weight: 700;
+    }
+    .card-case {
+      background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px; margin-bottom: 8px;
+      cursor: grab; box-shadow: 0 2px 10px rgba(15,28,36,.04);
+    }
+    .card-case:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+    table { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 860px; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; background: var(--paper); }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.85); }
+    .drawer-bg {
+      position: fixed; inset: 0; background: rgba(15,28,36,.35); backdrop-filter: blur(4px);
+      display: flex; justify-content: flex-end; z-index: 60;
+    }
+    .drawer {
+      width: min(100%, 420px); height: 100%; background: #fff; overflow-y: auto; padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .bar {
+      height: 10px; background: var(--paper); border-radius: 999px; overflow: hidden; margin: 4px 0 2px;
+    }
+    .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), var(--sky)); }
+    .toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+      background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 999px; font-size: .82rem; z-index: 80;
+    }
+    .setup-box {
+      border: 1px dashed var(--amber); background: #fff8eb; border-radius: 16px; padding: 14px; margin-bottom: 14px;
+    }
+    .setup-box pre {
+      white-space: pre-wrap; word-break: break-word; background: #fff; border: 1px solid var(--line);
+      border-radius: 12px; padding: 10px; font-size: .72rem; max-height: 180px; overflow: auto;
+    }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .home-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">見客通</div>
+    <nav class="nav-pills" id="navPills">
+      <button data-view="home" class="active">首頁</button>
+      <button data-view="portal">手機 Portal</button>
+      <button data-view="dashboard">Dashboard</button>
+      <button data-view="board">Kanban</button>
+      <button data-view="cases">列表</button>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <div id="setupBanner" class="setup-box hidden">
+      <strong>需要先建立 Supabase 資料表</strong>
+      <p class="muted" style="margin:8px 0">請打開 Supabase → SQL Editor，貼上並執行 <code>supabase/setup.sql</code>（或下方內容），完成後按「重新檢查」。</p>
+      <pre id="setupSqlPreview">載入中…</pre>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn btn-teal btn-sm" id="btnCopySql">複製 SQL</button>
+        <button class="btn btn-ghost btn-sm" id="btnRecheck">重新檢查</button>
+      </div>
+    </div>
+
+    <!-- HOME -->
+    <section id="view-home">
+      <div class="hero-card">
+        <div class="eyebrow">Sales case OS · Supabase</div>
+        <h1 style="font-size:clamp(2rem,5vw,3.2rem);margin-top:8px;line-height:1.1">講出嚟，就變案件。</h1>
+        <p class="muted" style="max-width:520px;margin-top:12px;line-height:1.6">
+          手機 Portal 用語音／文字填表；後台用 Kanban 跟進會見→報價→確認／關閉，並預測未來成交額。資料存於 Supabase。
+        </p>
+        <div class="home-actions">
+          <button class="btn btn-teal" data-go="portal">開啟手機 Portal</button>
+          <button class="btn btn-ghost" data-go="dashboard">進入後台 Dashboard</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PORTAL -->
+    <section id="view-portal" class="hidden">
+      <div class="panel" style="max-width:520px;margin:0 auto 12px">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+          <div>
+            <div class="eyebrow">Mobile Portal</div>
+            <h1 style="font-size:1.6rem;margin-top:4px">語音建案</h1>
+            <p class="muted" id="portalStatus" style="margin-top:8px">按麥克風講出案件，或貼文字後解析</p>
+          </div>
+          <button class="mic" id="micBtn" title="語音輸入">🎤</button>
+        </div>
+        <label class="field" style="margin-top:12px">
+          <span>語音／文字輸入</span>
+          <textarea id="transcript" rows="3" placeholder="例如：客戶係新里程製造，來自 Partner A，用緊 ERP 同 SCM，需求係整合庫存，數量三個模組，budget 大約四十五萬"></textarea>
+        </label>
+        <button class="btn btn-teal btn-sm" id="btnParse">解析並填入表格</button>
+      </div>
+      <form class="panel" id="caseForm" style="max-width:520px;margin:0 auto">
+        <label class="field"><span>客戶名稱</span><input name="customerName" required placeholder="公司／客戶名稱" /></label>
+        <label class="field"><span>來自邊個 Partner</span>
+          <select name="partner" id="partnerSelect"></select>
+        </label>
+        <div class="field"><span>客見有用咩系統</span><div class="tags" id="systemTags"></div></div>
+        <label class="field"><span>需求</span><textarea name="requirements" rows="3" placeholder="客戶主要需求"></textarea></label>
+        <div class="row2">
+          <label class="field"><span>數量</span><input name="quantity" placeholder="例如 20 用戶" /></label>
+          <label class="field"><span>Budget (HKD)</span><input name="budget" type="number" placeholder="0" /></label>
+        </div>
+        <button class="btn btn-ink" style="width:100%" type="submit">建立案件（首次會見）</button>
+      </form>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="view-dashboard" class="hidden">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
+        <div>
+          <h1>Dashboard</h1>
+          <p class="muted">未來幾個月 closing 預測、簽單額與成功機率</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ink btn-sm" data-go="board">開 Kanban</button>
+          <button class="btn btn-ghost btn-sm" data-go="cases">睇列表</button>
+        </div>
+      </div>
+      <div class="grid-stats" id="dashStats"></div>
+      <div style="display:grid;gap:12px;grid-template-columns:1fr;margin-top:8px">
+        <div class="panel" id="dashMonths"></div>
+        <div class="panel" id="dashStages"></div>
+      </div>
+    </section>
+
+    <!-- BOARD -->
+    <section id="view-board" class="hidden">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px">
+        <div>
+          <h1>Case 跟進</h1>
+          <p class="muted">拖曳卡片改 status：會見 → 報價 → 跟進 → 最終 → 確認／關閉</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnRefreshBoard">重新整理</button>
+      </div>
+      <div class="kanban" id="kanban"></div>
+    </section>
+
+    <!-- CASES LIST -->
+    <section id="view-cases" class="hidden">
+      <div style="margin-bottom:12px">
+        <h1>案件列表</h1>
+        <p class="muted">details、target closing date、case amount</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <input id="caseSearch" placeholder="搜尋客戶／partner／需求…" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff" />
+        <select id="caseStageFilter" style="border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff"></select>
+      </div>
+      <div class="table-wrap"><table><thead><tr>
+        <th>客戶</th><th>Partner</th><th>系統</th><th>階段</th><th>Amount</th><th>機率</th><th>Target Close</th><th>操作</th>
+      </tr></thead><tbody id="casesBody"></tbody></table></div>
+    </section>
+  </main>
+
+  <div id="drawerRoot"></div>
+  <div id="toastRoot"></div>
+
+  <script>
+    const SUPABASE_URL = "https://xdjzkcqhwamfajsjyclq.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkanprY3Fod2FtZmFqc2p5Y2xxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMTMzNjksImV4cCI6MjA5Mjc4OTM2OX0.-jQ0kcFD5CYWejJsg54BWogvr_upKwKWeDSaungnAo8";
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const STAGES = [
+      { id: "first_interview", label: "首次會見", short: "會見", color: "#0f766e", bg: "#ccfbf1", desc: "第一次見客、了解需求" },
+      { id: "quotation", label: "報價", short: "報價", color: "#1d4ed8", bg: "#dbeafe", desc: "提交報價／方案" },
+      { id: "follow_up", label: "跟進", short: "跟進", color: "#b45309", bg: "#fef3c7", desc: "報價後持續跟進" },
+      { id: "final_stage", label: "最終階段", short: "最終", color: "#7c2d12", bg: "#ffedd5", desc: "接近簽單的最後磋商" },
+      { id: "confirmation", label: "確認簽單", short: "確認", color: "#15803d", bg: "#dcfce7", desc: "客戶確認、準備成交" },
+      { id: "closed", label: "已關閉", short: "關閉", color: "#64748b", bg: "#e2e8f0", desc: "Disqualify 或失敗關閉" },
+    ];
+    const PARTNERS = ["直銷", "Partner A", "Partner B", "Partner C", "轉介", "活動／展覽", "其他"];
+    const SYSTEMS = ["HRM", "ERP", "CRM", "WORKFLOW", "PMS", "PPMS", "SCM", "BI", "其他"];
+
+    let cases = [];
+    let selectedSystems = new Set();
+    let dragId = null;
+    let dbReady = false;
+
+    const money = (n) => new Intl.NumberFormat("zh-HK", { style: "currency", currency: "HKD", maximumFractionDigits: 0 }).format(n || 0);
+    const pct = (n) => `${Math.round(n || 0)}%`;
+    const stageMeta = (id) => STAGES.find((s) => s.id === id) || STAGES[0];
+    const toast = (msg) => {
+      const el = document.createElement("div");
+      el.className = "toast";
+      el.textContent = msg;
+      document.getElementById("toastRoot").appendChild(el);
+      setTimeout(() => el.remove(), 2200);
+    };
+
+    function showView(name) {
+      ["home", "portal", "dashboard", "board", "cases"].forEach((v) => {
+        document.getElementById(`view-${v}`).classList.toggle("hidden", v !== name);
+      });
+      document.querySelectorAll("#navPills button").forEach((b) => b.classList.toggle("active", b.dataset.view === name));
+      if (name === "dashboard") renderDashboard();
+      if (name === "board") renderBoard();
+      if (name === "cases") renderCasesTable();
+      if (name === "portal") initPortalForm();
+    }
+
+    async function checkDb() {
+      const { data, error } = await db.from("crm_cases").select("id").limit(1);
+      dbReady = !error;
+      document.getElementById("setupBanner").classList.toggle("hidden", dbReady);
+      if (error) {
+        console.warn(error);
+        return false;
+      }
+      return true;
+    }
+
+    async function loadCases() {
+      if (!(await checkDb())) {
+        cases = [];
+        return;
+      }
+      const { data, error } = await db.from("crm_cases").select("*").order("updated_at", { ascending: false });
+      if (error) {
+        toast("載入失敗：" + error.message);
+        cases = [];
+        return;
+      }
+      cases = (data || []).map(fromRow);
+    }
+
+    function fromRow(r) {
+      return {
+        id: r.id,
+        customerName: r.customer_name,
+        partner: r.partner || "直銷",
+        systems: r.systems || [],
+        requirements: r.requirements || "",
+        quantity: r.quantity || "",
+        budget: Number(r.budget) || 0,
+        amount: Number(r.amount) || 0,
+        successRate: Number(r.success_rate) || 0,
+        targetClosingDate: r.target_closing_date || "",
+        stage: r.stage || "first_interview",
+        closeReason: r.close_reason,
+        notes: r.notes || "",
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      };
+    }
+
+    function toRow(c) {
+      return {
+        id: c.id,
+        customer_name: c.customerName,
+        partner: c.partner,
+        systems: c.systems,
+        requirements: c.requirements,
+        quantity: c.quantity,
+        budget: c.budget,
+        amount: c.amount,
+        success_rate: c.successRate,
+        target_closing_date: c.targetClosingDate || null,
+        stage: c.stage,
+        close_reason: c.closeReason,
+        notes: c.notes,
+        updated_at: new Date().toISOString(),
+      };
+    }
+
+    /* -------- voice parse (client heuristic) -------- */
+    function parseVoice(text) {
+      const normalized = text.trim().replace(/\s+/g, "");
+      const customerName = (normalized.match(/客戶(?:名稱|名叫|叫|係|是|為)?[:：]?([^，,。；;]+)/) || [])[1];
+      const knownPartner = PARTNERS.find((p) => normalized.toLowerCase().includes(p.toLowerCase().replace(/\s+/g, "")));
+      const systems = SYSTEMS.filter((s) => normalized.toUpperCase().includes(s));
+      const requirements = ((text.replace(/\n/g, " ").match(/需求(?:係|是|為|：|:)?(.+?)(?:預算|數量|幾多|amount|成功|$)/i) || [])[1] || "").trim().replace(/[，,；;]+$/g, "");
+      const quantity = (normalized.match(/數量(?:係|是|為)?[:：]?([0-9０-９一二三四五六七八九十兩]+(?:個|套|用戶|人|店|模組)?)/) || normalized.match(/([一二三四五六七八九十兩]+個模組)/) || [])[1];
+      const budgetRaw = (normalized.match(/(?:budget|預算)(?:係|是|大約|約|有)?[:：]?([0-9０-９,.一二三四五六七八九十兩]+[萬千]?)/i) || normalized.match(/([0-9０-９,.一二三四五六七八九十兩]+萬)/) || [])[1];
+      return {
+        customerName: customerName ? customerName.replace(/^(係|是|為|叫|名稱)/, "").slice(0, 40) : "",
+        partner: knownPartner || "",
+        systems,
+        requirements,
+        quantity: quantity || "",
+        budget: budgetRaw ? parseMoneyZh(budgetRaw) : undefined,
+      };
+    }
+
+    function parseMoneyZh(raw) {
+      const half = raw.replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0)).replace(/,/g, "");
+      const map = { 一:1,二:2,兩:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,十:10 };
+      const cm = half.match(/([一二三四五六七八九十兩]+)(萬|千)?/);
+      if (cm) {
+        let n = 0;
+        const s = cm[1];
+        if (s.includes("十")) {
+          const [a, b] = s.split("十");
+          n = (a ? map[a] || 0 : 1) * 10 + (b ? map[b] || 0 : 0);
+        } else n = [...s].reduce((acc, ch) => acc * 10 + (map[ch] || 0), 0);
+        if (cm[2] === "萬") n *= 10000;
+        if (cm[2] === "千") n *= 1000;
+        return Math.round(n);
+      }
+      const m = half.match(/([0-9.]+)(萬|千)?/);
+      if (!m) return 0;
+      let n = parseFloat(m[1]);
+      if (m[2] === "萬") n *= 10000;
+      if (m[2] === "千") n *= 1000;
+      return Math.round(n);
+    }
+
+    function initPortalForm() {
+      const sel = document.getElementById("partnerSelect");
+      sel.innerHTML = PARTNERS.map((p) => `<option value="${p}">${p}</option>`).join("");
+      const tags = document.getElementById("systemTags");
+      tags.innerHTML = SYSTEMS.map((s) => `<button type="button" class="tag ${selectedSystems.has(s) ? "on" : ""}" data-sys="${s}">${s}</button>`).join("");
+      tags.querySelectorAll(".tag").forEach((t) => {
+        t.onclick = () => {
+          const s = t.dataset.sys;
+          selectedSystems.has(s) ? selectedSystems.delete(s) : selectedSystems.add(s);
+          t.classList.toggle("on");
+        };
+      });
+    }
+
+    function fillPortal(parsed) {
+      const form = document.getElementById("caseForm");
+      if (parsed.customerName) form.customerName.value = parsed.customerName;
+      if (parsed.partner) form.partner.value = parsed.partner;
+      if (parsed.requirements) form.requirements.value = parsed.requirements;
+      if (parsed.quantity) form.quantity.value = parsed.quantity;
+      if (parsed.budget != null) form.budget.value = parsed.budget;
+      if (parsed.systems?.length) {
+        selectedSystems = new Set(parsed.systems);
+        initPortalForm();
+        if (parsed.partner) form.partner.value = parsed.partner;
+        if (parsed.customerName) form.customerName.value = parsed.customerName;
+        if (parsed.requirements) form.requirements.value = parsed.requirements;
+        if (parsed.quantity) form.quantity.value = parsed.quantity;
+        if (parsed.budget != null) form.budget.value = parsed.budget;
+      }
+    }
+
+    /* -------- dashboard / board / list -------- */
+    function renderDashboard() {
+      const open = cases.filter((c) => c.stage !== "closed");
+      const closed = cases.filter((c) => c.stage === "closed");
+      const pipeline = open.reduce((s, c) => s + c.amount, 0);
+      const weighted = open.reduce((s, c) => s + c.amount * (c.successRate / 100), 0);
+      const avg = open.length ? Math.round(open.reduce((s, c) => s + c.successRate, 0) / open.length) : 0;
+      document.getElementById("dashStats").innerHTML = [
+        ["進行中案件", open.length, "open pipeline"],
+        ["Pipeline 額", money(pipeline), "未關閉案件總額"],
+        ["加權預測", money(weighted), "額 × 成功機率"],
+        ["平均成功機率", pct(avg), `${closed.length} 宗已關閉`],
+      ].map(([l, v, s]) => `<article class="stat"><div class="label">${l}</div><div class="value">${v}</div><div class="muted" style="font-size:.72rem;margin-top:4px">${s}</div></article>`).join("");
+
+      const now = new Date();
+      let maxAmt = 1;
+      const months = [];
+      for (let i = 0; i < 6; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const list = open.filter((c) => (c.targetClosingDate || "").startsWith(key));
+        const total = list.reduce((s, c) => s + c.amount, 0);
+        maxAmt = Math.max(maxAmt, total);
+        months.push({ key, label: `${d.getFullYear()}年${d.getMonth() + 1}月`, list, total, weighted: list.reduce((s, c) => s + c.amount * c.successRate / 100, 0), avg: list.length ? Math.round(list.reduce((s, c) => s + c.successRate, 0) / list.length) : 0 });
+      }
+      document.getElementById("dashMonths").innerHTML = `<h2 style="font-size:1.2rem">未來 6 個月 Closing</h2><p class="muted">依 target closing date</p>` +
+        months.map((m) => `<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:.86rem"><strong>${m.label}</strong><span class="muted">${m.list.length} 宗 · ${money(m.total)} · 機率 ${pct(m.avg)}</span></div><div class="bar"><i style="width:${Math.max(4, (m.total / maxAmt) * 100)}%"></i></div><div class="muted" style="font-size:.7rem">加權預測 ${money(m.weighted)}</div></div>`).join("");
+
+      document.getElementById("dashStages").innerHTML = `<h2 style="font-size:1.2rem">Stage 分佈</h2>` +
+        STAGES.map((s) => {
+          const n = cases.filter((c) => c.stage === s.id).length;
+          return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--paper);border-radius:12px;padding:8px 10px;margin-top:8px"><span class="badge" style="color:${s.color};background:${s.bg}">${s.label}</span><strong style="font-family:var(--font-display);font-size:1.1rem">${n}</strong></div>`;
+        }).join("");
+    }
+
+    function renderBoard() {
+      const root = document.getElementById("kanban");
+      root.innerHTML = STAGES.map((s) => {
+        const items = cases.filter((c) => c.stage === s.id);
+        return `<section class="col" data-stage="${s.id}">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span class="badge" style="color:${s.color};background:${s.bg}">${s.label}</span>
+            <span class="muted" style="font-size:.72rem">${items.length}</span>
+          </div>
+          <p class="muted" style="font-size:.68rem;margin:0 0 8px">${s.desc}</p>
+          <div class="col-items">${items.map(cardHtml).join("") || `<div style="border:1px dashed var(--line);border-radius:12px;padding:20px;text-align:center;font-size:.72rem;color:var(--muted)">拖曳案件到此</div>`}</div>
+        </section>`;
+      }).join("");
+
+      root.querySelectorAll(".card-case").forEach((el) => {
+        el.draggable = true;
+        el.ondragstart = (e) => { dragId = el.dataset.id; e.dataTransfer.setData("text/case-id", el.dataset.id); };
+        el.onclick = () => openDrawer(el.dataset.id);
+      });
+      root.querySelectorAll(".col").forEach((col) => {
+        col.ondragover = (e) => e.preventDefault();
+        col.ondrop = async (e) => {
+          e.preventDefault();
+          const id = e.dataTransfer.getData("text/case-id") || dragId;
+          if (!id) return;
+          let stage = col.dataset.stage;
+          let closeReason = null;
+          if (stage === "closed") {
+            closeReason = confirm("按「確定」= Disqualified；「取消」= 失敗") ? "disqualified" : "failed";
+          }
+          await updateCase(id, { stage, closeReason, successRate: stage === "closed" ? 0 : undefined });
+        };
+      });
+    }
+
+    function cardHtml(c) {
+      const s = stageMeta(c.stage);
+      return `<article class="card-case" data-id="${c.id}">
+        <strong>${escapeHtml(c.customerName)}</strong>
+        <div class="muted" style="font-size:.72rem;margin-top:2px">${escapeHtml(c.partner)}</div>
+        <div class="tags" style="margin-top:6px">${(c.systems || []).slice(0, 3).map((x) => `<span class="tag on" style="cursor:default;padding:2px 8px">${escapeHtml(x)}</span>`).join("")}</div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:.75rem"><strong>${money(c.amount)}</strong><span class="muted">${pct(c.successRate)}</span></div>
+        ${c.stage === "closed" && c.closeReason ? `<div style="margin-top:6px;font-size:.68rem;color:var(--rose);font-weight:700">${c.closeReason === "disqualified" ? "Disqualified" : "失敗"}</div>` : ""}
+      </article>`;
+    }
+
+    function renderCasesTable() {
+      const q = (document.getElementById("caseSearch").value || "").trim().toLowerCase();
+      const stage = document.getElementById("caseStageFilter").value;
+      const list = cases.filter((c) => {
+        if (stage !== "all" && c.stage !== stage) return false;
+        if (!q) return true;
+        return [c.customerName, c.partner, c.requirements, (c.systems || []).join(" ")].join(" ").toLowerCase().includes(q);
+      });
+      document.getElementById("casesBody").innerHTML = list.map((c) => {
+        const s = stageMeta(c.stage);
+        return `<tr>
+          <td><strong>${escapeHtml(c.customerName)}</strong><div class="muted" style="font-size:.72rem">${escapeHtml(c.requirements || "—")}</div></td>
+          <td>${escapeHtml(c.partner)}</td>
+          <td>${(c.systems || []).map((x) => `<span class="badge" style="background:#f0fdfa;color:var(--teal);margin:1px">${escapeHtml(x)}</span>`).join(" ")}</td>
+          <td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>
+          <td><strong>${money(c.amount)}</strong></td>
+          <td>${pct(c.successRate)}</td>
+          <td>${c.targetClosingDate || "—"}</td>
+          <td><button class="btn btn-ghost btn-sm" data-open="${c.id}">詳情</button></td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="8" style="text-align:center;padding:28px" class="muted">沒有符合的案件</td></tr>`;
+      document.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => openDrawer(b.dataset.open));
+    }
+
+    function openDrawer(id) {
+      const c = cases.find((x) => x.id === id);
+      if (!c) return;
+      const root = document.getElementById("drawerRoot");
+      root.innerHTML = `<div class="drawer-bg"><aside class="drawer">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;margin-bottom:12px">
+          <div><div class="eyebrow">Case details</div><h2 style="font-size:1.3rem">${escapeHtml(c.customerName)}</h2></div>
+          <button class="btn btn-ghost btn-sm" id="drawerClose">關閉</button>
+        </div>
+        <label class="field"><span>客戶名稱</span><input id="d_customerName" value="${escapeAttr(c.customerName)}" /></label>
+        <label class="field"><span>Partner</span><input id="d_partner" value="${escapeAttr(c.partner)}" /></label>
+        <label class="field"><span>系統（逗號分隔）</span><input id="d_systems" value="${escapeAttr((c.systems || []).join(", "))}" /></label>
+        <label class="field"><span>需求</span><textarea id="d_requirements" rows="3">${escapeHtml(c.requirements)}</textarea></label>
+        <div class="row2">
+          <label class="field"><span>數量</span><input id="d_quantity" value="${escapeAttr(c.quantity)}" /></label>
+          <label class="field"><span>Budget</span><input id="d_budget" type="number" value="${c.budget}" /></label>
+        </div>
+        <div class="row2">
+          <label class="field"><span>Case Amount</span><input id="d_amount" type="number" value="${c.amount}" /></label>
+          <label class="field"><span>成功機率 %</span><input id="d_successRate" type="number" min="0" max="100" value="${c.successRate}" /></label>
+        </div>
+        <label class="field"><span>Target Closing Date</span><input id="d_date" type="date" value="${escapeAttr(c.targetClosingDate || "")}" /></label>
+        <label class="field"><span>Stage</span>
+          <select id="d_stage">${STAGES.map((s) => `<option value="${s.id}" ${s.id === c.stage ? "selected" : ""}>${s.label}</option>`).join("")}</select>
+        </label>
+        <label class="field"><span>關閉原因</span>
+          <select id="d_close"><option value="">—</option><option value="disqualified" ${c.closeReason === "disqualified" ? "selected" : ""}>Disqualified</option><option value="failed" ${c.closeReason === "failed" ? "selected" : ""}>失敗</option></select>
+        </label>
+        <label class="field"><span>備註</span><textarea id="d_notes" rows="2">${escapeHtml(c.notes)}</textarea></label>
+        <button class="btn btn-teal" style="width:100%" id="drawerSave">儲存變更</button>
+      </aside></div>`;
+      root.querySelector(".drawer-bg").onclick = (e) => { if (e.target.classList.contains("drawer-bg")) root.innerHTML = ""; };
+      document.getElementById("drawerClose").onclick = () => { root.innerHTML = ""; };
+      document.getElementById("drawerSave").onclick = async () => {
+        const stage = document.getElementById("d_stage").value;
+        await updateCase(c.id, {
+          customerName: document.getElementById("d_customerName").value.trim(),
+          partner: document.getElementById("d_partner").value.trim(),
+          systems: document.getElementById("d_systems").value.split(",").map((x) => x.trim()).filter(Boolean),
+          requirements: document.getElementById("d_requirements").value,
+          quantity: document.getElementById("d_quantity").value,
+          budget: Number(document.getElementById("d_budget").value) || 0,
+          amount: Number(document.getElementById("d_amount").value) || 0,
+          successRate: Number(document.getElementById("d_successRate").value) || 0,
+          targetClosingDate: document.getElementById("d_date").value,
+          stage,
+          closeReason: stage === "closed" ? (document.getElementById("d_close").value || "failed") : null,
+          notes: document.getElementById("d_notes").value,
+        });
+        root.innerHTML = "";
+      };
+    }
+
+    async function updateCase(id, patch) {
+      const prev = cases.find((c) => c.id === id);
+      if (!prev) return;
+      const next = {
+        ...prev,
+        ...patch,
+        closeReason: patch.stage === "closed" || prev.stage === "closed"
+          ? (patch.closeReason !== undefined ? patch.closeReason : prev.closeReason)
+          : null,
+      };
+      if (next.stage !== "closed") next.closeReason = null;
+      const { error } = await db.from("crm_cases").update(toRow(next)).eq("id", id);
+      if (error) return toast("更新失敗：" + error.message);
+      toast("已更新");
+      await loadCases();
+      renderBoard();
+      renderCasesTable();
+      renderDashboard();
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    }
+    function escapeAttr(s) { return escapeHtml(s).replace(/`/g, "&#96;"); }
+
+    /* -------- events -------- */
+    document.getElementById("navPills").onclick = (e) => {
+      const btn = e.target.closest("button[data-view]");
+      if (btn) showView(btn.dataset.view);
+    };
+    document.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => showView(b.dataset.go));
+    document.getElementById("btnRefreshBoard").onclick = async () => { await loadCases(); renderBoard(); toast("已重新整理"); };
+    document.getElementById("caseSearch").oninput = () => renderCasesTable();
+    document.getElementById("caseStageFilter").innerHTML = `<option value="all">全部階段</option>` + STAGES.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
+    document.getElementById("caseStageFilter").onchange = () => renderCasesTable();
+
+    document.getElementById("btnParse").onclick = () => {
+      const text = document.getElementById("transcript").value.trim();
+      if (!text) return toast("請先輸入內容");
+      const parsed = parseVoice(text);
+      fillPortal(parsed);
+      document.getElementById("portalStatus").textContent = "已填入相關欄位，請確認後提交";
+      toast("已解析");
+    };
+
+    document.getElementById("caseForm").onsubmit = async (e) => {
+      e.preventDefault();
+      if (!dbReady) return toast("請先完成 Supabase setup.sql");
+      const fd = new FormData(e.target);
+      const budget = Number(fd.get("budget")) || 0;
+      const item = {
+        id: `case-${crypto.randomUUID().slice(0, 8)}`,
+        customerName: String(fd.get("customerName") || "").trim(),
+        partner: String(fd.get("partner") || "直銷"),
+        systems: [...selectedSystems],
+        requirements: String(fd.get("requirements") || ""),
+        quantity: String(fd.get("quantity") || ""),
+        budget,
+        amount: budget,
+        successRate: 25,
+        targetClosingDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+        stage: "first_interview",
+        closeReason: null,
+        notes: document.getElementById("transcript").value.trim() ? `語音原文：${document.getElementById("transcript").value.trim()}` : "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      if (!item.customerName) return toast("請填客戶名稱");
+      const row = toRow(item);
+      row.created_at = item.createdAt;
+      const { error } = await db.from("crm_cases").insert(row);
+      if (error) return toast("建立失敗：" + error.message);
+      toast("案件已建立 " + item.id);
+      e.target.reset();
+      selectedSystems = new Set();
+      document.getElementById("transcript").value = "";
+      initPortalForm();
+      await loadCases();
+    };
+
+    // Speech
+    (function setupSpeech() {
+      const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const btn = document.getElementById("micBtn");
+      if (!Ctor) {
+        btn.title = "此瀏覽器不支援語音，請用文字";
+        return;
+      }
+      const rec = new Ctor();
+      rec.lang = "zh-HK";
+      rec.continuous = true;
+      rec.interimResults = true;
+      let finalText = "";
+      let listening = false;
+      rec.onresult = (ev) => {
+        let interim = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const t = ev.results[i][0].transcript;
+          if (ev.results[i].isFinal) finalText += t;
+          else interim += t;
+        }
+        document.getElementById("transcript").value = (finalText + " " + interim).trim();
+      };
+      rec.onend = () => {
+        listening = false;
+        btn.classList.remove("listening");
+        const text = document.getElementById("transcript").value.trim();
+        if (text) {
+          fillPortal(parseVoice(text));
+          document.getElementById("portalStatus").textContent = "已填入相關欄位，請確認後提交";
+        }
+      };
+      btn.onclick = () => {
+        if (listening) { rec.stop(); return; }
+        finalText = "";
+        document.getElementById("transcript").value = "";
+        listening = true;
+        btn.classList.add("listening");
+        document.getElementById("portalStatus").textContent = "聆聽中…";
+        rec.start();
+      };
+    })();
+
+    // Setup SQL preview
+    const SETUP_SQL_URL = "./supabase/setup.sql";
+    fetch(SETUP_SQL_URL).then((r) => r.text()).then((t) => {
+      document.getElementById("setupSqlPreview").textContent = t;
+      document.getElementById("btnCopySql").onclick = async () => {
+        await navigator.clipboard.writeText(t);
+        toast("已複製 SQL");
+      };
+    }).catch(() => {
+      document.getElementById("setupSqlPreview").textContent = "請打開 repo 內 supabase/setup.sql";
+    });
+    document.getElementById("btnRecheck").onclick = async () => {
+      await loadCases();
+      if (dbReady) {
+        toast("資料表已就緒");
+        renderDashboard();
+        renderBoard();
+        renderCasesTable();
+      } else toast("仍未偵測到 crm_cases，請確認已 Run SQL");
+    };
+
+    // boot
+    initPortalForm();
+    loadCases().then(() => {
+      const hash = (location.hash || "").replace("#", "");
+      showView(["portal", "dashboard", "board", "cases"].includes(hash) ? hash : "home");
+    });
+  </script>
+</body>
+</html>
