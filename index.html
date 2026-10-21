@@ -235,6 +235,67 @@
       height: 10px; background: var(--paper); border-radius: 999px; overflow: hidden; margin: 4px 0 2px;
     }
     .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), var(--sky)); }
+    .month-row {
+      margin-top: 12px;
+      padding: 10px 10px 8px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease;
+      user-select: none;
+    }
+    .month-row:hover { background: rgba(15, 118, 110, 0.05); }
+    .month-row.open {
+      background: rgba(15, 118, 110, 0.06);
+      border-color: rgba(15, 118, 110, 0.18);
+    }
+    .month-row-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: .86rem;
+      align-items: center;
+    }
+    .month-row-top .chev {
+      font-size: .7rem;
+      color: var(--muted);
+      margin-left: 6px;
+      transition: transform .15s ease;
+    }
+    .month-row.open .chev { transform: rotate(90deg); color: var(--teal); }
+    .month-breakdown {
+      display: none;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--line);
+    }
+    .month-row.open .month-breakdown { display: block; }
+    .breakdown-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px 12px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid var(--line);
+      margin-top: 6px;
+      font-size: .78rem;
+    }
+    .breakdown-item strong { font-size: .84rem; }
+    .breakdown-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      color: var(--muted);
+      font-size: .72rem;
+      grid-column: 1 / -1;
+    }
+    .breakdown-empty {
+      padding: 10px;
+      text-align: center;
+      color: var(--muted);
+      font-size: .75rem;
+    }
     .toast {
       position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
       background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 999px; font-size: .82rem; z-index: 80;
@@ -578,8 +639,61 @@
         maxAmt = Math.max(maxAmt, total);
         months.push({ key, label: `${d.getFullYear()}年${d.getMonth() + 1}月`, list, total, weighted: list.reduce((s, c) => s + c.amount * c.successRate / 100, 0), avg: list.length ? Math.round(list.reduce((s, c) => s + c.successRate, 0) / list.length) : 0 });
       }
-      document.getElementById("dashMonths").innerHTML = `<h2 style="font-size:1.2rem">未來 6 個月 Closing</h2><p class="muted">依 target closing date</p>` +
-        months.map((m) => `<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:.86rem"><strong>${m.label}</strong><span class="muted">${m.list.length} 宗 · ${money(m.total)} · 機率 ${pct(m.avg)}</span></div><div class="bar"><i style="width:${Math.max(4, (m.total / maxAmt) * 100)}%"></i></div><div class="muted" style="font-size:.7rem">加權預測 ${money(m.weighted)}</div></div>`).join("");
+      const monthsRoot = document.getElementById("dashMonths");
+      monthsRoot.innerHTML = `<h2 style="font-size:1.2rem">未來 6 個月 Closing</h2><p class="muted">依 target closing date · 點擊月份展開 breakdown</p>` +
+        months.map((m) => {
+          const width = Math.max(4, (m.total / maxAmt) * 100);
+          const breakdown = m.list.length
+            ? m.list.map((c) => {
+                const s = stageMeta(c.stage);
+                const w = c.amount * (c.successRate / 100);
+                return `<div class="breakdown-item" data-case-id="${c.id}">
+                  <div><strong>${escapeHtml(c.customerName)}</strong></div>
+                  <div><strong>${money(c.amount)}</strong></div>
+                  <div class="breakdown-meta">
+                    <span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span>
+                    <span>${escapeHtml(c.partner)}</span>
+                    <span>機率 ${pct(c.successRate)}</span>
+                    <span>加權 ${money(w)}</span>
+                    <span>Close ${c.targetClosingDate || "—"}</span>
+                  </div>
+                </div>`;
+              }).join("")
+            : `<div class="breakdown-empty">呢個月未有 target closing 案件</div>`;
+          return `<div class="month-row" data-month="${m.key}" role="button" tabindex="0" aria-expanded="false">
+            <div class="month-row-top">
+              <strong>${m.label}<span class="chev">▸</span></strong>
+              <span class="muted">${m.list.length} 宗 · ${money(m.total)} · 機率 ${pct(m.avg)}</span>
+            </div>
+            <div class="bar"><i style="width:${width}%"></i></div>
+            <div class="muted" style="font-size:.7rem">加權預測 ${money(m.weighted)}</div>
+            <div class="month-breakdown">
+              <div class="eyebrow" style="margin-bottom:4px">Breakdown</div>
+              ${breakdown}
+            </div>
+          </div>`;
+        }).join("");
+
+      monthsRoot.querySelectorAll(".month-row").forEach((row) => {
+        const toggle = () => {
+          const open = row.classList.toggle("open");
+          row.setAttribute("aria-expanded", open ? "true" : "false");
+        };
+        row.addEventListener("click", (e) => {
+          if (e.target.closest("[data-case-id]")) {
+            const id = e.target.closest("[data-case-id]").dataset.caseId;
+            openDrawer(id);
+            return;
+          }
+          toggle();
+        });
+        row.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggle();
+          }
+        });
+      });
 
       document.getElementById("dashStages").innerHTML = `<h2 style="font-size:1.2rem">Stage 分佈</h2>` +
         STAGES.map((s) => {
