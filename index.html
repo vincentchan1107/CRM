@@ -365,6 +365,7 @@
           <textarea id="transcript" rows="3" placeholder="例如：客戶係新里程製造，來自 Partner A，用緊 ERP 同 SCM，需求係整合庫存，數量三個模組，budget 大約四十五萬"></textarea>
         </label>
         <button class="btn btn-teal btn-sm" id="btnParse">解析並填入表格</button>
+        <div id="parsePreview" class="hidden" style="margin-top:12px;padding:12px;border-radius:14px;background:#f0fdfa;border:1px solid #99f6e4;font-size:.82rem"></div>
       </div>
       <form class="panel" id="caseForm" style="max-width:520px;margin:0 auto">
         <label class="field"><span>客戶名稱</span><input name="customerName" required placeholder="公司／客戶名稱" /></label>
@@ -445,7 +446,20 @@
       { id: "closed", label: "已關閉", short: "關閉", color: "#64748b", bg: "#e2e8f0", desc: "Disqualify 或失敗關閉" },
     ];
     const PARTNERS = ["直銷", "Partner A", "Partner B", "Partner C", "轉介", "活動／展覽", "其他"];
-    const SYSTEMS = ["HRM", "ERP", "CRM", "WORKFLOW", "PMS", "PPMS", "SCM", "BI", "其他"];
+    const SYSTEMS = ["BOOKING", "ACCOUNT", "FAS", "WORKFLOW", "HRM", "ERP", "CRM", "PMS", "PPMS", "SCM", "BI", "其他"];
+    const SYSTEM_ALIASES = [
+      { id: "BOOKING", keys: ["booking", "bookingsystem", "預約系統", "預約", "booking system"] },
+      { id: "ACCOUNT", keys: ["account system", "accountsystem", "accounting", "account", "會計系統", "會計", "賬系統", "帳系統"] },
+      { id: "FAS", keys: ["f a s", "f.a.s", "fas", "財務會計", "財務系統"] },
+      { id: "WORKFLOW", keys: ["workflow", "work flow", "工作流", "流程系統", "workflow系統"] },
+      { id: "HRM", keys: ["hrm", "人事", "hr系統"] },
+      { id: "ERP", keys: ["erp"] },
+      { id: "CRM", keys: ["crm"] },
+      { id: "PMS", keys: ["pms"] },
+      { id: "PPMS", keys: ["ppms"] },
+      { id: "SCM", keys: ["scm", "供應鏈"] },
+      { id: "BI", keys: ["bi", "商業智能"] },
+    ];
 
     let cases = [];
     let selectedSystems = new Set();
@@ -540,23 +554,153 @@
       };
     }
 
-    /* -------- voice parse (client heuristic) -------- */
+    /* -------- voice parse (natural Cantonese / Chinese notes) -------- */
     function parseVoice(text) {
-      const normalized = text.trim().replace(/\s+/g, "");
-      const customerName = (normalized.match(/客戶(?:名稱|名叫|叫|係|是|為)?[:：]?([^，,。；;]+)/) || [])[1];
-      const knownPartner = PARTNERS.find((p) => normalized.toLowerCase().includes(p.toLowerCase().replace(/\s+/g, "")));
-      const systems = SYSTEMS.filter((s) => normalized.toUpperCase().includes(s));
-      const requirements = ((text.replace(/\n/g, " ").match(/需求(?:係|是|為|：|:)?(.+?)(?:預算|數量|幾多|amount|成功|$)/i) || [])[1] || "").trim().replace(/[，,；;]+$/g, "");
-      const quantity = (normalized.match(/數量(?:係|是|為)?[:：]?([0-9０-９一二三四五六七八九十兩]+(?:個|套|用戶|人|店|模組)?)/) || normalized.match(/([一二三四五六七八九十兩]+個模組)/) || [])[1];
-      const budgetRaw = (normalized.match(/(?:budget|預算)(?:係|是|大約|約|有)?[:：]?([0-9０-９,.一二三四五六七八九十兩]+[萬千]?)/i) || normalized.match(/([0-9０-９,.一二三四五六七八九十兩]+萬)/) || [])[1];
+      const raw = text.trim();
+      const flat = raw.replace(/\s+/g, " ");
+      const compact = raw.replace(/\s+/g, "");
+      const lower = flat.toLowerCase();
+
+      const customerName = extractCustomerName(raw, flat, compact);
+      const partner = extractPartner(compact, lower);
+      const systems = extractSystems(lower, compact);
+      const quantity = extractQuantity(compact, flat);
+      const budgetRaw = (compact.match(/(?:budget|預算)(?:係|是|大約|約|有)?[:：]?([0-9０-９,.一二三四五六七八九十兩]+[萬千]?)/i) || compact.match(/([0-9０-９,.一二三四五六七八九十兩]+萬)/) || [])[1];
+      const requirements = extractRequirements(raw, flat, systems);
+
       return {
-        customerName: customerName ? customerName.replace(/^(係|是|為|叫|名稱)/, "").slice(0, 40) : "",
-        partner: knownPartner || "",
+        customerName,
+        partner: partner || "直銷",
         systems,
         requirements,
-        quantity: quantity || "",
+        quantity,
         budget: budgetRaw ? parseMoneyZh(budgetRaw) : undefined,
       };
+    }
+
+    function extractCustomerName(raw, flat, compact) {
+      const patterns = [
+        /客戶名稱[，,\s]*叫\s*([^\n。.!！；;]{2,60})/i,
+        /名稱[，,\s]*叫\s*([^\n。.!！；;]{2,60})/i,
+        /叫\s*([A-Za-z][A-Za-z0-9 .&'’\-]{1,50}(?:group|ltd|limited|company|co\.?|clinic|centre|center)?)/i,
+        /客戶(?:公司|名稱)?(?:名叫|叫|係|是|為)\s*([^\n，,。.!！；;]{2,60})/,
+        /公司(?:名叫|叫|係|是|為)\s*([^\n，,。.!！；;]{2,60})/,
+      ];
+      for (const re of patterns) {
+        const m = raw.match(re) || flat.match(re) || compact.match(re);
+        if (m?.[1]) {
+          let name = m[1]
+            .replace(/^(係|是|為|叫|名稱|公司)/, "")
+            .replace(/[，,。.!！].*$/, "")
+            .replace(/(做|係|現時|而家|目前).*$/, "")
+            .trim();
+          // Prefer English brand if mixed with Chinese trailing noise
+          const eng = name.match(/[A-Za-z][A-Za-z0-9 .&'’\-]{1,50}/);
+          if (eng && /[A-Za-z]{2,}/.test(eng[0]) && eng[0].trim().length >= 3) {
+            name = eng[0].replace(/\s+/g, " ").trim();
+          }
+          if (name.length >= 2) return name.slice(0, 80);
+        }
+      }
+      return "";
+    }
+
+    function extractPartner(compact, lower) {
+      const known = PARTNERS.find((p) => lower.includes(p.toLowerCase()) || compact.toLowerCase().includes(p.toLowerCase().replace(/\s+/g, "")));
+      if (known) return known;
+      if (/轉介|介紹人|經人介紹/.test(compact)) return "轉介";
+      if (/partner\s*a/i.test(lower)) return "Partner A";
+      if (/partner\s*b/i.test(lower)) return "Partner B";
+      if (/partner\s*c/i.test(lower)) return "Partner C";
+      return "";
+    }
+
+    function extractSystems(lower, compact) {
+      const found = new Set();
+      const hay = `${lower} ${compact.toLowerCase().replace(/fas/gi, "fas")}`;
+      // normalize "F A S" / "F.A.S"
+      const norm = hay.replace(/f\s*a\s*s/gi, "fas").replace(/f\.a\.s/gi, "fas");
+      for (const item of SYSTEM_ALIASES) {
+        if (item.keys.some((k) => norm.includes(k.toLowerCase()))) found.add(item.id);
+      }
+      // direct tag match
+      for (const s of SYSTEMS) {
+        if (s !== "其他" && norm.toUpperCase().includes(s)) found.add(s);
+      }
+      return [...found];
+    }
+
+    function extractQuantity(compact, flat) {
+      const map = { 一:1,二:2,兩:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,十:10 };
+      const patterns = [
+        /有([0-9０-９一二三四五六七八九十兩]+)個?人/,
+        /([0-9０-９一二三四五六七八九十兩]+)個?(?:人|用戶|users?)/i,
+        /數量(?:係|是|為)?[:：]?([0-9０-９一二三四五六七八九十兩]+(?:個|套|用戶|人|店|模組)?)/,
+        /([0-9０-９一二三四五六七八九十兩]+個模組)/,
+      ];
+      for (const re of patterns) {
+        const m = compact.match(re) || flat.replace(/\s+/g, "").match(re);
+        if (!m?.[1]) continue;
+        let q = m[1];
+        q = q.replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0));
+        const zh = q.match(/^([一二三四五六七八九十兩]+)(人|用戶)?$/);
+        if (zh) {
+          let n = zh[1];
+          let num = n.includes("十")
+            ? ((n.split("十")[0] ? map[n.split("十")[0]] || 0 : 1) * 10 + (map[n.split("十")[1]] || 0))
+            : (map[n] || 0);
+          return `${num} 用戶`;
+        }
+        if (/^\d+$/.test(q)) return `${q} 用戶`;
+        return q;
+      }
+      return "";
+    }
+
+    function extractRequirements(raw, flat, systems) {
+      const bits = [];
+      const compact = raw.replace(/\s+/g, "");
+
+      const biz = compact.match(/做([^。.!！，,]{2,30})(?:嘅|的)/);
+      if (biz?.[1] && !/系統|booking|account/i.test(biz[1])) {
+        bits.push(`行業／服務：${biz[1]}`);
+      }
+
+      if (/沒有用[緊着]?任何系統|未有系統|冇用系統|沒有系統|currently\s*no\s*system/i.test(raw + compact)) {
+        bits.push("現時未有使用任何系統");
+      }
+
+      const interest = [];
+      if (/booking/i.test(raw) || /預約/.test(compact)) interest.push("Booking System");
+      if (/account/i.test(raw) || /會計/.test(compact)) interest.push("Account System");
+      if (interest.length) bits.push(`特別有興趣：${interest.join("、")}`);
+
+      const introduced = [];
+      if (/workflow/i.test(raw) || /工作流|流程系統/.test(compact)) introduced.push("Workflow");
+      if (/f\s*a\s*s|fas|f\.a\.s/i.test(raw)) introduced.push("FAS");
+      if (introduced.length && /介紹/.test(compact)) {
+        bits.push(`已介紹：${introduced.join("、")}`);
+      } else if (introduced.length && systems.length) {
+        // still note if mentioned
+      }
+
+      if (/scan|掃描|ocr|影相|張單|單據|發票|receipt|invoice/i.test(raw) || /scan張|掃/.test(compact)) {
+        bits.push("希望以系統掃描單據／發票，自動擷取內容與銀碼並入會計系統");
+      }
+
+      // Explicit 需求 clause if present
+      const explicit = ((flat.match(/需求(?:係|是|為|：|:)\s*(.+?)(?:預算|數量|幾多|amount|成功|$)/i) || [])[1] || "").trim();
+      if (explicit) bits.unshift(explicit.replace(/[，,；;]+$/g, ""));
+
+      if (!bits.length && systems.length) {
+        bits.push(`有興趣系統：${systems.join("、")}`);
+      }
+
+      // Keep a short cleaned original for context if we got structure
+      if (bits.length) return bits.join("；");
+
+      // Fallback: use a condensed version of the note (not empty)
+      return flat.replace(/\s+/g, " ").slice(0, 280);
     }
 
     function parseMoneyZh(raw) {
@@ -598,19 +742,36 @@
 
     function fillPortal(parsed) {
       const form = document.getElementById("caseForm");
+      selectedSystems = new Set(parsed.systems || []);
+      initPortalForm();
       if (parsed.customerName) form.customerName.value = parsed.customerName;
-      if (parsed.partner) form.partner.value = parsed.partner;
-      if (parsed.requirements) form.requirements.value = parsed.requirements;
-      if (parsed.quantity) form.quantity.value = parsed.quantity;
+      form.partner.value = parsed.partner || "直銷";
+      form.requirements.value = parsed.requirements || "";
+      form.quantity.value = parsed.quantity || "";
       if (parsed.budget != null) form.budget.value = parsed.budget;
-      if (parsed.systems?.length) {
-        selectedSystems = new Set(parsed.systems);
-        initPortalForm();
-        if (parsed.partner) form.partner.value = parsed.partner;
-        if (parsed.customerName) form.customerName.value = parsed.customerName;
-        if (parsed.requirements) form.requirements.value = parsed.requirements;
-        if (parsed.quantity) form.quantity.value = parsed.quantity;
-        if (parsed.budget != null) form.budget.value = parsed.budget;
+      else if (!form.budget.value) form.budget.value = "";
+
+      const summary = [
+        parsed.customerName ? `客戶：${parsed.customerName}` : null,
+        parsed.quantity ? `人數／數量：${parsed.quantity}` : null,
+        parsed.systems?.length ? `系統：${parsed.systems.join("、")}` : null,
+        parsed.partner ? `Partner：${parsed.partner}` : null,
+        parsed.budget != null ? `Budget：${parsed.budget}` : null,
+      ].filter(Boolean);
+      const status = document.getElementById("portalStatus");
+      status.textContent = summary.length
+        ? `已填入：${summary.join(" ｜ ")}`
+        : "未能可靠識別欄位，請手動修正";
+      const box = document.getElementById("parsePreview");
+      if (box) {
+        box.classList.toggle("hidden", !summary.length);
+        box.innerHTML = summary.length
+          ? `<strong>解析結果</strong>
+             <div style="margin-top:6px;line-height:1.55;color:var(--ink-soft)">
+               ${summary.map((s) => escapeHtml(s)).join("<br>")}
+               ${parsed.requirements ? `<div style="margin-top:8px"><strong>需求摘要</strong><div style="margin-top:4px">${escapeHtml(parsed.requirements)}</div></div>` : ""}
+             </div>`
+          : "";
       }
     }
 
