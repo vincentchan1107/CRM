@@ -2,17 +2,19 @@
 
 GitHub 放網頁程式，Supabase 做 Database。
 
-## 一次過啟用（必須）
+## 一次過啟用／匯入 Ricoh Excel（必須）
 
-Anon key **唔可以**建表／刪舊 schema。請你做呢一步：
+Anon key **唔可以**建表。請你做呢一步：
 
 1. 打開 [Supabase SQL Editor](https://supabase.com/dashboard/project/xdjzkcqhwamfajsjyclq/sql)
-2. 貼上並 **Run** 整個 [`supabase/setup.sql`](./supabase/setup.sql)
-   - 會刪除舊表（`profiles` / `customers` / `meetings` / `sales_cases` 等）
-   - 新建 `crm_cases`，開放 anon 讀寫，並插入示範案件
-3. 打開 [`index.html`](./index.html)（或下面 Preview 連結）
+2. 貼上並 **Run** 整個 [`supabase/ricoh_import.sql`](./supabase/ricoh_import.sql)  
+   Raw：https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/ricoh_import.sql
+   - 刪除舊 sample cases
+   - 新建 `crm_cases` / `crm_contacts` / `crm_activity_logs`
+   - 匯入 Ricoh Event Excel（同一公司合併為 1 個 case，多聯絡人 + log）
+3. 打開 https://vincentchan1107.github.io/CRM/
 
-完成後，Portal／Kanban／Dashboard／列表都會直接讀寫 Supabase。
+完成後可管理：聯絡 log（含聯絡不到）、約見／確認、會面完成／會後 comment、跟進機會與後續 stage。
 
 ## 在瀏覽器打開（GitHub）
 

@@ -325,11 +325,12 @@
 
   <main class="wrap">
     <div id="setupBanner" class="setup-box hidden">
-      <strong>需要先建立 Supabase 資料表</strong>
-      <p class="muted" style="margin:8px 0">請打開 Supabase → SQL Editor，貼上並執行 <code>supabase/setup.sql</code>（或下方內容），完成後按「重新檢查」。</p>
+      <strong>需要匯入 Ricoh Excel／重建資料表</strong>
+      <p class="muted" style="margin:8px 0">請打開 Supabase → SQL Editor，執行完整檔案 <code>supabase/ricoh_import.sql</code>（會刪除 sample cases，匯入 Ricoh Event leads、多聯絡人與 log）。完成後按「重新檢查」。</p>
+      <p class="muted" style="margin:0 0 8px">Raw 連結：<a href="https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/ricoh_import.sql" target="_blank" rel="noopener">ricoh_import.sql</a></p>
       <pre id="setupSqlPreview">載入中…</pre>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <button class="btn btn-teal btn-sm" id="btnCopySql">複製 SQL</button>
+        <button class="btn btn-teal btn-sm" id="btnCopySql">複製 SQL（開頭預覽）</button>
         <button class="btn btn-ghost btn-sm" id="btnRecheck">重新檢查</button>
       </div>
     </div>
@@ -424,7 +425,7 @@
         <select id="caseStageFilter" style="border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff"></select>
       </div>
       <div class="table-wrap"><table><thead><tr>
-        <th>客戶</th><th>Partner</th><th>系統</th><th>階段</th><th>Amount</th><th>機率</th><th>Target Close</th><th>操作</th>
+        <th>公司／Case</th><th>Partner／House</th><th>系統</th><th>階段</th><th>約見</th><th>會面</th><th>跟進機會</th><th>操作</th>
       </tr></thead><tbody id="casesBody"></tbody></table></div>
     </section>
   </main>
@@ -438,14 +439,29 @@
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const STAGES = [
-      { id: "first_interview", label: "首次會見", short: "會見", color: "#0f766e", bg: "#ccfbf1", desc: "第一次見客、了解需求" },
-      { id: "quotation", label: "報價", short: "報價", color: "#1d4ed8", bg: "#dbeafe", desc: "提交報價／方案" },
-      { id: "follow_up", label: "跟進", short: "跟進", color: "#b45309", bg: "#fef3c7", desc: "報價後持續跟進" },
-      { id: "final_stage", label: "最終階段", short: "最終", color: "#7c2d12", bg: "#ffedd5", desc: "接近簽單的最後磋商" },
-      { id: "confirmation", label: "確認簽單", short: "確認", color: "#15803d", bg: "#dcfce7", desc: "客戶確認、準備成交" },
-      { id: "closed", label: "已關閉", short: "關閉", color: "#64748b", bg: "#e2e8f0", desc: "Disqualify 或失敗關閉" },
+      { id: "new_lead", label: "新 Lead", short: "新客", color: "#0e7490", bg: "#cffafe", desc: "活動／渠道新進客戶" },
+      { id: "contacting", label: "聯絡中", short: "聯絡", color: "#a16207", bg: "#fef9c3", desc: "致電／跟進中（含聯絡不到 log）" },
+      { id: "unreachable", label: "聯絡不到", short: "失聯", color: "#9f1239", bg: "#ffe4e6", desc: "多次無法聯繫" },
+      { id: "appointment_set", label: "已約會面", short: "已約", color: "#1d4ed8", bg: "#dbeafe", desc: "已約時間，待確認／會面" },
+      { id: "first_interview", label: "已會面", short: "會見", color: "#0f766e", bg: "#ccfbf1", desc: "會面完成，可寫會後 comment" },
+      { id: "quotation", label: "報價", short: "報價", color: "#1e40af", bg: "#dbeafe", desc: "提交報價／方案" },
+      { id: "follow_up", label: "跟進", short: "跟進", color: "#b45309", bg: "#fef3c7", desc: "有機會繼續跟進" },
+      { id: "final_stage", label: "最終階段", short: "最終", color: "#7c2d12", bg: "#ffedd5", desc: "接近簽單" },
+      { id: "confirmation", label: "確認簽單", short: "確認", color: "#15803d", bg: "#dcfce7", desc: "客戶確認成交" },
+      { id: "closed", label: "已關閉", short: "關閉", color: "#64748b", bg: "#e2e8f0", desc: "DQ／失敗關閉" },
     ];
-    const PARTNERS = ["直銷", "Partner A", "Partner B", "Partner C", "轉介", "活動／展覽", "其他"];
+    const PARTNERS = ["Ricoh Partner", "直銷", "Partner A", "Partner B", "Partner C", "轉介", "活動／展覽", "其他"];
+    const LOG_TYPES = [
+      { id: "call_attempt", label: "致電／聯絡" },
+      { id: "call_no_answer", label: "聯絡不到／無人接" },
+      { id: "appointment", label: "約會面" },
+      { id: "appointment_confirmed", label: "客人確認會面" },
+      { id: "meeting_done", label: "會面完成／會後" },
+      { id: "follow_up", label: "跟進機會" },
+      { id: "remark", label: "備註" },
+      { id: "ricoh_remark", label: "Ricoh Remark" },
+      { id: "status", label: "狀態更新" },
+    ];
     const SYSTEMS = ["BOOKING", "ACCOUNT", "FAS", "WORKFLOW", "HRM", "ERP", "CRM", "PMS", "PPMS", "SCM", "BI", "其他"];
     const SYSTEM_ALIASES = [
       { id: "BOOKING", keys: ["booking", "bookingsystem", "預約系統", "預約", "booking system"] },
@@ -462,6 +478,8 @@
     ];
 
     let cases = [];
+    let contactsByCase = {};
+    let logsByCase = {};
     let selectedSystems = new Set();
     let dragId = null;
     let dbReady = false;
@@ -491,11 +509,20 @@
     }
 
     async function checkDb() {
-      const { data, error } = await db.from("crm_cases").select("id").limit(1);
-      dbReady = !error;
+      const { data, error } = await db.from("crm_cases").select("id,ricoh_sales").limit(1);
+      const contactsProbe = await db.from("crm_contacts").select("id").limit(1);
+      dbReady = !error && !contactsProbe.error;
       document.getElementById("setupBanner").classList.toggle("hidden", dbReady);
-      if (error) {
-        console.warn(error);
+      if (error || contactsProbe.error) {
+        console.warn(error || contactsProbe.error);
+        const preview = document.getElementById("setupSqlPreview");
+        if (preview && !preview.dataset.ricoh) {
+          preview.dataset.ricoh = "1";
+          fetch("./supabase/ricoh_import.sql")
+            .then((r) => r.text())
+            .then((t) => { preview.textContent = t.slice(0, 2500) + "\n\n…（完整檔案請開 supabase/ricoh_import.sql）"; })
+            .catch(() => {});
+        }
         return false;
       }
       return true;
@@ -504,6 +531,8 @@
     async function loadCases() {
       if (!(await checkDb())) {
         cases = [];
+        contactsByCase = {};
+        logsByCase = {};
         return;
       }
       const { data, error } = await db.from("crm_cases").select("*").order("updated_at", { ascending: false });
@@ -513,13 +542,25 @@
         return;
       }
       cases = (data || []).map(fromRow);
+      const [{ data: contacts }, { data: logs }] = await Promise.all([
+        db.from("crm_contacts").select("*").order("name"),
+        db.from("crm_activity_logs").select("*").order("created_at", { ascending: false }),
+      ]);
+      contactsByCase = {};
+      (contacts || []).forEach((c) => {
+        (contactsByCase[c.case_id] ||= []).push(c);
+      });
+      logsByCase = {};
+      (logs || []).forEach((l) => {
+        (logsByCase[l.case_id] ||= []).push(l);
+      });
     }
 
     function fromRow(r) {
       return {
         id: r.id,
         customerName: r.customer_name,
-        partner: r.partner || "直銷",
+        partner: r.partner || "Ricoh Partner",
         systems: r.systems || [],
         requirements: r.requirements || "",
         quantity: r.quantity || "",
@@ -527,9 +568,20 @@
         amount: Number(r.amount) || 0,
         successRate: Number(r.success_rate) || 0,
         targetClosingDate: r.target_closing_date || "",
-        stage: r.stage || "first_interview",
+        stage: r.stage || "new_lead",
         closeReason: r.close_reason,
         notes: r.notes || "",
+        ricohHouse: r.ricoh_house || "",
+        ricohSales: r.ricoh_sales || "",
+        ricohConsultant: r.ricoh_consultant || "",
+        appointmentFlag: !!r.appointment_flag,
+        appointmentAt: r.appointment_at || "",
+        appointmentConfirmed: !!r.appointment_confirmed,
+        meetingDone: !!r.meeting_done,
+        meetingNotes: r.meeting_notes || "",
+        followUpOpportunity: !!r.follow_up_opportunity,
+        leadStatus: r.lead_status || "Processing",
+        sourceEvent: r.source_event || "",
         createdAt: r.created_at,
         updatedAt: r.updated_at,
       };
@@ -550,6 +602,17 @@
         stage: c.stage,
         close_reason: c.closeReason,
         notes: c.notes,
+        ricoh_house: c.ricohHouse || "",
+        ricoh_sales: c.ricohSales || "",
+        ricoh_consultant: c.ricohConsultant || "",
+        appointment_flag: !!c.appointmentFlag,
+        appointment_at: c.appointmentAt || null,
+        appointment_confirmed: !!c.appointmentConfirmed,
+        meeting_done: !!c.meetingDone,
+        meeting_notes: c.meetingNotes || "",
+        follow_up_opportunity: !!c.followUpOpportunity,
+        lead_status: c.leadStatus || "Processing",
+        source_event: c.sourceEvent || "",
         updated_at: new Date().toISOString(),
       };
     }
@@ -782,11 +845,14 @@
       const pipeline = open.reduce((s, c) => s + c.amount, 0);
       const weighted = open.reduce((s, c) => s + c.amount * (c.successRate / 100), 0);
       const avg = open.length ? Math.round(open.reduce((s, c) => s + c.successRate, 0) / open.length) : 0;
+      const apptN = cases.filter((c) => c.appointmentFlag || c.appointmentAt).length;
+      const meetN = cases.filter((c) => c.meetingDone).length;
+      const followN = cases.filter((c) => c.followUpOpportunity).length;
       document.getElementById("dashStats").innerHTML = [
-        ["進行中案件", open.length, "open pipeline"],
-        ["Pipeline 額", money(pipeline), "未關閉案件總額"],
-        ["加權預測", money(weighted), "額 × 成功機率"],
-        ["平均成功機率", pct(avg), `${closed.length} 宗已關閉`],
+        ["公司 Cases", open.length, `${closed.length} 宗 DQ／關閉`],
+        ["已約會面", apptN, "含待確認／已確認"],
+        ["已完成會面", meetN, "會後可寫 comment"],
+        ["有跟進機會", followN, `${cases.length} 宗總數`],
       ].map(([l, v, s]) => `<article class="stat"><div class="label">${l}</div><div class="value">${v}</div><div class="muted" style="font-size:.72rem;margin-top:4px">${s}</div></article>`).join("");
 
       const now = new Date();
@@ -900,12 +966,24 @@
 
     function cardHtml(c) {
       const s = stageMeta(c.stage);
+      const contacts = contactsByCase[c.id] || [];
+      const logs = logsByCase[c.id] || [];
+      const companyLine = (c.customerName || "").split("\n")[0];
+      const appt = c.appointmentAt ? new Date(c.appointmentAt) : null;
+      const apptText = appt && !Number.isNaN(appt.getTime())
+        ? appt.toLocaleString("zh-HK", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+        : "";
       return `<article class="card-case" data-id="${c.id}">
-        <strong>${escapeHtml(c.customerName)}</strong>
-        <div class="muted" style="font-size:.72rem;margin-top:2px">${escapeHtml(c.partner)}</div>
+        <strong style="white-space:pre-line;font-size:.9rem">${escapeHtml(companyLine)}</strong>
+        <div class="muted" style="font-size:.7rem;margin-top:3px">Sales: ${escapeHtml(c.ricohSales || "—")} · ${contacts.length} contacts · ${logs.length} logs</div>
         <div class="tags" style="margin-top:6px">${(c.systems || []).slice(0, 3).map((x) => `<span class="tag on" style="cursor:default;padding:2px 8px">${escapeHtml(x)}</span>`).join("")}</div>
-        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:.75rem"><strong>${money(c.amount)}</strong><span class="muted">${pct(c.successRate)}</span></div>
-        ${c.stage === "closed" && c.closeReason ? `<div style="margin-top:6px;font-size:.68rem;color:var(--rose);font-weight:700">${c.closeReason === "disqualified" ? "Disqualified" : "失敗"}</div>` : ""}
+        <div style="margin-top:8px;font-size:.72rem;color:var(--ink-soft)">
+          ${c.appointmentFlag || apptText ? `📅 ${apptText || "已約"}${c.appointmentConfirmed ? " · 已確認" : " · 待確認"}` : "未約會面"}
+          ${c.meetingDone ? " · ✅ 已會面" : ""}
+          ${c.followUpOpportunity ? " · 有跟進機會" : ""}
+        </div>
+        ${c.leadStatus === "DQ" || (c.stage === "closed" && c.closeReason) ? `<div style="margin-top:6px;font-size:.68rem;color:var(--rose);font-weight:700">${c.leadStatus === "DQ" || c.closeReason === "disqualified" ? "DQ" : "失敗"}</div>` : ""}
+        <div style="margin-top:6px"><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></div>
       </article>`;
     }
 
@@ -915,18 +993,21 @@
       const list = cases.filter((c) => {
         if (stage !== "all" && c.stage !== stage) return false;
         if (!q) return true;
-        return [c.customerName, c.partner, c.requirements, (c.systems || []).join(" ")].join(" ").toLowerCase().includes(q);
+        const contactHay = (contactsByCase[c.id] || []).map((x) => [x.name, x.email, x.mobile, x.tel].join(" ")).join(" ");
+        return [c.customerName, c.partner, c.ricohSales, c.ricohHouse, c.requirements, (c.systems || []).join(" "), contactHay].join(" ").toLowerCase().includes(q);
       });
       document.getElementById("casesBody").innerHTML = list.map((c) => {
         const s = stageMeta(c.stage);
+        const n = (contactsByCase[c.id] || []).length;
+        const companyLine = (c.customerName || "").split("\n")[0];
         return `<tr>
-          <td><strong>${escapeHtml(c.customerName)}</strong><div class="muted" style="font-size:.72rem">${escapeHtml(c.requirements || "—")}</div></td>
-          <td>${escapeHtml(c.partner)}</td>
-          <td>${(c.systems || []).map((x) => `<span class="badge" style="background:#f0fdfa;color:var(--teal);margin:1px">${escapeHtml(x)}</span>`).join(" ")}</td>
+          <td><strong>${escapeHtml(companyLine)}</strong><div class="muted" style="font-size:.72rem">${n} contacts · ${escapeHtml(c.ricohSales || "—")}</div></td>
+          <td>${escapeHtml(c.partner)}<div class="muted" style="font-size:.68rem">${escapeHtml(c.ricohHouse || "")}</div></td>
+          <td>${(c.systems || []).map((x) => `<span class="badge" style="background:#f0fdfa;color:var(--teal);margin:1px">${escapeHtml(x)}</span>`).join(" ") || "—"}</td>
           <td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>
-          <td><strong>${money(c.amount)}</strong></td>
-          <td>${pct(c.successRate)}</td>
-          <td>${c.targetClosingDate || "—"}</td>
+          <td>${c.appointmentAt ? new Date(c.appointmentAt).toLocaleString("zh-HK") : "—"}<div class="muted" style="font-size:.68rem">${c.appointmentConfirmed ? "已確認" : (c.appointmentFlag ? "待確認" : "")}</div></td>
+          <td>${c.meetingDone ? "已會面" : "未會面"}</td>
+          <td>${c.followUpOpportunity ? "有" : "—"}</td>
           <td><button class="btn btn-ghost btn-sm" data-open="${c.id}">詳情</button></td>
         </tr>`;
       }).join("") || `<tr><td colspan="8" style="text-align:center;padding:28px" class="muted">沒有符合的案件</td></tr>`;
@@ -936,53 +1017,132 @@
     function openDrawer(id) {
       const c = cases.find((x) => x.id === id);
       if (!c) return;
+      const contacts = contactsByCase[c.id] || [];
+      const logs = logsByCase[c.id] || [];
       const root = document.getElementById("drawerRoot");
+      const apptLocal = c.appointmentAt ? new Date(c.appointmentAt) : null;
+      const apptValue = apptLocal && !Number.isNaN(apptLocal.getTime())
+        ? new Date(apptLocal.getTime() - apptLocal.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+        : "";
       root.innerHTML = `<div class="drawer-bg"><aside class="drawer">
         <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;margin-bottom:12px">
-          <div><div class="eyebrow">Case details</div><h2 style="font-size:1.3rem">${escapeHtml(c.customerName)}</h2></div>
+          <div><div class="eyebrow">Case · Multi contact</div><h2 style="font-size:1.15rem;white-space:pre-line">${escapeHtml(c.customerName)}</h2></div>
           <button class="btn btn-ghost btn-sm" id="drawerClose">關閉</button>
         </div>
-        <label class="field"><span>客戶名稱</span><input id="d_customerName" value="${escapeAttr(c.customerName)}" /></label>
-        <label class="field"><span>Partner</span><input id="d_partner" value="${escapeAttr(c.partner)}" /></label>
-        <label class="field"><span>系統（逗號分隔）</span><input id="d_systems" value="${escapeAttr((c.systems || []).join(", "))}" /></label>
-        <label class="field"><span>需求</span><textarea id="d_requirements" rows="3">${escapeHtml(c.requirements)}</textarea></label>
+
+        <div class="eyebrow">Ricoh 跟進</div>
         <div class="row2">
-          <label class="field"><span>數量</span><input id="d_quantity" value="${escapeAttr(c.quantity)}" /></label>
-          <label class="field"><span>Budget</span><input id="d_budget" type="number" value="${c.budget}" /></label>
+          <label class="field"><span>Ricoh House</span><input id="d_house" value="${escapeAttr(c.ricohHouse)}" /></label>
+          <label class="field"><span>Ricoh Sales</span><input id="d_sales" value="${escapeAttr(c.ricohSales)}" /></label>
         </div>
-        <div class="row2">
-          <label class="field"><span>Case Amount</span><input id="d_amount" type="number" value="${c.amount}" /></label>
-          <label class="field"><span>成功機率 %</span><input id="d_successRate" type="number" min="0" max="100" value="${c.successRate}" /></label>
+        <label class="field"><span>Ricoh Consultant</span><input id="d_consultant" value="${escapeAttr(c.ricohConsultant)}" /></label>
+
+        <div class="eyebrow" style="margin-top:8px">Multi Contact & Details（${contacts.length}）</div>
+        <div style="margin:8px 0 12px">${contacts.map((p) => `
+          <div class="breakdown-item">
+            <div><strong>${escapeHtml(p.name)}</strong><div class="muted" style="font-size:.72rem">${escapeHtml(p.title || "")}</div></div>
+            <div class="muted" style="font-size:.72rem;text-align:right">聯絡人</div>
+            <div class="breakdown-meta">
+              ${p.tel ? `<span>Tel ${escapeHtml(p.tel)}</span>` : ""}
+              ${p.mobile ? `<span>Mobile ${escapeHtml(p.mobile)}</span>` : ""}
+              ${p.email ? `<span>${escapeHtml(p.email)}</span>` : ""}
+              ${p.fax ? `<span>Fax ${escapeHtml(p.fax)}</span>` : ""}
+            </div>
+          </div>`).join("") || `<div class="breakdown-empty">未有聯絡人</div>`}
         </div>
-        <label class="field"><span>Target Closing Date</span><input id="d_date" type="date" value="${escapeAttr(c.targetClosingDate || "")}" /></label>
+
+        <div class="eyebrow">會面／跟進狀態</div>
         <label class="field"><span>Stage</span>
           <select id="d_stage">${STAGES.map((s) => `<option value="${s.id}" ${s.id === c.stage ? "selected" : ""}>${s.label}</option>`).join("")}</select>
         </label>
+        <div class="row2">
+          <label class="field"><span>約見時間</span><input id="d_appt" type="datetime-local" value="${escapeAttr(apptValue)}" /></label>
+          <label class="field"><span>Lead Status</span>
+            <select id="d_lead"><option value="Processing" ${c.leadStatus!=="DQ"?"selected":""}>Processing</option><option value="DQ" ${c.leadStatus==="DQ"?"selected":""}>DQ</option></select>
+          </label>
+        </div>
+        <div class="row2">
+          <label class="field" style="display:flex;align-items:center;gap:8px;margin-top:18px"><input type="checkbox" id="d_apptConf" ${c.appointmentConfirmed?"checked":""}/> 客人已確認會面</label>
+          <label class="field" style="display:flex;align-items:center;gap:8px;margin-top:18px"><input type="checkbox" id="d_meetDone" ${c.meetingDone?"checked":""}/> 會面已完成</label>
+        </div>
+        <label class="field" style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="d_follow" ${c.followUpOpportunity?"checked":""}/> 有機會跟進</label>
+        <label class="field"><span>會後 Comment</span><textarea id="d_meetNotes" rows="2">${escapeHtml(c.meetingNotes)}</textarea></label>
+        <label class="field"><span>系統（逗號分隔）</span><input id="d_systems" value="${escapeAttr((c.systems || []).join(", "))}" /></label>
+        <label class="field"><span>需求／Product</span><textarea id="d_requirements" rows="2">${escapeHtml(c.requirements)}</textarea></label>
         <label class="field"><span>關閉原因</span>
           <select id="d_close"><option value="">—</option><option value="disqualified" ${c.closeReason === "disqualified" ? "selected" : ""}>Disqualified</option><option value="failed" ${c.closeReason === "failed" ? "selected" : ""}>失敗</option></select>
         </label>
-        <label class="field"><span>備註</span><textarea id="d_notes" rows="2">${escapeHtml(c.notes)}</textarea></label>
-        <button class="btn btn-teal" style="width:100%" id="drawerSave">儲存變更</button>
+        <button class="btn btn-teal" style="width:100%;margin-bottom:14px" id="drawerSave">儲存案件</button>
+
+        <div class="eyebrow">Activity Log（每次聯絡都要留下）</div>
+        <div style="margin:8px 0">${logs.map((l) => {
+          const typeLabel = (LOG_TYPES.find((t) => t.id === l.log_type) || { label: l.log_type }).label;
+          const when = l.happened_at || l.created_at;
+          return `<div class="breakdown-item">
+            <div><strong>${escapeHtml(typeLabel)}</strong></div>
+            <div class="muted" style="font-size:.68rem">${when ? new Date(when).toLocaleString("zh-HK") : ""}</div>
+            <div class="breakdown-meta">${escapeHtml(l.content || "")}</div>
+          </div>`;
+        }).join("") || `<div class="breakdown-empty">未有 log</div>`}</div>
+
+        <label class="field"><span>新增 Log 類型</span>
+          <select id="d_logType">${LOG_TYPES.map((t) => `<option value="${t.id}">${t.label}</option>`).join("")}</select>
+        </label>
+        <label class="field"><span>Log 內容</span><textarea id="d_logContent" rows="2" placeholder="例如：3/10 上午致電無人接聽"></textarea></label>
+        <button class="btn btn-ink" style="width:100%" id="drawerAddLog">加入 Log Record</button>
       </aside></div>`;
       root.querySelector(".drawer-bg").onclick = (e) => { if (e.target.classList.contains("drawer-bg")) root.innerHTML = ""; };
       document.getElementById("drawerClose").onclick = () => { root.innerHTML = ""; };
       document.getElementById("drawerSave").onclick = async () => {
         const stage = document.getElementById("d_stage").value;
+        const appt = document.getElementById("d_appt").value;
+        const lead = document.getElementById("d_lead").value;
         await updateCase(c.id, {
-          customerName: document.getElementById("d_customerName").value.trim(),
-          partner: document.getElementById("d_partner").value.trim(),
+          ricohHouse: document.getElementById("d_house").value.trim(),
+          ricohSales: document.getElementById("d_sales").value.trim(),
+          ricohConsultant: document.getElementById("d_consultant").value.trim(),
           systems: document.getElementById("d_systems").value.split(",").map((x) => x.trim()).filter(Boolean),
           requirements: document.getElementById("d_requirements").value,
-          quantity: document.getElementById("d_quantity").value,
-          budget: Number(document.getElementById("d_budget").value) || 0,
-          amount: Number(document.getElementById("d_amount").value) || 0,
-          successRate: Number(document.getElementById("d_successRate").value) || 0,
-          targetClosingDate: document.getElementById("d_date").value,
-          stage,
-          closeReason: stage === "closed" ? (document.getElementById("d_close").value || "failed") : null,
-          notes: document.getElementById("d_notes").value,
+          stage: lead === "DQ" ? "closed" : stage,
+          closeReason: lead === "DQ" || stage === "closed" ? (document.getElementById("d_close").value || "disqualified") : null,
+          leadStatus: lead,
+          appointmentFlag: !!appt || c.appointmentFlag,
+          appointmentAt: appt ? new Date(appt).toISOString() : null,
+          appointmentConfirmed: document.getElementById("d_apptConf").checked,
+          meetingDone: document.getElementById("d_meetDone").checked,
+          meetingNotes: document.getElementById("d_meetNotes").value,
+          followUpOpportunity: document.getElementById("d_follow").checked,
         });
-        root.innerHTML = "";
+        openDrawer(c.id);
+      };
+      document.getElementById("drawerAddLog").onclick = async () => {
+        const content = document.getElementById("d_logContent").value.trim();
+        const logType = document.getElementById("d_logType").value;
+        if (!content) return toast("請輸入 log 內容");
+        const row = {
+          id: `log-${crypto.randomUUID().slice(0, 10)}`,
+          case_id: c.id,
+          contact_id: null,
+          log_type: logType,
+          content,
+          happened_at: new Date().toISOString(),
+        };
+        const { error } = await db.from("crm_activity_logs").insert(row);
+        if (error) return toast("Log 失敗：" + error.message);
+        // auto stage hints
+        if (logType === "call_no_answer" && ["new_lead", "contacting"].includes(c.stage)) {
+          await updateCase(c.id, { stage: "contacting" });
+        } else if (logType === "appointment_confirmed") {
+          await updateCase(c.id, { stage: "appointment_set", appointmentConfirmed: true, appointmentFlag: true });
+        } else if (logType === "meeting_done") {
+          await updateCase(c.id, { stage: "first_interview", meetingDone: true, meetingNotes: (c.meetingNotes ? c.meetingNotes + "\n" : "") + content });
+        } else if (logType === "follow_up") {
+          await updateCase(c.id, { followUpOpportunity: true, stage: c.stage === "first_interview" ? "follow_up" : c.stage });
+        } else {
+          await loadCases();
+        }
+        toast("已加入 log");
+        openDrawer(c.id);
       };
     }
 
@@ -1036,7 +1196,7 @@
 
     document.getElementById("caseForm").onsubmit = async (e) => {
       e.preventDefault();
-      if (!dbReady) return toast("請先完成 Supabase setup.sql");
+      if (!dbReady) return toast("請先完成 Supabase ricoh_import.sql");
       const fd = new FormData(e.target);
       const budget = Number(fd.get("budget")) || 0;
       const item = {
@@ -1113,15 +1273,17 @@
     })();
 
     // Setup SQL preview
-    const SETUP_SQL_URL = "./supabase/setup.sql";
+    const SETUP_SQL_URL = "./supabase/ricoh_import.sql";
+    let cachedSetupSql = "";
     fetch(SETUP_SQL_URL).then((r) => r.text()).then((t) => {
-      document.getElementById("setupSqlPreview").textContent = t;
+      cachedSetupSql = t;
+      document.getElementById("setupSqlPreview").textContent = t.slice(0, 2500) + "\n\n…完整內容請用「複製 SQL」或開 raw 檔";
       document.getElementById("btnCopySql").onclick = async () => {
-        await navigator.clipboard.writeText(t);
-        toast("已複製 SQL");
+        await navigator.clipboard.writeText(cachedSetupSql || t);
+        toast("已複製完整 ricoh_import.sql");
       };
     }).catch(() => {
-      document.getElementById("setupSqlPreview").textContent = "請打開 repo 內 supabase/setup.sql";
+      document.getElementById("setupSqlPreview").textContent = "請打開 repo 內 supabase/ricoh_import.sql";
     });
     document.getElementById("btnRecheck").onclick = async () => {
       await loadCases();
