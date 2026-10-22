@@ -377,6 +377,60 @@
     }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .home-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .dash-period {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: end;
+      margin: 12px 0 4px;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.75);
+      border: 1px solid var(--line);
+    }
+    .dash-period .seg {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      background: var(--paper);
+      padding: 3px;
+      border-radius: 999px;
+    }
+    .dash-period .seg button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: .75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .dash-period .seg button.active {
+      background: var(--ink);
+      color: #fff;
+    }
+    .dash-period .custom-range {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: end;
+    }
+    .dash-period .custom-range label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: .68rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .dash-period .custom-range input {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 7px 10px;
+      background: #fff;
+      font-size: .8rem;
+    }
   </style>
 </head>
 <body>
@@ -456,7 +510,7 @@
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
         <div>
           <h1>Dashboard</h1>
-          <p class="muted">未來幾個月 closing 預測、簽單額與成功機率</p>
+          <p class="muted">可揀當月／未來 3／6／12 個月，或自訂由日期至日期</p>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-ink btn-sm" data-go="board">開 Kanban</button>
@@ -464,6 +518,20 @@
         </div>
       </div>
       <div class="grid-stats" id="dashStats"></div>
+      <div class="dash-period" id="dashPeriodBar">
+        <div class="seg" id="dashPeriodSeg">
+          <button type="button" data-period="month">當月</button>
+          <button type="button" data-period="3" class="active">未來 3 個月</button>
+          <button type="button" data-period="6">未來 6 個月</button>
+          <button type="button" data-period="12">未來 12 個月</button>
+          <button type="button" data-period="custom">自訂日期</button>
+        </div>
+        <div class="custom-range hidden" id="dashCustomRange">
+          <label>由日期<input type="date" id="dashFrom" /></label>
+          <label>至日期<input type="date" id="dashTo" /></label>
+          <button type="button" class="btn btn-teal btn-sm" id="dashApplyCustom">套用</button>
+        </div>
+      </div>
       <div style="display:grid;gap:12px;grid-template-columns:1fr;margin-top:8px">
         <div class="panel" id="dashMonths"></div>
         <div class="panel" id="dashStages"></div>
@@ -941,54 +1009,165 @@
     }
 
     /* -------- dashboard / board / list -------- */
+    let dashPeriod = localStorage.getItem("crm_dash_period") || "3";
+    let dashFrom = localStorage.getItem("crm_dash_from") || "";
+    let dashTo = localStorage.getItem("crm_dash_to") || "";
+
+    function parseLocalDate(raw) {
+      if (!raw) return null;
+      const s = String(raw).slice(0, 10);
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+      if (!m) return null;
+      const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function formatLocalDate(d) {
+      if (!d) return "—";
+      const y = d.getFullYear();
+      const mo = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${mo}-${day}`;
+    }
+
+    function endOfDay(d) {
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+    }
+
+    function caseForecastDate(c) {
+      // Prefer target closing; fallback to appointment for Ricoh leads
+      return parseLocalDate(c.targetClosingDate || (c.appointmentAt ? String(c.appointmentAt).slice(0, 10) : ""));
+    }
+
+    function getDashRange() {
+      const now = new Date();
+      const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      if (dashPeriod === "custom") {
+        const from = parseLocalDate(dashFrom);
+        const to = parseLocalDate(dashTo);
+        if (from && to && from <= to) {
+          return {
+            mode: "custom",
+            from,
+            to: endOfDay(to),
+            title: `${dashFrom} 至 ${dashTo}`,
+            months: buildMonthBuckets(from, to),
+          };
+        }
+        // Custom selected but incomplete — show empty range until Apply
+        return {
+          mode: "custom",
+          from: startMonth,
+          to: endOfDay(startMonth),
+          title: "請選擇由日期至日期後按「套用」",
+          months: [],
+        };
+      }
+      const count = dashPeriod === "month" ? 1 : Number(dashPeriod) || 3;
+      const end = endOfDay(new Date(startMonth.getFullYear(), startMonth.getMonth() + count, 0));
+      const title =
+        count === 1 ? `${startMonth.getFullYear()}年${startMonth.getMonth() + 1}月（當月）`
+        : `未來 ${count} 個月 Closing`;
+      return {
+        mode: dashPeriod,
+        from: startMonth,
+        to: end,
+        title,
+        months: buildMonthBuckets(startMonth, end),
+      };
+    }
+
+    function buildMonthBuckets(from, to) {
+      const months = [];
+      const cursor = new Date(from.getFullYear(), from.getMonth(), 1);
+      const last = new Date(to.getFullYear(), to.getMonth(), 1);
+      while (cursor <= last) {
+        const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+        months.push({
+          key,
+          label: `${cursor.getFullYear()}年${cursor.getMonth() + 1}月`,
+          monthStart: new Date(cursor),
+          monthEnd: new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 23, 59, 59),
+        });
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+      return months;
+    }
+
+    function syncDashPeriodUi() {
+      document.querySelectorAll("#dashPeriodSeg button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.period === dashPeriod);
+      });
+      const custom = document.getElementById("dashCustomRange");
+      custom.classList.toggle("hidden", dashPeriod !== "custom");
+      if (dashFrom) document.getElementById("dashFrom").value = dashFrom;
+      if (dashTo) document.getElementById("dashTo").value = dashTo;
+    }
+
     function renderDashboard() {
+      syncDashPeriodUi();
       const open = cases.filter((c) => c.stage !== "closed");
       const closed = cases.filter((c) => c.stage === "closed");
-      const pipeline = open.reduce((s, c) => s + c.amount, 0);
-      const weighted = open.reduce((s, c) => s + c.amount * (c.successRate / 100), 0);
-      const avg = open.length ? Math.round(open.reduce((s, c) => s + c.successRate, 0) / open.length) : 0;
+      const range = getDashRange();
+      const inRange = open.filter((c) => {
+        const d = caseForecastDate(c);
+        if (!d) return false;
+        return d >= range.from && d <= range.to;
+      });
       const apptN = cases.filter((c) => c.appointmentFlag || c.appointmentAt).length;
       const meetN = cases.filter((c) => c.meetingDone).length;
       const followN = cases.filter((c) => c.followUpOpportunity).length;
+      const rangeAmt = inRange.reduce((s, c) => s + (c.amount || 0), 0);
+      const rangeWeighted = inRange.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
       document.getElementById("dashStats").innerHTML = [
         ["公司 Cases", open.length, `${closed.length} 宗 DQ／關閉`],
         ["已約會面", apptN, "含待確認／已確認"],
         ["已完成會面", meetN, "會後可寫 comment"],
-        ["有跟進機會", followN, `${cases.length} 宗總數`],
+        ["所選期間案件", inRange.length, `${money(rangeAmt)} · 加權 ${money(rangeWeighted)}`],
       ].map(([l, v, s]) => `<article class="stat"><div class="label">${l}</div><div class="value">${v}</div><div class="muted" style="font-size:.72rem;margin-top:4px">${s}</div></article>`).join("");
 
-      const now = new Date();
       let maxAmt = 1;
-      const months = [];
-      for (let i = 0; i < 6; i++) {
-        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        const list = open.filter((c) => (c.targetClosingDate || "").startsWith(key));
-        const total = list.reduce((s, c) => s + c.amount, 0);
+      const months = range.months.map((m) => {
+        const list = open.filter((c) => {
+          const d = caseForecastDate(c);
+          if (!d) return false;
+          return d >= m.monthStart && d <= m.monthEnd;
+        });
+        const total = list.reduce((s, c) => s + (c.amount || 0), 0);
         maxAmt = Math.max(maxAmt, total);
-        months.push({ key, label: `${d.getFullYear()}年${d.getMonth() + 1}月`, list, total, weighted: list.reduce((s, c) => s + c.amount * c.successRate / 100, 0), avg: list.length ? Math.round(list.reduce((s, c) => s + c.successRate, 0) / list.length) : 0 });
-      }
+        return {
+          ...m,
+          list,
+          total,
+          weighted: list.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0),
+          avg: list.length ? Math.round(list.reduce((s, c) => s + (c.successRate || 0), 0) / list.length) : 0,
+        };
+      });
+
       const monthsRoot = document.getElementById("dashMonths");
-      monthsRoot.innerHTML = `<h2 style="font-size:1.2rem">未來 6 個月 Closing</h2><p class="muted">依 target closing date · 點擊月份展開 breakdown</p>` +
+      monthsRoot.innerHTML = `<h2 style="font-size:1.2rem">${escapeHtml(range.title)}</h2>
+        <p class="muted">依 target closing date（無則用約見日）· 點擊月份展開 breakdown · 跟進機會 ${followN}</p>` +
         months.map((m) => {
           const width = Math.max(4, (m.total / maxAmt) * 100);
           const breakdown = m.list.length
             ? m.list.map((c) => {
                 const s = stageMeta(c.stage);
-                const w = c.amount * (c.successRate / 100);
+                const w = (c.amount || 0) * ((c.successRate || 0) / 100);
+                const fd = caseForecastDate(c);
+                const fdText = formatLocalDate(fd);
                 return `<div class="breakdown-item" data-case-id="${c.id}">
-                  <div><strong>${escapeHtml(c.customerName)}</strong></div>
+                  <div><strong>${escapeHtml((c.customerName || "").split("\n")[0])}</strong></div>
                   <div><strong>${money(c.amount)}</strong></div>
                   <div class="breakdown-meta">
                     <span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span>
-                    <span>${escapeHtml(c.partner)}</span>
+                    <span>${escapeHtml(c.ricohSales || c.partner || "")}</span>
                     <span>機率 ${pct(c.successRate)}</span>
                     <span>加權 ${money(w)}</span>
-                    <span>Close ${c.targetClosingDate || "—"}</span>
+                    <span>日期 ${fdText}</span>
                   </div>
                 </div>`;
               }).join("")
-            : `<div class="breakdown-empty">呢個月未有 target closing 案件</div>`;
+            : `<div class="breakdown-empty">呢段期間未有案件</div>`;
           return `<div class="month-row" data-month="${m.key}" role="button" tabindex="0" aria-expanded="false">
             <div class="month-row-top">
               <strong>${m.label}<span class="chev">▸</span></strong>
@@ -1005,8 +1184,8 @@
 
       monthsRoot.querySelectorAll(".month-row").forEach((row) => {
         const toggle = () => {
-          const open = row.classList.toggle("open");
-          row.setAttribute("aria-expanded", open ? "true" : "false");
+          const openRow = row.classList.toggle("open");
+          row.setAttribute("aria-expanded", openRow ? "true" : "false");
         };
         row.addEventListener("click", (e) => {
           if (e.target.closest("[data-case-id]")) {
@@ -1361,6 +1540,46 @@
     document.getElementById("caseSearch").oninput = () => renderCasesTable();
     document.getElementById("caseStageFilter").innerHTML = `<option value="all">全部階段</option>` + STAGES.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
     document.getElementById("caseStageFilter").onchange = () => renderCasesTable();
+
+    document.getElementById("dashPeriodSeg").onclick = (e) => {
+      const btn = e.target.closest("button[data-period]");
+      if (!btn) return;
+      dashPeriod = btn.dataset.period;
+      localStorage.setItem("crm_dash_period", dashPeriod);
+      if (dashPeriod === "custom") {
+        if (dashFrom && dashTo) renderDashboard();
+        else {
+          syncDashPeriodUi();
+          document.getElementById("dashMonths").innerHTML =
+            `<h2 style="font-size:1.2rem">自訂日期</h2><p class="muted">請揀「由日期」同「至日期」，再按「套用」</p>`;
+        }
+        return;
+      }
+      renderDashboard();
+    };
+    document.getElementById("dashApplyCustom").onclick = () => {
+      dashFrom = document.getElementById("dashFrom").value || "";
+      dashTo = document.getElementById("dashTo").value || "";
+      if (!dashFrom || !dashTo) return toast("請揀齊由日期同至日期");
+      const from = parseLocalDate(dashFrom);
+      const to = parseLocalDate(dashTo);
+      if (!from || !to) return toast("日期格式唔正確");
+      if (from > to) return toast("「由日期」唔可以晚過「至日期」");
+      dashPeriod = "custom";
+      localStorage.setItem("crm_dash_period", "custom");
+      localStorage.setItem("crm_dash_from", dashFrom);
+      localStorage.setItem("crm_dash_to", dashTo);
+      renderDashboard();
+      toast(`已套用 ${dashFrom} 至 ${dashTo}`);
+    };
+    document.getElementById("dashFrom").onchange = () => {
+      dashFrom = document.getElementById("dashFrom").value || "";
+      localStorage.setItem("crm_dash_from", dashFrom);
+    };
+    document.getElementById("dashTo").onchange = () => {
+      dashTo = document.getElementById("dashTo").value || "";
+      localStorage.setItem("crm_dash_to", dashTo);
+    };
 
     document.getElementById("btnParse").onclick = () => {
       const text = document.getElementById("transcript").value.trim();
