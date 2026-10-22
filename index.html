@@ -1027,8 +1027,11 @@
       if (!text) return toast("請先輸入內容");
       const parsed = parseVoice(text);
       fillPortal(parsed);
-      document.getElementById("portalStatus").textContent = "已填入相關欄位，請確認後提交";
-      toast("已解析");
+      if (parsed.customerName || parsed.systems?.length || parsed.requirements) {
+        toast("已解析並填入表格，請確認");
+      } else {
+        toast("解析唔完整，請手動修正");
+      }
     };
 
     document.getElementById("caseForm").onsubmit = async (e) => {
