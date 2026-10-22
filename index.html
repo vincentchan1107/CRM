@@ -216,11 +216,11 @@
     }
     .kanban::-webkit-scrollbar-track { background: transparent; }
     .col {
-      /* ~5 columns visible on typical laptop; scroll for the rest */
-      flex: 0 0 min(240px, calc((100% - 48px) / 5));
-      width: min(240px, calc((100% - 48px) / 5));
-      min-width: 200px;
-      max-width: 260px;
+      /* Exactly ~5 wider columns per viewport; scroll right for the rest */
+      flex: 0 0 calc((100% - 48px) / 5);
+      width: calc((100% - 48px) / 5);
+      min-width: calc((100% - 48px) / 5);
+      max-width: none;
       display: flex;
       flex-direction: column;
       min-height: 0;
@@ -228,15 +228,21 @@
       background: rgba(255,255,255,.78);
       border: 1px solid var(--line);
       border-radius: 16px;
-      padding: 10px;
+      padding: 12px;
       scroll-snap-align: start;
     }
-    @media (max-width: 700px) {
+    @media (max-width: 900px) {
       .col {
-        flex-basis: 78vw;
-        width: 78vw;
-        min-width: 78vw;
-        max-width: 78vw;
+        flex-basis: calc((100% - 24px) / 2.2);
+        width: calc((100% - 24px) / 2.2);
+        min-width: calc((100% - 24px) / 2.2);
+      }
+    }
+    @media (max-width: 640px) {
+      .col {
+        flex-basis: 85vw;
+        width: 85vw;
+        min-width: 85vw;
       }
     }
     .col-head { flex-shrink: 0; margin-bottom: 6px; }
@@ -469,7 +475,7 @@
       <div class="board-toolbar">
         <div>
           <h1>Case 跟進</h1>
-          <p class="muted">一頁約睇 5 個 status，向右滑／撳箭嘴睇其餘 · 可用勾選控制顯示</p>
+          <p class="muted">一屏排約 5 個較闊嘅 status 欄，向右拉睇其餘 · 可用勾選暫時隱藏某啲 status</p>
         </div>
         <button class="btn btn-ghost btn-sm" id="btnRefreshBoard">重新整理</button>
       </div>
@@ -554,7 +560,7 @@
     let selectedSystems = new Set();
     let dragId = null;
     let dbReady = false;
-    const DEFAULT_BOARD_STAGES = ["new_lead", "contacting", "unreachable", "appointment_set", "first_interview"];
+    const ALL_BOARD_STAGES = () => STAGES.map((s) => s.id);
     let visibleStages = loadVisibleStages();
 
     function loadVisibleStages() {
@@ -562,10 +568,19 @@
         const raw = localStorage.getItem("crm_visible_stages");
         if (raw) {
           const arr = JSON.parse(raw).filter((id) => STAGES.some((s) => s.id === id));
+          // Migrate old "default 5 only" preference → show all statuses
+          if (arr.length && arr.length < STAGES.length) {
+            const oldDefault = ["new_lead", "contacting", "unreachable", "appointment_set", "first_interview"];
+            const looksLikeOldDefault = arr.length === 5 && oldDefault.every((id) => arr.includes(id));
+            if (looksLikeOldDefault) {
+              localStorage.removeItem("crm_visible_stages");
+              return ALL_BOARD_STAGES();
+            }
+          }
           if (arr.length) return arr;
         }
       } catch (_) {}
-      return [...DEFAULT_BOARD_STAGES];
+      return ALL_BOARD_STAGES();
     }
     function saveVisibleStages() {
       localStorage.setItem("crm_visible_stages", JSON.stringify(visibleStages));
@@ -1039,8 +1054,8 @@
           const checked = visibleStages.includes(s.id) ? "checked" : "";
           return `<label><input type="checkbox" data-stage-toggle="${s.id}" ${checked}/> ${s.label} <span class="muted">(${n})</span></label>`;
         }).join("") +
-        `<button type="button" class="btn btn-ghost btn-sm" id="btnStagesDefault">預設 5 個</button>
-         <button type="button" class="btn btn-ghost btn-sm" id="btnStagesAll">全選</button>`;
+        `<button type="button" class="btn btn-ghost btn-sm" id="btnStagesAll">顯示全部 Status</button>
+         <button type="button" class="btn btn-ghost btn-sm" id="btnStagesClearEmpty">隱藏 0 宗</button>`;
       box.querySelectorAll("[data-stage-toggle]").forEach((input) => {
         input.onchange = () => {
           const id = input.dataset.stageToggle;
@@ -1060,14 +1075,15 @@
           paintKanbanColumns();
         };
       });
-      document.getElementById("btnStagesDefault").onclick = () => {
-        visibleStages = [...DEFAULT_BOARD_STAGES];
+      document.getElementById("btnStagesAll").onclick = () => {
+        visibleStages = ALL_BOARD_STAGES();
         saveVisibleStages();
         renderStageFilter();
         paintKanbanColumns();
       };
-      document.getElementById("btnStagesAll").onclick = () => {
-        visibleStages = STAGES.map((s) => s.id);
+      document.getElementById("btnStagesClearEmpty").onclick = () => {
+        const next = STAGES.map((s) => s.id).filter((id) => cases.some((c) => c.stage === id));
+        visibleStages = next.length ? next : ALL_BOARD_STAGES();
         saveVisibleStages();
         renderStageFilter();
         paintKanbanColumns();
@@ -1078,7 +1094,7 @@
       const root = document.getElementById("kanban");
       const shown = STAGES.filter((s) => visibleStages.includes(s.id));
       document.getElementById("kanbanHint").textContent =
-        `顯示 ${shown.length} 個 status · 一屏約 5 欄，向右睇其餘`;
+        `共 ${shown.length} 個 status · 一屏顯示約 5 欄（較闊）· 向右拉睇其餘`;
       root.innerHTML = shown.map((s) => {
         const items = cases.filter((c) => c.stage === s.id);
         return `<section class="col" data-stage="${s.id}">
@@ -1334,11 +1350,13 @@
     document.getElementById("btnRefreshBoard").onclick = async () => { await loadCases(); renderBoard(); toast("已重新整理"); };
     document.getElementById("btnKanbanLeft").onclick = () => {
       const el = document.getElementById("kanban");
-      el.scrollBy({ left: -el.clientWidth * 0.85, behavior: "smooth" });
+      const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 5;
+      el.scrollBy({ left: -(step + 12), behavior: "smooth" });
     };
     document.getElementById("btnKanbanRight").onclick = () => {
       const el = document.getElementById("kanban");
-      el.scrollBy({ left: el.clientWidth * 0.85, behavior: "smooth" });
+      const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 5;
+      el.scrollBy({ left: step + 12, behavior: "smooth" });
     };
     document.getElementById("caseSearch").oninput = () => renderCasesTable();
     document.getElementById("caseStageFilter").innerHTML = `<option value="all">全部階段</option>` + STAGES.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
