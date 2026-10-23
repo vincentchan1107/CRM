@@ -94,6 +94,28 @@
       margin-bottom: 10px;
       flex-shrink: 0;
     }
+    .board-toolbar-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex: 1;
+      justify-content: flex-end;
+      min-width: min(100%, 280px);
+    }
+    #boardSearch {
+      flex: 1;
+      max-width: 360px;
+      min-width: 160px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 9px 14px;
+      background: #fff;
+      font-size: .85rem;
+    }
+    #boardSearch:focus {
+      outline: 2px solid rgba(13, 148, 136, .25);
+      border-color: var(--teal);
+    }
     .board-dash {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -544,7 +566,10 @@
         <div>
           <h1>Case 跟進</h1>
         </div>
-        <button class="btn btn-ghost btn-sm" id="btnRefreshBoard">重新整理</button>
+        <div class="board-toolbar-actions">
+          <input id="boardSearch" type="search" placeholder="搜尋公司名／聯絡人…" autocomplete="off" />
+          <button class="btn btn-ghost btn-sm" id="btnRefreshBoard">重新整理</button>
+        </div>
       </div>
       <div class="board-dash" id="boardDash"></div>
       <div class="stage-filter" id="stageFilter"></div>
@@ -1268,20 +1293,32 @@
       };
     }
 
+    function caseMatchesBoardSearch(c) {
+      const q = (document.getElementById("boardSearch")?.value || "").trim().toLowerCase();
+      if (!q) return true;
+      const company = (c.customerName || "").toLowerCase();
+      if (company.includes(q)) return true;
+      return (contactsByCase[c.id] || []).some((p) => (p.name || "").toLowerCase().includes(q));
+    }
+
     function paintKanbanColumns() {
       const root = document.getElementById("kanban");
       const shown = STAGES.filter((s) => visibleStages.includes(s.id));
-      document.getElementById("kanbanHint").textContent =
-        `共 ${shown.length} 個 status · 一屏顯示約 5 欄（較闊）· 向右拉睇其餘`;
+      const q = (document.getElementById("boardSearch")?.value || "").trim();
+      const matched = cases.filter(caseMatchesBoardSearch);
+      document.getElementById("kanbanHint").textContent = q
+        ? `搜尋「${q}」· ${matched.length} 宗符合 · ${shown.length} 個 status`
+        : `共 ${shown.length} 個 status · 一屏顯示約 5 欄（較闊）· 向右拉睇其餘`;
       root.innerHTML = shown.map((s) => {
-        const items = cases.filter((c) => c.stage === s.id);
+        const items = matched.filter((c) => c.stage === s.id);
+        const emptyMsg = q ? "沒有符合搜尋" : "拖曳案件到此";
         return `<section class="col" data-stage="${s.id}">
           <div class="col-head" style="display:flex;justify-content:space-between;align-items:center">
             <span class="badge" style="color:${s.color};background:${s.bg}">${s.label}</span>
             <span class="muted" style="font-size:.72rem">${items.length}</span>
           </div>
           <p class="col-desc">${s.desc}</p>
-          <div class="col-items">${items.map(cardHtml).join("") || `<div class="col-empty">拖曳案件到此</div>`}</div>
+          <div class="col-items">${items.map(cardHtml).join("") || `<div class="col-empty">${emptyMsg}</div>`}</div>
         </section>`;
       }).join("") || `<div class="breakdown-empty" style="padding:40px">請至少勾選一個 status</div>`;
 
@@ -1526,6 +1563,7 @@
     };
     document.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => showView(b.dataset.go));
     document.getElementById("btnRefreshBoard").onclick = async () => { await loadCases(); renderBoard(); toast("已重新整理"); };
+    document.getElementById("boardSearch").oninput = () => paintKanbanColumns();
     document.getElementById("btnKanbanLeft").onclick = () => {
       const el = document.getElementById("kanban");
       const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 5;
