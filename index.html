@@ -102,10 +102,14 @@
       justify-content: flex-end;
       min-width: min(100%, 280px);
     }
-    #boardSearch {
+    .board-search-wrap {
+      position: relative;
       flex: 1;
       max-width: 360px;
       min-width: 160px;
+    }
+    #boardSearch {
+      width: 100%;
       border: 1px solid var(--line);
       border-radius: 999px;
       padding: 9px 14px;
@@ -115,6 +119,60 @@
     #boardSearch:focus {
       outline: 2px solid rgba(13, 148, 136, .25);
       border-color: var(--teal);
+    }
+    .board-suggest {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 40;
+      max-height: 280px;
+      overflow: auto;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, .12);
+      padding: 6px;
+    }
+    .board-suggest.hidden { display: none !important; }
+    .board-suggest-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: 100%;
+      text-align: left;
+      border: 0;
+      background: transparent;
+      border-radius: 10px;
+      padding: 8px 10px;
+      cursor: pointer;
+      color: var(--ink);
+    }
+    .board-suggest-item:hover,
+    .board-suggest-item.active {
+      background: var(--paper);
+    }
+    .board-suggest-item .kind {
+      font-size: .66rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .board-suggest-item .label {
+      font-size: .84rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    .board-suggest-item .meta {
+      font-size: .7rem;
+      color: var(--muted);
+    }
+    .board-suggest-empty {
+      padding: 10px;
+      font-size: .78rem;
+      color: var(--muted);
+      text-align: center;
     }
     .board-dash {
       display: grid;
@@ -567,7 +625,10 @@
           <h1>Case 跟進</h1>
         </div>
         <div class="board-toolbar-actions">
-          <input id="boardSearch" type="search" placeholder="搜尋公司名／聯絡人…" autocomplete="off" />
+          <div class="board-search-wrap">
+            <input id="boardSearch" type="search" placeholder="搜尋公司名／聯絡人…" autocomplete="off" aria-autocomplete="list" aria-controls="boardSuggest" aria-expanded="false" />
+            <div id="boardSuggest" class="board-suggest hidden" role="listbox"></div>
+          </div>
           <button class="btn btn-ghost btn-sm" id="btnRefreshBoard">重新整理</button>
         </div>
       </div>
@@ -1293,12 +1354,99 @@
       };
     }
 
+    let boardSuggestActive = -1;
+
     function caseMatchesBoardSearch(c) {
       const q = (document.getElementById("boardSearch")?.value || "").trim().toLowerCase();
       if (!q) return true;
       const company = (c.customerName || "").toLowerCase();
       if (company.includes(q)) return true;
       return (contactsByCase[c.id] || []).some((p) => (p.name || "").toLowerCase().includes(q));
+    }
+
+    function buildBoardSuggestions(qRaw) {
+      const q = (qRaw || "").trim().toLowerCase();
+      if (!q) return [];
+      const seen = new Set();
+      const out = [];
+      const push = (item) => {
+        const key = `${item.kind}|${item.value.toLowerCase()}|${item.caseId || ""}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push(item);
+      };
+      for (const c of cases) {
+        const company = (c.customerName || "").split("\n")[0].trim();
+        if (company && company.toLowerCase().includes(q)) {
+          push({
+            kind: "公司",
+            label: company,
+            value: company,
+            meta: stageMeta(c.stage).label,
+            caseId: c.id,
+          });
+        }
+        for (const p of (contactsByCase[c.id] || [])) {
+          const name = (p.name || "").trim();
+          if (!name || !name.toLowerCase().includes(q)) continue;
+          push({
+            kind: "聯絡人",
+            label: name,
+            value: name,
+            meta: company || "—",
+            caseId: c.id,
+          });
+        }
+        if (out.length >= 12) break;
+      }
+      return out.slice(0, 12);
+    }
+
+    function hideBoardSuggest() {
+      const box = document.getElementById("boardSuggest");
+      box.classList.add("hidden");
+      box.innerHTML = "";
+      boardSuggestActive = -1;
+      document.getElementById("boardSearch").setAttribute("aria-expanded", "false");
+    }
+
+    function renderBoardSuggest() {
+      const input = document.getElementById("boardSearch");
+      const box = document.getElementById("boardSuggest");
+      const q = (input.value || "").trim();
+      if (!q) {
+        hideBoardSuggest();
+        return;
+      }
+      const items = buildBoardSuggestions(q);
+      if (!items.length) {
+        box.innerHTML = `<div class="board-suggest-empty">沒有相似公司／聯絡人</div>`;
+        box.classList.remove("hidden");
+        input.setAttribute("aria-expanded", "true");
+        boardSuggestActive = -1;
+        return;
+      }
+      box.innerHTML = items.map((it, i) => `
+        <button type="button" class="board-suggest-item${i === boardSuggestActive ? " active" : ""}" role="option" data-suggest-idx="${i}" data-value="${escapeAttr(it.value)}" data-case-id="${escapeAttr(it.caseId || "")}">
+          <span class="kind">${escapeHtml(it.kind)}</span>
+          <span class="label">${escapeHtml(it.label)}</span>
+          <span class="meta">${escapeHtml(it.meta || "")}</span>
+        </button>
+      `).join("");
+      box.classList.remove("hidden");
+      input.setAttribute("aria-expanded", "true");
+      box.querySelectorAll(".board-suggest-item").forEach((btn) => {
+        btn.onmousedown = (e) => e.preventDefault(); // keep focus for click
+        btn.onclick = () => applyBoardSuggestion(btn.dataset.value, btn.dataset.caseId);
+      });
+    }
+
+    function applyBoardSuggestion(value, caseId) {
+      const input = document.getElementById("boardSearch");
+      input.value = value || "";
+      hideBoardSuggest();
+      paintKanbanColumns();
+      if (caseId) openDrawer(caseId);
     }
 
     function paintKanbanColumns() {
@@ -1563,7 +1711,41 @@
     };
     document.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => showView(b.dataset.go));
     document.getElementById("btnRefreshBoard").onclick = async () => { await loadCases(); renderBoard(); toast("已重新整理"); };
-    document.getElementById("boardSearch").oninput = () => paintKanbanColumns();
+    (function setupBoardSearch() {
+      const input = document.getElementById("boardSearch");
+      const box = document.getElementById("boardSuggest");
+      input.oninput = () => {
+        boardSuggestActive = -1;
+        paintKanbanColumns();
+        renderBoardSuggest();
+      };
+      input.onfocus = () => renderBoardSuggest();
+      input.onblur = () => setTimeout(hideBoardSuggest, 120);
+      input.onkeydown = (e) => {
+        const items = [...box.querySelectorAll(".board-suggest-item")];
+        if (e.key === "Escape") {
+          hideBoardSuggest();
+          return;
+        }
+        if (!items.length || box.classList.contains("hidden")) return;
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          boardSuggestActive = (boardSuggestActive + 1) % items.length;
+          renderBoardSuggest();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          boardSuggestActive = (boardSuggestActive - 1 + items.length) % items.length;
+          renderBoardSuggest();
+        } else if (e.key === "Enter" && boardSuggestActive >= 0) {
+          e.preventDefault();
+          const btn = items[boardSuggestActive];
+          if (btn) applyBoardSuggestion(btn.dataset.value, btn.dataset.caseId);
+        }
+      };
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".board-search-wrap")) hideBoardSuggest();
+      });
+    })();
     document.getElementById("btnKanbanLeft").onclick = () => {
       const el = document.getElementById("kanban");
       const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 5;
