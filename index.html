@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>見客通 CaseFlow CRM</title>
+  <title>Achiever CRM</title>
+  <link rel="icon" type="image/png" href="./images/achiever-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -63,21 +64,20 @@
       z-index: 50;
     }
     .sidebar-brand {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.2rem;
-      color: #fff;
-      padding: 6px 12px 18px;
-      letter-spacing: .02em;
+      display: flex;
+      align-items: center;
+      padding: 8px 10px 20px;
     }
-    .sidebar-brand small {
+    .sidebar-brand img {
       display: block;
-      margin-top: 4px;
-      font-size: .68rem;
-      font-weight: 500;
-      color: #8fa3bd;
-      letter-spacing: .08em;
-      text-transform: uppercase;
+      width: min(100%, 168px);
+      height: auto;
+      object-fit: contain;
+    }
+    .topbar-brand {
+      display: none;
+      height: 28px;
+      width: auto;
     }
     .nav-pills {
       display: flex;
@@ -160,8 +160,8 @@
         padding: 10px 12px;
         overflow-x: auto;
       }
-      .sidebar-brand { padding: 0 8px 0 0; white-space: nowrap; }
-      .sidebar-brand small { display: none; }
+      .sidebar-brand { padding: 0 8px 0 0; }
+      .sidebar-brand img { width: 110px; }
       .nav-pills { flex-direction: row; overflow-x: auto; }
       .nav-pills button { padding: 8px 12px; font-size: .76rem; }
       .topbar { display: none; }
@@ -880,7 +880,11 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="sidebar-brand">見客通<small>CaseFlow CRM</small></div>
+      <div class="sidebar-brand">
+        <a href="https://achiever.hk/" target="_blank" rel="noopener" title="Achiever">
+          <img src="./images/achiever-logo.png" alt="Achiever" />
+        </a>
+      </div>
       <nav class="nav-pills" id="navPills">
         <button data-view="home" class="active">首頁</button>
         <button data-view="portal">手機 Portal</button>
@@ -894,7 +898,7 @@
     <div class="app-main">
       <header class="topbar">
         <div class="topbar-title" id="topbarTitle">首頁</div>
-        <div class="topbar-meta">ADMIN · 見客通</div>
+        <div class="topbar-meta">ADMIN · Achiever</div>
       </header>
       <main class="wrap">
     <div id="setupBanner" class="setup-box hidden">
@@ -911,10 +915,10 @@
     <!-- HOME -->
     <section id="view-home">
       <div class="hero-card">
-        <div class="eyebrow">Sales case OS · Supabase</div>
-        <h1 style="font-size:clamp(2rem,5vw,3.2rem);margin-top:8px;line-height:1.1">講出嚟，就變案件。</h1>
+        <div class="eyebrow">Achiever · Sales CRM</div>
+        <h1 style="font-size:clamp(1.8rem,4vw,2.6rem);margin-top:8px;line-height:1.15">講出嚟，就變案件。</h1>
         <p class="muted" style="max-width:520px;margin-top:12px;line-height:1.6">
-          手機 Portal 用語音／文字填表；後台用 Kanban 跟進會見→報價→確認／關閉，並預測未來成交額。資料存於 Supabase。
+          手機 Portal 用語音／文字填表；後台用 Kanban 跟進會見→報價→確認／關閉，並預測未來成交額。
         </p>
         <div class="home-actions">
           <button class="btn btn-teal" data-go="portal">開啟手機 Portal</button>
@@ -1248,7 +1252,7 @@
       document.body.classList.toggle("mode-board", name === "board");
       document.querySelectorAll("#navPills button").forEach((b) => b.classList.toggle("active", b.dataset.view === name));
       const titleEl = document.getElementById("topbarTitle");
-      if (titleEl) titleEl.textContent = VIEW_TITLES[name] || "見客通";
+      if (titleEl) titleEl.textContent = VIEW_TITLES[name] || "Achiever";
       if (name === "dashboard") renderDashboard();
       if (name === "board") renderBoard();
       if (name === "cases") renderCasesTable();
