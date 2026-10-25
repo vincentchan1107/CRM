@@ -700,12 +700,6 @@
       margin-bottom: 6px;
       flex-shrink: 0;
     }
-    .kanban-hint {
-      font-size: .72rem;
-      color: var(--muted);
-      margin-right: auto;
-      align-self: center;
-    }
     .hero-card, .panel {
       background: rgba(255, 255, 255, .92);
       border: 1px solid rgba(235, 230, 244, .95);
@@ -1389,7 +1383,6 @@
       <div class="stage-filter" id="stageFilter"></div>
       <div class="kanban-shell">
         <div class="kanban-nav">
-          <span class="kanban-hint" id="kanbanHint">顯示中的 status</span>
           <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanLeft" aria-label="向左">←</button>
           <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanRight" aria-label="向右">→</button>
         </div>
@@ -2572,9 +2565,6 @@
       const shown = STAGES.filter((s) => visibleStages.includes(s.id));
       const q = (document.getElementById("boardSearch")?.value || "").trim();
       const matched = cases.filter(caseMatchesBoardSearch);
-      document.getElementById("kanbanHint").textContent = q
-        ? `搜尋「${q}」· ${matched.length} 宗符合 · ${shown.length} 個 status`
-        : `共 ${shown.length} 個 status · 一屏顯示約 5 欄（較闊）· 向右拉睇其餘`;
       root.innerHTML = shown.map((s) => {
         const items = matched.filter((c) => c.stage === s.id);
         const emptyMsg = q ? "沒有符合搜尋" : "拖曳案件到此";
