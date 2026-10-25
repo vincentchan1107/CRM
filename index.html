@@ -416,9 +416,23 @@
       justify-content: space-between;
       gap: 10px;
       flex-wrap: wrap;
-      align-items: end;
+      align-items: center;
       margin-bottom: 8px;
       flex-shrink: 0;
+    }
+    .board-toolbar-left {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex: 1;
+      min-width: min(100%, 220px);
+    }
+    .board-toolbar-right {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+      margin-left: auto;
     }
     .board-upper {
       overflow: hidden;
@@ -451,18 +465,10 @@
     #view-board.upper-collapsed #btnToggleBoardUpper svg {
       transform: rotate(180deg);
     }
-    .board-toolbar-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex: 1;
-      justify-content: flex-end;
-      min-width: min(100%, 280px);
-    }
     .board-search-wrap {
       position: relative;
       flex: 1;
-      max-width: 360px;
+      max-width: 420px;
       min-width: 160px;
     }
     #boardSearch {
@@ -782,13 +788,6 @@
       margin-top: 6px;
       height: auto;
     }
-    .kanban-nav {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-bottom: 6px;
-      flex-shrink: 0;
-    }
     .hero-card, .panel {
       background: rgba(255, 255, 255, .92);
       border: 1px solid rgba(235, 230, 244, .95);
@@ -979,17 +978,15 @@
         margin-bottom: 6px;
         width: 100%;
       }
-      .board-toolbar > div:first-child { width: 100%; }
-      .board-toolbar h1 { font-size: 1.2rem; }
-      .board-toolbar-actions {
-        display: grid;
-        grid-template-columns: 1fr auto auto;
-        gap: 8px;
-        justify-content: stretch;
-        align-items: center;
-        min-width: 0;
+      .board-toolbar-left {
         width: 100%;
-        max-width: 100%;
+        min-width: 0;
+      }
+      .board-toolbar-right {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-end;
+        flex-wrap: wrap;
       }
       .board-search-wrap {
         max-width: none;
@@ -1082,7 +1079,6 @@
         width: 100%;
         max-width: 100%;
       }
-      .kanban-nav { display: none; }
       .kanban {
         flex: 0 0 auto;
         flex-direction: row;
@@ -2279,10 +2275,7 @@
     <!-- BOARD -->
     <section id="view-board" class="hidden">
       <div class="board-toolbar">
-        <div>
-          <h1>Case Management</h1>
-        </div>
-        <div class="board-toolbar-actions">
+        <div class="board-toolbar-left">
           <div class="board-search-wrap">
             <input id="boardSearch" type="search" placeholder="搜尋公司名／聯絡人…" autocomplete="off" aria-autocomplete="list" aria-controls="boardSuggest" aria-expanded="false" />
             <div id="boardSuggest" class="board-suggest hidden" role="listbox"></div>
@@ -2290,7 +2283,10 @@
           <button class="btn btn-ghost btn-sm btn-icon" id="btnToggleBoardUpper" type="button" aria-expanded="true" aria-controls="boardUpper" title="收起上方" aria-label="收起上方">
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 14.5 12 8.5l6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
-          <button class="btn btn-ghost btn-sm" id="btnRefreshBoard">重新整理</button>
+        </div>
+        <div class="board-toolbar-right">
+          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanLeft" aria-label="向左">← 較早狀態</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanRight" aria-label="向右">更多狀態 →</button>
         </div>
       </div>
       <div class="board-upper" id="boardUpper">
@@ -2313,10 +2309,6 @@
         <div class="stage-filter" id="stageFilter"></div>
       </div>
       <div class="kanban-shell">
-        <div class="kanban-nav">
-          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanLeft" aria-label="向左">← 較早狀態</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanRight" aria-label="向右">更多狀態 →</button>
-        </div>
         <div class="kanban" id="kanban"></div>
       </div>
     </section>
@@ -6518,7 +6510,6 @@
       }
     };
     document.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => showView(b.dataset.go));
-    document.getElementById("btnRefreshBoard").onclick = async () => { await loadCases(); renderBoard(); toast("已重新整理"); };
     document.getElementById("btnToggleBoardUpper").onclick = () => {
       const next = localStorage.getItem("crm_board_upper_collapsed") === "1" ? "0" : "1";
       localStorage.setItem("crm_board_upper_collapsed", next);
