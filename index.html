@@ -1001,6 +1001,97 @@
       height: 10px; background: var(--paper); border-radius: 999px; overflow: hidden; margin: 4px 0 2px;
     }
     .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #4aa8ff, var(--accent), #ff6b9d); }
+    .dash-charts {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 960px) {
+      .dash-charts { grid-template-columns: repeat(3, 1fr); }
+    }
+    .chart-panel { min-height: 280px; }
+    .chart-panel h2 { font-size: 1.05rem; }
+    .chart-row {
+      display: grid;
+      grid-template-columns: minmax(72px, 96px) 1fr auto;
+      gap: 8px 10px;
+      align-items: center;
+      margin-top: 10px;
+    }
+    .chart-row .name {
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--ink-soft);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chart-row .count {
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--ink);
+      min-width: 2.2ch;
+      text-align: right;
+    }
+    .chart-bar {
+      height: 12px;
+      background: #f0ecf8;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .chart-bar > i {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #4aa8ff, var(--accent), #ff6b9d);
+      min-width: 4px;
+      transition: width .35s ease;
+    }
+    .chart-bar.tone-purple > i { background: linear-gradient(90deg, #8b6fff, #6b46fe); }
+    .chart-bar.tone-mint > i { background: linear-gradient(90deg, #5ee4b0, #27c281); }
+    .chart-bar.tone-orange > i { background: linear-gradient(90deg, #ffb086, #ff8a4c); }
+    .chart-bar.tone-sky > i { background: linear-gradient(90deg, #7ec4ff, #4aa8ff); }
+    .chart-bar.tone-rose > i { background: linear-gradient(90deg, #ff9abc, #ff6b9d); }
+    .funnel-stack { margin-top: 8px; display: grid; gap: 8px; }
+    .funnel-step {
+      position: relative;
+      border-radius: 14px;
+      padding: 10px 12px;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 8px 18px rgba(107, 70, 254, .12);
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .funnel-step .flabel { font-size: .78rem; font-weight: 700; }
+    .funnel-step .fval { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; }
+    .funnel-step .fsub { font-size: .68rem; opacity: .88; font-weight: 600; }
+    .sparkline {
+      width: 100%;
+      height: 86px;
+      margin-top: 8px;
+      display: block;
+    }
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      margin-top: 10px;
+    }
+    .chart-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .7rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .chart-legend i {
+      width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+    }
     .month-row {
       margin-top: 12px;
       padding: 10px 10px 8px;
@@ -1278,7 +1369,11 @@
       </div>
       <div style="display:grid;gap:12px;grid-template-columns:1fr;margin-top:8px">
         <div class="panel" id="dashMonths"></div>
-        <div class="panel" id="dashStages"></div>
+        <div class="dash-charts" id="dashCharts">
+          <div class="panel chart-panel" id="dashChartStage"></div>
+          <div class="panel chart-panel" id="dashChartSales"></div>
+          <div class="panel chart-panel" id="dashChartFunnel"></div>
+        </div>
       </div>
     </section>
 
@@ -2207,11 +2302,121 @@
         });
       });
 
-      document.getElementById("dashStages").innerHTML = `<h2 style="font-size:1.2rem">Stage 分佈</h2>` +
-        STAGES.map((s) => {
-          const n = cases.filter((c) => c.stage === s.id).length;
-          return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--paper);border-radius:12px;padding:8px 10px;margin-top:8px"><span class="badge" style="color:${s.color};background:${s.bg}">${s.label}</span><strong style="font-family:var(--font-display);font-size:1.1rem">${n}</strong></div>`;
-        }).join("");
+      renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN });
+    }
+
+    function renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN }) {
+      // 1) Stage pipeline bars
+      const stageCounts = STAGES.map((s) => ({
+        ...s,
+        n: cases.filter((c) => c.stage === s.id).length,
+      }));
+      const stageMax = Math.max(1, ...stageCounts.map((s) => s.n));
+      const stageTotal = stageCounts.reduce((s, x) => s + x.n, 0) || 1;
+      document.getElementById("dashChartStage").innerHTML = `
+        <h2>Stage Pipeline</h2>
+        <p class="muted">全部案件階段分佈 · 共 ${stageTotal} 宗</p>
+        ${stageCounts.map((s) => {
+          const w = Math.max(s.n ? 6 : 0, (s.n / stageMax) * 100);
+          return `<div class="chart-row" title="${escapeHtml(s.label)}：${s.n}">
+            <div class="name">${escapeHtml(s.short)}</div>
+            <div class="chart-bar"><i style="width:${w}%;background:linear-gradient(90deg, ${s.bg}, ${s.color})"></i></div>
+            <div class="count">${s.n}</div>
+          </div>`;
+        }).join("")}`;
+
+      // 2) Sales ranking + mini sparkline of weighted pipeline
+      const salesRows = COMPANY_SALES.map((name) => {
+        const list = cases.filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed");
+        const amt = list.reduce((s, c) => s + (c.amount || 0), 0);
+        const weighted = list.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
+        const meets = list.filter((c) => c.meetingDone).length;
+        return { name, n: list.length, amt, weighted, meets };
+      });
+      const salesMax = Math.max(1, ...salesRows.map((r) => r.n));
+      const sparkVals = (range.months || []).map((m) => {
+        const list = open.filter((c) => {
+          const d = caseForecastDate(c);
+          return d && d >= m.monthStart && d <= m.monthEnd;
+        });
+        return list.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
+      });
+      const sparkMax = Math.max(1, ...sparkVals);
+      const sparkW = 220, sparkH = 86, pad = 6;
+      const sparkPts = sparkVals.length
+        ? sparkVals.map((v, i) => {
+            const x = pad + (sparkVals.length === 1 ? sparkW / 2 : (i / (sparkVals.length - 1)) * (sparkW - pad * 2));
+            const y = sparkH - pad - (v / sparkMax) * (sparkH - pad * 2);
+            return [x, y];
+          })
+        : [[pad, sparkH - pad], [sparkW - pad, sparkH - pad]];
+      const poly = sparkPts.map(([x, y]) => `${x},${y}`).join(" ");
+      const area = `${pad},${sparkH - pad} ${poly} ${sparkW - pad},${sparkH - pad}`;
+      document.getElementById("dashChartSales").innerHTML = `
+        <h2>銷售員 Pipeline</h2>
+        <p class="muted">本公司銷售員 open cases · 期間加權走勢</p>
+        <svg class="sparkline" viewBox="0 0 ${sparkW} ${sparkH}" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#6b46fe" stop-opacity=".28"/>
+              <stop offset="100%" stop-color="#6b46fe" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="sparkStroke" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#4aa8ff"/>
+              <stop offset="55%" stop-color="#6b46fe"/>
+              <stop offset="100%" stop-color="#ff6b9d"/>
+            </linearGradient>
+          </defs>
+          <polygon points="${area}" fill="url(#sparkFill)"></polygon>
+          <polyline points="${poly}" fill="none" stroke="url(#sparkStroke)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 4"></polyline>
+          ${sparkPts.map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="2.6" fill="${i === sparkPts.length - 1 ? "#6b46fe" : "#a78bfa"}"></circle>`).join("")}
+        </svg>
+        ${salesRows.map((r, idx) => {
+          const tones = ["purple", "orange", "mint", "sky", "rose"];
+          const w = Math.max(r.n ? 6 : 0, (r.n / salesMax) * 100);
+          return `<div class="chart-row">
+            <div class="name">${escapeHtml(r.name)}</div>
+            <div class="chart-bar tone-${tones[idx % tones.length]}"><i style="width:${w}%"></i></div>
+            <div class="count">${r.n}</div>
+          </div>
+          <div class="muted" style="font-size:.68rem;margin:-2px 0 2px 106px">${money(r.weighted)} 加權 · 會面 ${r.meets}</div>`;
+        }).join("")}`;
+
+      // 3) Conversion funnel
+      const allN = cases.length;
+      const funnel = [
+        { label: "全部 Lead", n: allN, sub: "資料庫總數", color: "linear-gradient(135deg,#8b6fff,#6b46fe)", width: 100 },
+        { label: "已約／會面", n: Math.max(apptN, meetN), sub: `約見 ${apptN} · 完成 ${meetN}`, color: "linear-gradient(135deg,#7ec4ff,#4aa8ff)", width: 86 },
+        { label: "跟進機會", n: followN, sub: "有機會繼續", color: "linear-gradient(135deg,#ffb086,#ff8a4c)", width: 72 },
+        { label: "報價／最終", n: cases.filter((c) => ["quotation", "follow_up", "final_stage"].includes(c.stage)).length, sub: "接近成交", color: "linear-gradient(135deg,#ff9abc,#ff6b9d)", width: 58 },
+        { label: "確認簽單", n: cases.filter((c) => c.stage === "confirmation" || (c.closeReason === "won")).length, sub: `關閉 ${closed.length}`, color: "linear-gradient(135deg,#5ee4b0,#27c281)", width: 44 },
+      ];
+      const top = Math.max(1, funnel[0].n);
+      document.getElementById("dashChartFunnel").innerHTML = `
+        <h2>轉換漏斗</h2>
+        <p class="muted">由 Lead 到簽單 · 所選期間 ${inRange.length} 宗</p>
+        <div class="funnel-stack">
+          ${funnel.map((f) => {
+            const rate = Math.round((f.n / top) * 100);
+            return `<div class="funnel-step" style="width:${f.width}%;background:${f.color}">
+              <div>
+                <div class="flabel">${escapeHtml(f.label)}</div>
+                <div class="fsub">${escapeHtml(f.sub)}</div>
+              </div>
+              <div style="text-align:right">
+                <div class="fval">${f.n}</div>
+                <div class="fsub">${rate}%</div>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>
+        <div class="chart-legend">
+          <span><i style="background:#6b46fe"></i>Lead</span>
+          <span><i style="background:#4aa8ff"></i>會面</span>
+          <span><i style="background:#ff8a4c"></i>跟進</span>
+          <span><i style="background:#ff6b9d"></i>報價</span>
+          <span><i style="background:#27c281"></i>簽單</span>
+        </div>`;
     }
 
     function renderBoardDash() {
@@ -3315,6 +3520,10 @@
           syncDashPeriodUi();
           document.getElementById("dashMonths").innerHTML =
             `<h2 style="font-size:1.2rem">自訂日期</h2><p class="muted">請揀「由日期」同「至日期」，再按「套用」</p>`;
+          ["dashChartStage", "dashChartSales", "dashChartFunnel"].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = `<h2>等待日期</h2><p class="muted">套用自訂期間後顯示 chart</p>`;
+          });
         }
         return;
       }
