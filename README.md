@@ -55,7 +55,8 @@ Raw：https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_a
 - **資料庫管理**
   - **客戶管理**：VISIT、最後聯絡渠道、下次跟進、重複公司名合併
   - **Partner 管理**：DQ 率、貢獻金額排行；Team Leader 可編輯寫回 DB
-  - **銷售員管理**：Pipeline 金額、加權預測、轉換率、會面／簽單統計
+  - **銷售員管理**：每人 KPI（會面／Qualified／簽單宗數／轉換率）+ 每月 Closing 目標銀碼；本月達成率
+- **Dashboard**：銷售員目標 vs Closing／加權 Forecast 圖表與達成率表
 
 ## 設定
 

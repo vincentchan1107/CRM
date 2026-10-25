@@ -1409,6 +1409,73 @@
     .log-card .log-meta { font-size: .72rem; color: var(--muted); font-weight: 650; }
     .log-card .log-actor { font-size: .72rem; font-weight: 800; color: var(--accent); }
 
+
+    .sales-kpi-grid {
+      display: grid; gap: 12px; grid-template-columns: 1fr; margin: 12px 0;
+    }
+    @media (min-width: 960px) {
+      .sales-kpi-grid { grid-template-columns: 280px 1fr; }
+    }
+    .sales-kpi-nav {
+      background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 10px;
+      display: grid; gap: 6px; align-content: start;
+    }
+    .sales-kpi-nav button {
+      border: 0; background: transparent; text-align: left; padding: 10px 12px;
+      border-radius: 12px; font-weight: 750; cursor: pointer; color: var(--ink-soft);
+    }
+    .sales-kpi-nav button.active {
+      background: var(--accent); color: #fff;
+      box-shadow: 0 8px 18px rgba(107,70,254,.22);
+    }
+    .sales-kpi-nav button .sub {
+      display: block; font-size: .68rem; font-weight: 650; opacity: .85; margin-top: 2px;
+    }
+    .sales-kpi-panel {
+      background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px;
+    }
+    .kpi-form-grid {
+      display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      margin-top: 10px;
+    }
+    .kpi-form-grid label span { font-size: .68rem; font-weight: 700; color: var(--muted); }
+    .kpi-form-grid input {
+      width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+      font-size: .85rem; font-weight: 700; background: #fff;
+    }
+    .month-target-table input[type="number"] {
+      width: 100%; min-width: 110px; border: 1px solid var(--line); border-radius: 10px;
+      padding: 7px 8px; font-size: .8rem; font-weight: 700;
+    }
+    .kpi-attain {
+      display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      margin-top: 12px;
+    }
+    .kpi-attain .ka {
+      border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: #f7f4fc;
+    }
+    .kpi-attain .ka .lbl { font-size: .68rem; font-weight: 700; color: var(--muted); }
+    .kpi-attain .ka .val { font-size: 1.05rem; font-weight: 800; margin-top: 2px; }
+    .kpi-attain .ka .bar { height: 7px; background: #ebe6f4; border-radius: 999px; margin-top: 8px; overflow: hidden; }
+    .kpi-attain .ka .bar > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #8b6fff, #6b46fe); }
+    .kpi-attain .ka.ok .bar > i { background: linear-gradient(90deg, #5ee4b0, #27c281); }
+    .kpi-attain .ka.warn .val { color: #9f1239; }
+    .dual-money-bars { display: flex; align-items: flex-end; gap: 12px; height: 200px; margin-top: 14px; overflow-x: auto; padding: 0 4px; }
+    .dual-money-col {
+      flex: 1 0 72px; min-width: 72px; max-width: 110px; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px;
+    }
+    .dual-money-pair { display: flex; align-items: flex-end; gap: 4px; height: 140px; width: 100%; justify-content: center; }
+    .dual-money-pair .mbar {
+      width: 18px; height: 100%; background: #f0ecf8; border-radius: 999px;
+      display: flex; align-items: flex-end; overflow: hidden;
+    }
+    .dual-money-pair .mbar > i { display: block; width: 100%; min-height: 3px; border-radius: 999px; }
+    .dual-money-pair .mbar.target > i { background: linear-gradient(180deg, #8b6fff, #6b46fe); }
+    .dual-money-pair .mbar.closed > i { background: linear-gradient(180deg, #5ee4b0, #27c281); }
+    .dual-money-col .mlbl { font-size: .68rem; font-weight: 800; color: var(--ink-soft); text-align: center; }
+    .dual-money-col .mnums { font-size: .62rem; font-weight: 700; color: var(--muted); text-align: center; line-height: 1.25; }
+
     .toast {
       position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
       background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 999px; font-size: .82rem; z-index: 80;
@@ -1628,6 +1695,7 @@
       </div>
       <div style="display:grid;gap:12px;grid-template-columns:1fr;margin-top:8px">
         <div class="panel" id="dashMonths"></div>
+        <div class="panel" id="dashChartSalesTarget" style="margin-top:0"></div>
         <div class="dash-charts" id="dashCharts">
           <div class="panel chart-panel" id="dashChartStage"></div>
           <div class="panel chart-panel" id="dashChartSales"></div>
@@ -1764,10 +1832,15 @@
 
       <div class="mgmt-panel" id="mgmt-sales">
         <div class="mgmt-stats" id="salesStats"></div>
-        <p class="muted" style="margin-bottom:10px;font-size:.78rem">本公司銷售員：Vincent／Tim／Andrew／Kelly／Sophia（唔係 Partner Sales）· 會面數依會面完成日期 · 成功簽單 = 確認簽單／won · 請喺案件詳情指派「本公司銷售員」</p>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">本公司銷售員：Vincent／Tim／Andrew／Kelly／Sophia · 可設定每人 KPI 同每月 Closing 目標銀碼 · Dashboard 會顯示目標 vs 實際</p>
+        <div class="sales-kpi-grid">
+          <div class="sales-kpi-nav" id="salesKpiNav"></div>
+          <div class="sales-kpi-panel" id="salesKpiPanel"></div>
+        </div>
+        <div class="eyebrow" style="margin:16px 0 8px">團隊總覽</div>
         <div class="table-wrap"><table>
           <thead><tr>
-            <th>本公司銷售員</th><th>負責 Case</th><th>Pipeline 金額</th><th>加權預測</th><th>轉換率</th><th>近 1 月會面</th><th>近 3 月會面</th><th>DQ</th><th>Qualified</th><th>成功簽單</th><th>簽單金額</th>
+            <th>本公司銷售員</th><th>本月 Closing 目標</th><th>本月已 Closing</th><th>達成率</th><th>Pipeline 金額</th><th>加權預測</th><th>轉換率</th><th>近 1 月會面</th><th>成功簽單</th><th>簽單金額</th>
           </tr></thead>
           <tbody id="salesBody"></tbody>
         </table></div>
@@ -1952,6 +2025,119 @@
       else map[key] = Number(amount) || 0;
       localStorage.setItem("crm_month_targets", JSON.stringify(map));
     }
+
+    const DEFAULT_SALES_KPI = {
+      meetTarget: 8,
+      qualifyTarget: 5,
+      closeCountTarget: 2,
+      conversionTarget: 25,
+    };
+    let salesKpiSelected = localStorage.getItem("crm_sales_kpi_selected") || COMPANY_SALES[0];
+    let salesKpiMonthCursor = ""; // YYYY-MM for editor month list start
+
+    function loadSalesPlans() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("crm_sales_plans") || "{}");
+        const out = {};
+        for (const name of COMPANY_SALES) {
+          const src = raw[name] || {};
+          out[name] = {
+            kpi: { ...DEFAULT_SALES_KPI, ...(src.kpi || {}) },
+            months: { ...(src.months || {}) },
+          };
+        }
+        return out;
+      } catch {
+        const out = {};
+        COMPANY_SALES.forEach((n) => { out[n] = { kpi: { ...DEFAULT_SALES_KPI }, months: {} }; });
+        return out;
+      }
+    }
+    function saveSalesPlans(plans) {
+      localStorage.setItem("crm_sales_plans", JSON.stringify(plans));
+    }
+    function getSalesPlan(name) {
+      return loadSalesPlans()[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+    }
+    function setSalesKpi(name, kpi) {
+      const plans = loadSalesPlans();
+      plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+      plans[name].kpi = { ...DEFAULT_SALES_KPI, ...kpi };
+      saveSalesPlans(plans);
+    }
+    function setSalesMonthClosingTarget(name, ym, amount) {
+      const plans = loadSalesPlans();
+      plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+      if (!amount && amount !== 0) delete plans[name].months[ym];
+      else plans[name].months[ym] = { closingTarget: Number(amount) || 0 };
+      saveSalesPlans(plans);
+    }
+    function monthKeyFromDate(d) {
+      if (!d || Number.isNaN(d.getTime())) return "";
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    }
+    function currentMonthKey() {
+      return monthKeyFromDate(new Date());
+    }
+    function listMonthKeys(fromYm, count = 6) {
+      const [y0, m0] = (fromYm || currentMonthKey()).split("-").map(Number);
+      const out = [];
+      for (let i = 0; i < count; i++) {
+        const dt = new Date(y0, m0 - 1 + i, 1);
+        out.push({
+          key: monthKeyFromDate(dt),
+          label: `${dt.getFullYear()}年${dt.getMonth() + 1}月`,
+          start: new Date(dt.getFullYear(), dt.getMonth(), 1),
+          end: endOfDay(new Date(dt.getFullYear(), dt.getMonth() + 1, 0)),
+        });
+      }
+      return out;
+    }
+    function salesClosedAmountInRange(name, from, to) {
+      return cases.filter((c) => {
+        if (normalizeCompanySales(c.companySales) !== name) return false;
+        const d = caseClosingDate(c);
+        if (!d) return false;
+        return d >= from && d <= to;
+      }).reduce((s, c) => s + (Number(c.amount) || 0), 0);
+    }
+    function salesClosedCountInRange(name, from, to) {
+      return cases.filter((c) => {
+        if (normalizeCompanySales(c.companySales) !== name) return false;
+        const d = caseClosingDate(c);
+        if (!d) return false;
+        return d >= from && d <= to;
+      }).length;
+    }
+    function salesMeetCountInRange(name, from, to) {
+      const set = new Set();
+      for (const c of cases) {
+        if (normalizeCompanySales(c.companySales) !== name) continue;
+        for (const md of meetingDatesForCase(c)) {
+          if (md >= from && md <= to) set.add(companyKey(c) + "|" + formatLocalDate(md));
+        }
+      }
+      return set.size;
+    }
+    function salesQualifyCountInRange(name, from, to) {
+      // approximate: cases that became qualified activity in range — use meeting done or follow-up or stage advanced with updated_at
+      return cases.filter((c) => {
+        if (normalizeCompanySales(c.companySales) !== name) return false;
+        if (!isQualified(c)) return false;
+        const d = c.appointmentAt ? new Date(c.appointmentAt) : (c.updatedAt ? new Date(c.updatedAt) : null);
+        if (!d || Number.isNaN(d.getTime())) return false;
+        return d >= from && d <= to;
+      }).length;
+    }
+    function salesClosingTargetSum(name, monthKeys) {
+      const plan = getSalesPlan(name);
+      return monthKeys.reduce((s, k) => s + (Number(plan.months[k]?.closingTarget) || 0), 0);
+    }
+    function attainPct(actual, target) {
+      if (!target) return actual ? 100 : 0;
+      return Math.round((actual / target) * 100);
+    }
+
     function partnerOptionsFromCases() {
       const set = new Set(PARTNERS);
       cases.forEach((c) => { if (c.partner) set.add(c.partner); });
@@ -2996,7 +3182,89 @@
         const hit = salesRows.find((r) => r.name === dashDrill.key);
         salesHtml += renderDrillList(hit ? hit.list : [], dashDrill.key);
       }
-      document.getElementById("dashChartSales").innerHTML = salesHtml;
+            document.getElementById("dashChartSales").innerHTML = salesHtml;
+
+      // ---- Sales Target $ vs Closing $ ----
+      const salesTargetRoot = document.getElementById("dashChartSalesTarget");
+      if (salesTargetRoot) {
+        const monthKeys = (range.months || []).map((m) => m.key);
+        const periodFrom = range.from;
+        const periodTo = range.to;
+        const salesTargetRows = COMPANY_SALES.filter((name) => {
+          if (dashSalesFilter !== "all" && name !== dashSalesFilter) return false;
+          return true;
+        }).map((name) => {
+          const targetAmt = salesClosingTargetSum(name, monthKeys);
+          // If period months don't match plan keys well, also include targets for monthKeys from range.months
+          const closedAmt = salesClosedAmountInRange(name, periodFrom, periodTo);
+          const forecastAmt = (filtered || cases)
+            .filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed")
+            .filter((c) => {
+              const d = caseForecastDate(c);
+              return d && d >= periodFrom && d <= periodTo;
+            })
+            .reduce((s, c) => s + (Number(c.amount) || 0) * ((Number(c.successRate) || 0) / 100), 0);
+          return { name, targetAmt, closedAmt, forecastAmt, pct: attainPct(closedAmt, targetAmt) };
+        });
+        const maxMoney = Math.max(1, ...salesTargetRows.flatMap((r) => [r.targetAmt, r.closedAmt, r.forecastAmt]));
+        const teamT = salesTargetRows.reduce((s, r) => s + r.targetAmt, 0);
+        const teamC = salesTargetRows.reduce((s, r) => s + r.closedAmt, 0);
+        const teamF = salesTargetRows.reduce((s, r) => s + r.forecastAmt, 0);
+        const teamP = attainPct(teamC, teamT);
+        let targetBody = `
+          <div class="chart-legend">
+            <span><i style="background:#6b46fe"></i>Closing 目標 $</span>
+            <span><i style="background:#27c281"></i>已 Closing $</span>
+            <span><i style="background:#ff8a4c"></i>加權 Forecast $</span>
+          </div>
+          <div class="money-compare">
+            <div class="mc"><div class="lbl">團隊 Closing 目標</div><div class="val">${money(teamT)}</div><div class="muted" style="font-size:.68rem">${escapeHtml(range.title)}</div></div>
+            <div class="mc"><div class="lbl">已 Closing</div><div class="val">${money(teamC)}</div><div class="muted" style="font-size:.68rem">${teamT ? teamP + "% 達成" : "未設目標"}</div></div>
+            <div class="mc"><div class="lbl">加權 Forecast</div><div class="val">${money(teamF)}</div><div class="muted" style="font-size:.68rem">Pipeline × 機率</div></div>
+          </div>
+          <div class="dual-money-bars">
+            ${salesTargetRows.map((r) => {
+              const tH = Math.max(r.targetAmt ? 4 : 0, (r.targetAmt / maxMoney) * 100);
+              const cH = Math.max(r.closedAmt ? 4 : 0, (r.closedAmt / maxMoney) * 100);
+              const fH = Math.max(r.forecastAmt ? 4 : 0, (r.forecastAmt / maxMoney) * 100);
+              return `<div class="dual-money-col" title="${escapeAttr(r.name)} · 目標 ${money(r.targetAmt)} · 已完成 ${money(r.closedAmt)}">
+                <div class="mnums">${r.targetAmt ? r.pct + "%" : "—"}</div>
+                <div class="dual-money-pair">
+                  <div class="mbar target"><i style="height:${tH}%"></i></div>
+                  <div class="mbar closed"><i style="height:${cH}%"></i></div>
+                  <div class="mbar" style="width:18px;height:100%;background:#f0ecf8;border-radius:999px;display:flex;align-items:flex-end;overflow:hidden"><i style="display:block;width:100%;min-height:3px;border-radius:999px;height:${fH}%;background:linear-gradient(180deg,#ffb072,#ff8a4c)"></i></div>
+                </div>
+                <div class="mlbl">${escapeHtml(r.name)}</div>
+                <div class="mnums">${money(r.targetAmt)}<br/>${money(r.closedAmt)}</div>
+              </div>`;
+            }).join("")}
+          </div>
+          <div class="table-wrap" style="margin-top:12px"><table>
+            <thead><tr><th>銷售員</th><th>Closing 目標 $</th><th>已 Closing $</th><th>達成率</th><th>加權 Forecast $</th><th>差距</th></tr></thead>
+            <tbody>
+              ${salesTargetRows.map((r) => {
+                const gap = r.closedAmt - r.targetAmt;
+                return `<tr>
+                  <td><strong>${escapeHtml(r.name)}</strong></td>
+                  <td>${r.targetAmt ? money(r.targetAmt) : '<span class="muted">未設定</span>'}</td>
+                  <td><strong>${money(r.closedAmt)}</strong></td>
+                  <td style="font-weight:800;color:${!r.targetAmt ? "var(--muted)" : (r.pct >= 100 ? "#15803d" : (r.pct < 60 ? "#9f1239" : "var(--ink)"))}">${r.targetAmt ? r.pct + "%" : "—"}</td>
+                  <td>${money(r.forecastAmt)}</td>
+                  <td style="font-weight:700;color:${gap >= 0 ? "#15803d" : "#9f1239"}">${r.targetAmt ? ((gap >= 0 ? "+" : "") + money(gap)) : "—"}</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table></div>
+          <p class="muted" style="margin-top:8px;font-size:.72rem">目標喺「資料庫管理 → 銷售員管理」設定每位同事每月 Closing 銀碼</p>
+        `;
+        if (!salesTargetRows.some((r) => r.targetAmt || r.closedAmt || r.forecastAmt)) {
+          targetBody += `<div class="breakdown-empty" style="margin-top:8px">尚未有目標或 Closing 數據 — 去銷售員管理設定每月目標</div>`;
+        }
+        salesTargetRoot.innerHTML = chartHeadHtml(
+          "銷售員目標 vs Closing",
+          `期間 Closing 目標銀碼對比實際簽單 · 團隊達成 ${teamT ? teamP + "%" : "—"}`
+        ) + targetBody;
+      }
 
       const allN = pool.length;
       const funnel = [
@@ -4302,33 +4570,179 @@
       }
     }
 
+    function renderSalesKpiEditor(name) {
+      const plan = getSalesPlan(name);
+      const kpi = plan.kpi;
+      if (!salesKpiMonthCursor) salesKpiMonthCursor = currentMonthKey();
+      const months = listMonthKeys(salesKpiMonthCursor, 6);
+      const cur = currentMonthKey();
+      const curMonth = months.find((m) => m.key === cur) || {
+        key: cur,
+        start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+        end: endOfDay(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)),
+        label: `${new Date().getFullYear()}年${new Date().getMonth() + 1}月`,
+      };
+      const closedAmt = salesClosedAmountInRange(name, curMonth.start, curMonth.end);
+      const closedN = salesClosedCountInRange(name, curMonth.start, curMonth.end);
+      const meetN = salesMeetCountInRange(name, curMonth.start, curMonth.end);
+      const qualN = salesQualifyCountInRange(name, curMonth.start, curMonth.end);
+      const monthTarget = Number(plan.months[cur]?.closingTarget) || 0;
+      const row = buildSalesRows().find((r) => r.name === name);
+      const conv = row && row.caseIds.size ? Math.round((row.wonN / row.caseIds.size) * 100) : 0;
+
+      const attainCard = (label, actual, target, format = (v) => v) => {
+        const p = attainPct(actual, target);
+        const cls = !target ? "" : (p >= 100 ? " ok" : (p < 60 ? " warn" : ""));
+        const w = Math.min(100, p);
+        return `<div class="ka${cls}">
+          <div class="lbl">${escapeHtml(label)}</div>
+          <div class="val">${format(actual)} / ${format(target || 0)}</div>
+          <div class="muted" style="font-size:.68rem;font-weight:700">${target ? p + "% 達成" : "未設目標"}</div>
+          <div class="bar"><i style="width:${w}%"></i></div>
+        </div>`;
+      };
+
+      return `
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
+          <div>
+            <div class="eyebrow">銷售員 KPI · Closing 目標</div>
+            <h2 style="margin:2px 0 0;font-size:1.35rem">${escapeHtml(name)}</h2>
+            <p class="muted" style="margin:4px 0 0;font-size:.75rem">本月 ${escapeHtml(curMonth.label)} 達成情況會即時對照目標</p>
+          </div>
+          <button type="button" class="btn btn-teal btn-sm" id="btnSaveSalesKpi">儲存 KPI</button>
+        </div>
+        <div class="kpi-attain">
+          ${attainCard("本月 Closing 銀碼", closedAmt, monthTarget, money)}
+          ${attainCard("本月簽單宗數", closedN, kpi.closeCountTarget || 0)}
+          ${attainCard("本月會面", meetN, kpi.meetTarget || 0)}
+          ${attainCard("本月 Qualified", qualN, kpi.qualifyTarget || 0)}
+          ${attainCard("轉換率", conv, kpi.conversionTarget || 0, (v) => v + "%")}
+        </div>
+        <div class="eyebrow" style="margin-top:16px">KPI 設計（每月目標）</div>
+        <div class="kpi-form-grid" id="salesKpiForm">
+          <label><span>會面目標（宗／月）</span><input type="number" min="0" data-kpi="meetTarget" value="${kpi.meetTarget || 0}" /></label>
+          <label><span>Qualified 目標（宗／月）</span><input type="number" min="0" data-kpi="qualifyTarget" value="${kpi.qualifyTarget || 0}" /></label>
+          <label><span>簽單宗數目標（宗／月）</span><input type="number" min="0" data-kpi="closeCountTarget" value="${kpi.closeCountTarget || 0}" /></label>
+          <label><span>轉換率目標（%）</span><input type="number" min="0" max="100" data-kpi="conversionTarget" value="${kpi.conversionTarget || 0}" /></label>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;margin-top:18px">
+          <div class="eyebrow" style="margin:0">每月 Closing 目標銀碼（HKD）</div>
+          <div style="display:flex;gap:6px">
+            <button type="button" class="btn btn-ghost btn-sm" id="btnSalesMonthPrev">← 較早</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnSalesMonthNext">較後 →</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="margin-top:8px">
+          <table class="month-target-table">
+            <thead><tr><th>月份</th><th>Closing 目標 $</th><th>實際 Closing $</th><th>達成率</th><th>實際簽單宗數</th></tr></thead>
+            <tbody>
+              ${months.map((m) => {
+                const t = Number(plan.months[m.key]?.closingTarget) || 0;
+                const a = salesClosedAmountInRange(name, m.start, m.end);
+                const n = salesClosedCountInRange(name, m.start, m.end);
+                const p = attainPct(a, t);
+                return `<tr>
+                  <td><strong>${escapeHtml(m.label)}</strong>${m.key === cur ? ' <span class="badge" style="color:#5b21b6;background:#efeefe">本月</span>' : ""}</td>
+                  <td><input type="number" min="0" step="1000" data-ym="${escapeAttr(m.key)}" class="sales-month-target" value="${t || ""}" placeholder="0" /></td>
+                  <td><strong>${money(a)}</strong></td>
+                  <td style="font-weight:800;color:${!t ? "var(--muted)" : (p >= 100 ? "#15803d" : (p < 60 ? "#9f1239" : "var(--ink)"))}">${t ? p + "%" : "—"}</td>
+                  <td>${n}</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="margin-top:8px;font-size:.72rem">改完目標會即時儲存 · Dashboard「銷售員目標 vs Closing」會同步顯示</p>
+      `;
+    }
+
+    function bindSalesKpiEditor(name) {
+      const panel = document.getElementById("salesKpiPanel");
+      document.getElementById("btnSaveSalesKpi").onclick = () => {
+        const kpi = {};
+        panel.querySelectorAll("#salesKpiForm [data-kpi]").forEach((input) => {
+          kpi[input.dataset.kpi] = Number(input.value) || 0;
+        });
+        setSalesKpi(name, kpi);
+        toast(`已儲存 ${name} 的 KPI`);
+        renderSalesMgmt();
+        if (!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashboard();
+      };
+      panel.querySelectorAll(".sales-month-target").forEach((input) => {
+        input.onchange = () => {
+          setSalesMonthClosingTarget(name, input.dataset.ym, input.value);
+          toast(`已更新 ${name} · ${input.dataset.ym} Closing 目標`);
+          renderSalesMgmt();
+          if (!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashboard();
+        };
+      });
+      document.getElementById("btnSalesMonthPrev").onclick = () => {
+        const [y, m] = salesKpiMonthCursor.split("-").map(Number);
+        const d = new Date(y, m - 2, 1);
+        salesKpiMonthCursor = monthKeyFromDate(d);
+        renderSalesMgmt();
+      };
+      document.getElementById("btnSalesMonthNext").onclick = () => {
+        const [y, m] = salesKpiMonthCursor.split("-").map(Number);
+        const d = new Date(y, m, 1);
+        salesKpiMonthCursor = monthKeyFromDate(d);
+        renderSalesMgmt();
+      };
+    }
+
     function renderSalesMgmt() {
+      if (!COMPANY_SALES.includes(salesKpiSelected)) salesKpiSelected = COMPANY_SALES[0];
       const rows = buildSalesRows();
       const assigned = cases.filter((c) => !!normalizeCompanySales(c.companySales)).length;
       const unassigned = cases.length - assigned;
-      const meet1 = rows.reduce((s, r) => s + r.meet1m.size, 0);
-      const meet3 = rows.reduce((s, r) => s + r.meet3m.size, 0);
-      const wonN = rows.reduce((s, r) => s + r.wonN, 0);
-      const wonAmt = rows.reduce((s, r) => s + r.wonAmt, 0);
+      const cur = currentMonthKey();
+      const curStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      const curEnd = endOfDay(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
+      const teamTarget = COMPANY_SALES.reduce((s, n) => s + (Number(getSalesPlan(n).months[cur]?.closingTarget) || 0), 0);
+      const teamClosed = COMPANY_SALES.reduce((s, n) => s + salesClosedAmountInRange(n, curStart, curEnd), 0);
+      const teamPct = attainPct(teamClosed, teamTarget);
+
       document.getElementById("salesStats").innerHTML = [
         renderStatCard({ label: "本公司銷售員", value: COMPANY_SALES.length, sub: COMPANY_SALES.join(" · "), tone: "purple", icon: "people" }),
-        renderStatCard({ label: "已指派 Case", value: `${assigned} / ${cases.length}`, sub: unassigned ? `${unassigned} 宗未指派` : "全部已指派", tone: "sky", icon: "cases", valueStyle: "font-size:1.2rem" }),
-        renderStatCard({ label: "近 1／3 月會面", value: `${meet1} / ${meet3}`, sub: "去重公司數合計", tone: "orange", icon: "meet", valueStyle: "font-size:1.2rem" }),
-        renderStatCard({ label: "成功簽單", value: `${wonN} · ${money(wonAmt)}`, sub: "確認簽單／won", tone: "mint", icon: "money", valueStyle: "font-size:1.05rem", trend: wonN ? `${wonN}` : "" }),
+        renderStatCard({ label: "本月團隊 Closing 目標", value: money(teamTarget), sub: `已完成 ${money(teamClosed)}`, tone: "sky", icon: "money", valueStyle: "font-size:1.05rem" }),
+        renderStatCard({ label: "本月達成率", value: teamTarget ? `${teamPct}%` : "—", sub: teamTarget ? (teamPct >= 100 ? "已達標" : "進行中") : "尚未設定目標", tone: teamPct >= 100 ? "mint" : "orange", icon: "chart" }),
+        renderStatCard({ label: "已指派 Case", value: `${assigned} / ${cases.length}`, sub: unassigned ? `${unassigned} 宗未指派` : "全部已指派", tone: "mint", icon: "cases", valueStyle: "font-size:1.2rem" }),
       ].join("");
+
+      document.getElementById("salesKpiNav").innerHTML = COMPANY_SALES.map((n) => {
+        const t = Number(getSalesPlan(n).months[cur]?.closingTarget) || 0;
+        const a = salesClosedAmountInRange(n, curStart, curEnd);
+        const p = attainPct(a, t);
+        return `<button type="button" data-sales-kpi="${escapeAttr(n)}" class="${n === salesKpiSelected ? "active" : ""}">
+          ${escapeHtml(n)}
+          <span class="sub">${t ? `本月 ${p}% · ${money(t)}` : "未設本月目標"}</span>
+        </button>`;
+      }).join("");
+      document.querySelectorAll("#salesKpiNav [data-sales-kpi]").forEach((btn) => {
+        btn.onclick = () => {
+          salesKpiSelected = btn.dataset.salesKpi;
+          localStorage.setItem("crm_sales_kpi_selected", salesKpiSelected);
+          renderSalesMgmt();
+        };
+      });
+
+      document.getElementById("salesKpiPanel").innerHTML = renderSalesKpiEditor(salesKpiSelected);
+      bindSalesKpiEditor(salesKpiSelected);
 
       document.getElementById("salesBody").innerHTML = rows.map((r) => {
         const conv = r.caseIds.size ? Math.round((r.wonN / r.caseIds.size) * 100) : 0;
+        const t = Number(getSalesPlan(r.name).months[cur]?.closingTarget) || 0;
+        const a = salesClosedAmountInRange(r.name, curStart, curEnd);
+        const p = attainPct(a, t);
         return `<tr>
-        <td><strong>${escapeHtml(r.name)}</strong></td>
-        <td><strong>${r.caseIds.size}</strong><div class="muted" style="font-size:.68rem">open ${r.openN}</div></td>
+        <td><strong>${escapeHtml(r.name)}</strong><div class="muted" style="font-size:.68rem">open ${r.openN}</div></td>
+        <td><strong>${t ? money(t) : "—"}</strong></td>
+        <td><strong>${money(a)}</strong></td>
+        <td style="font-weight:800;color:${!t ? "var(--muted)" : (p >= 100 ? "#15803d" : (p < 60 ? "#9f1239" : "var(--ink)"))}">${t ? p + "%" : "—"}</td>
         <td><strong>${money(r.pipelineAmt)}</strong></td>
         <td><strong>${money(r.weightedAmt)}</strong></td>
-        <td><strong>${conv}%</strong><div class="muted" style="font-size:.68rem">${r.wonN}/${r.caseIds.size}</div></td>
+        <td><strong>${conv}%</strong></td>
         <td><strong>${r.meet1m.size}</strong></td>
-        <td><strong>${r.meet3m.size}</strong></td>
-        <td style="color:#9f1239;font-weight:700">${r.dq}</td>
-        <td style="color:#15803d;font-weight:700">${r.qualified}</td>
         <td><strong>${r.wonN}</strong></td>
         <td>${money(r.wonAmt)}</td>
       </tr>`;
@@ -4933,7 +5347,7 @@
           syncDashPeriodUi();
           document.getElementById("dashMonths").innerHTML =
             `<h2 style="font-size:1.2rem">自訂日期</h2><p class="muted">請揀「由日期」同「至日期」，再按「套用」</p>`;
-          ["dashChartStage", "dashChartSales", "dashChartFunnel"].forEach((id) => {
+          ["dashChartStage", "dashChartSales", "dashChartFunnel", "dashChartSalesTarget"].forEach((id) => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = `<h2>等待日期</h2><p class="muted">套用自訂期間後顯示 chart</p>`;
           });
