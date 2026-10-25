@@ -40,7 +40,11 @@ PR / 分支 Preview（無需自己 host）：
 - **手機 Portal**：語音（Web Speech）／文字解析 → 客戶、Partner、系統、需求、數量、Budget
 - **Kanban**：首次會見 → 報價 → 跟進 → 最終階段 → 確認簽單 → 已關閉（DQ／失敗）
 - **列表**：details、target closing date、amount
-- **Dashboard**：未來 6 個月 closing 額與成功機率
+- **Dashboard**：可揀當月／3／6／12 個月或自訂日期嘅 closing 預測
+- **資料庫管理**
+  - **客戶管理**：VISIT 次數、上次會議、下次跟進日期；逾期未跟進提示
+  - **Partner 管理**：Team Leader／Sales；近 1／3 個月交 case 數、DQ、Qualified
+  - **銷售員管理**：近 1／3 個月會面客人數、DQ、Qualified、成功簽單數與金額
 
 ## 設定
 
