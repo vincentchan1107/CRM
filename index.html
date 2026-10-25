@@ -1294,11 +1294,11 @@
       display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 8px;
     }
     .money-compare {
-      display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin: 10px 0 4px;
+      display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin: 10px 0 4px; width: 100%;
     }
     @media (max-width: 700px) { .money-compare { grid-template-columns: 1fr; } }
     .money-compare .mc {
-      background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px;
+      background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; min-width: 0;
     }
     .money-compare .mc .lbl { font-size: .68rem; font-weight: 700; color: var(--muted); }
     .money-compare .mc .val { font-size: 1.05rem; font-weight: 800; margin-top: 2px; }
@@ -1460,21 +1460,74 @@
     .kpi-attain .ka .bar > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #8b6fff, #6b46fe); }
     .kpi-attain .ka.ok .bar > i { background: linear-gradient(90deg, #5ee4b0, #27c281); }
     .kpi-attain .ka.warn .val { color: #9f1239; }
-    .dual-money-bars { display: flex; align-items: flex-end; gap: 12px; height: 200px; margin-top: 14px; overflow-x: auto; padding: 0 4px; }
-    .dual-money-col {
-      flex: 1 0 72px; min-width: 72px; max-width: 110px; height: 100%;
-      display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px;
+    .dual-money-bars {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: stretch;
+      gap: 12px;
+      width: 100%;
+      min-height: 240px;
+      margin-top: 14px;
+      padding: 4px 0 0;
+      box-sizing: border-box;
     }
-    .dual-money-pair { display: flex; align-items: flex-end; gap: 4px; height: 140px; width: 100%; justify-content: center; }
+    @media (max-width: 700px) {
+      .dual-money-bars { flex-wrap: wrap; gap: 10px; }
+      .dual-money-col { flex: 1 1 calc(50% - 10px); min-width: calc(50% - 10px); }
+    }
+    .dual-money-col {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 12px 8px 10px;
+      border-radius: 16px;
+      background: rgba(247, 244, 252, .65);
+      box-sizing: border-box;
+    }
+    .dual-money-pair {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: clamp(6px, 1.4vw, 12px);
+      height: 160px;
+      width: 100%;
+      max-width: 160px;
+      margin: 0 auto;
+    }
     .dual-money-pair .mbar {
-      width: 18px; height: 100%; background: #f0ecf8; border-radius: 999px;
-      display: flex; align-items: flex-end; overflow: hidden;
+      flex: 1 1 0;
+      max-width: 32px;
+      min-width: 16px;
+      height: 100%;
+      background: #f0ecf8;
+      border-radius: 999px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
     }
     .dual-money-pair .mbar > i { display: block; width: 100%; min-height: 3px; border-radius: 999px; }
     .dual-money-pair .mbar.target > i { background: linear-gradient(180deg, #8b6fff, #6b46fe); }
     .dual-money-pair .mbar.closed > i { background: linear-gradient(180deg, #5ee4b0, #27c281); }
-    .dual-money-col .mlbl { font-size: .68rem; font-weight: 800; color: var(--ink-soft); text-align: center; }
-    .dual-money-col .mnums { font-size: .62rem; font-weight: 700; color: var(--muted); text-align: center; line-height: 1.25; }
+    .dual-money-pair .mbar.forecast > i { background: linear-gradient(180deg, #ffb072, #ff8a4c); }
+    .dual-money-col .mlbl {
+      font-size: .78rem; font-weight: 800; color: var(--ink-soft); text-align: center; width: 100%;
+    }
+    .dual-money-col .mnums {
+      font-size: .66rem; font-weight: 700; color: var(--muted); text-align: center; line-height: 1.35; width: 100%;
+    }
+    #dashChartSalesTarget { width: 100%; box-sizing: border-box; }
+    #dashChartSalesTarget .chart-legend {
+      width: 100%;
+      justify-content: flex-start;
+      gap: 10px 18px;
+      margin: 4px 0 2px;
+    }
+    #dashChartSalesTarget .table-wrap { width: 100%; overflow-x: auto; }
+    #dashChartSalesTarget .table-wrap table { width: 100%; min-width: 560px; }
 
     .toast {
       position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
@@ -3232,7 +3285,7 @@
                 <div class="dual-money-pair">
                   <div class="mbar target"><i style="height:${tH}%"></i></div>
                   <div class="mbar closed"><i style="height:${cH}%"></i></div>
-                  <div class="mbar" style="width:18px;height:100%;background:#f0ecf8;border-radius:999px;display:flex;align-items:flex-end;overflow:hidden"><i style="display:block;width:100%;min-height:3px;border-radius:999px;height:${fH}%;background:linear-gradient(180deg,#ffb072,#ff8a4c)"></i></div>
+                  <div class="mbar forecast"><i style="height:${fH}%"></i></div>
                 </div>
                 <div class="mlbl">${escapeHtml(r.name)}</div>
                 <div class="mnums">${money(r.targetAmt)}<br/>${money(r.closedAmt)}</div>
