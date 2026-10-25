@@ -2009,6 +2009,8 @@
     }
     #dashChartSalesTarget .table-wrap { width: 100%; overflow-x: auto; }
     #dashChartSalesTarget .table-wrap table { width: 100%; min-width: 560px; }
+    #dashTeamSales { width: 100%; box-sizing: border-box; }
+    #dashTeamSales .sales-line-chart { margin-top: 4px; }
     #dashPartnerPerf { width: 100%; box-sizing: border-box; }
     .partner-perf-summary {
       display: grid;
@@ -2257,10 +2259,9 @@
       <div style="display:grid;gap:12px;grid-template-columns:1fr;margin-top:8px">
         <div class="panel" id="dashPartnerPerf"></div>
         <div class="panel" id="dashChartSalesTarget"></div>
-        <div class="panel" id="dashMonths"></div>
+        <div class="panel" id="dashTeamSales"></div>
         <div class="dash-charts" id="dashCharts">
           <div class="panel chart-panel" id="dashChartStage"></div>
-          <div class="panel chart-panel" id="dashChartSales"></div>
           <div class="panel chart-panel" id="dashChartFunnel"></div>
         </div>
       </div>
@@ -3428,6 +3429,7 @@
     let partnerPerfPeriod = localStorage.getItem("crm_partner_perf_period") || "month";
     let partnerPerfFrom = localStorage.getItem("crm_partner_perf_from") || "";
     let partnerPerfTo = localStorage.getItem("crm_partner_perf_to") || "";
+    let teamSalesPeriod = localStorage.getItem("crm_team_sales_period") || "month";
 
     function parseLocalDate(raw) {
       if (!raw) return null;
@@ -3661,6 +3663,50 @@
         from: thisStart,
         to: thisEnd,
         title: `${thisStart.getFullYear()}年${thisStart.getMonth() + 1}月（本月）`,
+      };
+    }
+
+    function getTeamSalesRange() {
+      const now = new Date();
+      const thisStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const thisEnd = endOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+      if (teamSalesPeriod === "last") {
+        const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const to = endOfDay(new Date(now.getFullYear(), now.getMonth(), 0));
+        return {
+          mode: "last",
+          from,
+          to,
+          title: `${from.getFullYear()}年${from.getMonth() + 1}月（上月）`,
+          months: buildMonthBuckets(from, to),
+        };
+      }
+      if (teamSalesPeriod === "3") {
+        const from = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        return {
+          mode: "3",
+          from,
+          to: thisEnd,
+          title: "過去 3 個月（含本月）",
+          months: buildMonthBuckets(from, thisEnd),
+        };
+      }
+      if (teamSalesPeriod === "6") {
+        const from = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+        return {
+          mode: "6",
+          from,
+          to: thisEnd,
+          title: "過去 6 個月（含本月）",
+          months: buildMonthBuckets(from, thisEnd),
+        };
+      }
+      return {
+        mode: "month",
+        from: thisStart,
+        to: thisEnd,
+        title: `${thisStart.getFullYear()}年${thisStart.getMonth() + 1}月（本月）`,
+        months: buildMonthBuckets(thisStart, thisEnd),
       };
     }
 
@@ -4110,86 +4156,86 @@
       });
     }
 
-    function renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt, filtered }) {
-      const monthsRoot = document.getElementById("dashMonths");
-      const targets = loadMonthlyTargets();
-      months.forEach((m) => { m.quota = Number(targets[m.key]) || 0; });
+    function bindTeamSalesPeriodUi() {
+      document.querySelectorAll("#teamSalesSeg button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.teamSalesPeriod === teamSalesPeriod);
+        b.onclick = () => {
+          teamSalesPeriod = b.dataset.teamSalesPeriod || "month";
+          localStorage.setItem("crm_team_sales_period", teamSalesPeriod);
+          renderDashboard();
+        };
+      });
+    }
 
-      let monthsBody = renderGroupedMonthBars(months);
-      // monthly target quota editors
-      monthsBody += `<div style="margin-top:8px;display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
-        ${months.map((m) => `<label class="field" style="margin:0"><span style="font-size:.68rem">目標額 · ${escapeHtml(m.label.replace(/^\d{4}年/, ""))}</span>
-          <input class="month-quota" data-month-key="${escapeAttr(m.key)}" type="number" min="0" step="1000" value="${m.quota || ""}" placeholder="HKD" />
-        </label>`).join("")}
-      </div>`;
-
-      if (dashDrill && dashDrill.type === "month") {
-        const m = months.find((x) => x.key === dashDrill.key);
-        if (m) {
-          const combined = [...m.list];
-          m.closedList.forEach((c) => { if (!combined.find((x) => x.id === c.id)) combined.push(c); });
-          monthsBody += renderDrillList(combined, `${m.label} · 點擊案件開啟`);
-        }
+    function renderDashTeamSales(filtered) {
+      const root = document.getElementById("dashTeamSales");
+      if (!root) return;
+      const salesRange = getTeamSalesRange();
+      const monthKeys = (salesRange.months || []).map((m) => m.key);
+      const pool = filtered || cases;
+      const salesRows = COMPANY_SALES.filter((name) => dashSalesFilter === "all" || name === dashSalesFilter).map((name) => {
+        const list = pool.filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed");
+        const closedAmt = salesClosedAmountInRange(name, salesRange.from, salesRange.to);
+        const targetAmt = salesClosingTargetSum(name, monthKeys);
+        const forecastAmt = pool
+          .filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed")
+          .filter((c) => {
+            const d = caseForecastDate(c);
+            return d && d >= salesRange.from && d <= salesRange.to;
+          })
+          .reduce((s, c) => s + (Number(c.amount) || 0) * ((Number(c.successRate) || 0) / 100), 0);
+        return {
+          name,
+          list,
+          closedAmt,
+          targetAmt,
+          forecastAmt,
+          pct: attainPct(closedAmt, targetAmt),
+        };
+      });
+      const teamT = salesRows.reduce((s, r) => s + r.targetAmt, 0);
+      const teamC = salesRows.reduce((s, r) => s + r.closedAmt, 0);
+      const teamF = salesRows.reduce((s, r) => s + r.forecastAmt, 0);
+      const teamP = attainPct(teamC, teamT);
+      const salesLineItems = salesRows.map((r) => ({
+        name: r.name,
+        closedAmt: r.closedAmt,
+        targetAmt: r.targetAmt,
+        drillType: "sales",
+        drillKey: r.name,
+      }));
+      let body = `
+        <div class="dash-period" style="margin:8px 0 0;padding:10px 12px">
+          <div class="seg" id="teamSalesSeg">
+            <button type="button" data-team-sales-period="month">本月</button>
+            <button type="button" data-team-sales-period="last">上月</button>
+            <button type="button" data-team-sales-period="3">過去 3 個月</button>
+            <button type="button" data-team-sales-period="6">過去 6 個月</button>
+          </div>
+        </div>
+        <p class="muted" style="margin:8px 0 0;font-size:.75rem">${escapeHtml(salesRange.title)} · 下方 Sales · 右邊 $</p>
+        <div class="money-compare" style="margin-top:10px">
+          <div class="mc"><div class="lbl">Closing 目標 $</div><div class="val">${money(teamT)}</div><div class="muted" style="font-size:.68rem">${escapeHtml(salesRange.title)}</div></div>
+          <div class="mc"><div class="lbl">已 Closing $</div><div class="val">${money(teamC)}</div><div class="muted" style="font-size:.68rem">${teamT ? teamP + "% 達成" : "未設目標"}</div></div>
+          <div class="mc"><div class="lbl">加權 Forecast $</div><div class="val">${money(teamF)}</div><div class="muted" style="font-size:.68rem">Pipeline × 機率</div></div>
+        </div>
+        ${renderSalesLineChart(salesLineItems)}
+      `;
+      if (dashDrill && dashDrill.type === "sales") {
+        const hit = salesRows.find((r) => r.name === dashDrill.key);
+        body += renderDrillList(hit ? hit.list : [], dashDrill.key);
       }
+      root.innerHTML = chartHeadHtml(
+        "團隊 Sales",
+        `表現回顧 · 點選期間睇各銷售員 Closing $`
+      ) + body;
+      bindTeamSalesPeriodUi();
+    }
 
-      monthsBody += months.map((m) => {
-        const width = Math.max(4, ((m.targetCount || 0) / Math.max(...months.map((x) => x.targetCount || 0), 1)) * 100);
-        const breakdownTarget = m.list.length
-          ? m.list.map((c) => {
-              const s = stageMeta(c.stage);
-              const fd = caseForecastDate(c);
-              return `<div class="breakdown-item" data-case-id="${c.id}">
-                <div><strong>${escapeHtml((c.customerName || "").split("\n")[0])}</strong></div>
-                <div><strong>${money(c.amount)}</strong></div>
-                <div class="breakdown-meta">
-                  <span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span>
-                  <span>Target ${formatLocalDate(fd)}</span>
-                </div>
-              </div>`;
-            }).join("")
-          : `<div class="breakdown-empty">呢個月未有 Target Closing</div>`;
-        const breakdownClosed = (m.closedList || []).length
-          ? m.closedList.map((c) => {
-              const s = stageMeta(c.stage);
-              const cd = caseClosingDate(c);
-              return `<div class="breakdown-item" data-case-id="${c.id}">
-                <div><strong>${escapeHtml((c.customerName || "").split("\n")[0])}</strong></div>
-                <div><strong>${money(c.amount)}</strong></div>
-                <div class="breakdown-meta">
-                  <span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span>
-                  <span>Closed ${formatLocalDate(cd)}</span>
-                </div>
-              </div>`;
-            }).join("")
-          : `<div class="breakdown-empty">呢個月未有 Closing Case</div>`;
-        return `<div class="month-row" data-month="${m.key}" role="button" tabindex="0" aria-expanded="false">
-          <div class="month-row-top">
-            <strong>${m.label}<span class="chev">▸</span></strong>
-            <span class="muted">Target ${m.targetCount || 0} · Closed ${m.closedCount || 0} · ${money(m.total)}${m.quota ? ` · 目標 ${money(m.quota)}` : ""}</span>
-          </div>
-          <div class="bar"><i style="width:${width}%"></i></div>
-          <div class="muted" style="font-size:.7rem">加權預測 ${money(m.weighted)} · 機率 ${pct(m.avg)}</div>
-          <div class="month-breakdown">
-            <div class="eyebrow" style="margin-bottom:4px">Target Closing</div>
-            ${breakdownTarget}
-            <div class="eyebrow" style="margin:10px 0 4px">Closing Case</div>
-            ${breakdownClosed}
-          </div>
-        </div>`;
-      }).join("");
+    function renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt, filtered }) {
+      renderDashTeamSales(filtered);
 
-      const targetSum = months.reduce((s, m) => s + (m.targetCount || 0), 0);
-      const closedSum = months.reduce((s, m) => s + (m.closedCount || 0), 0);
-      const filterNote = (dashSalesFilter !== "all" || dashPartnerFilter !== "all")
-        ? ` · 篩選 ${dashSalesFilter !== "all" ? dashSalesFilter : ""}${dashSalesFilter !== "all" && dashPartnerFilter !== "all" ? " / " : ""}${dashPartnerFilter !== "all" ? dashPartnerFilter : ""}`
-        : "";
-      monthsRoot.innerHTML = chartHeadHtml(
-        range.title,
-        `Target Closing vs Closing Case · Target ${targetSum} · Closed ${closedSum} · 跟進機會 ${followN}${filterNote}`
-      ) + monthsBody;
-      bindMonthRows(monthsRoot);
-
-      // Stage / Sales / Funnel use filtered set
+      // Stage / Funnel use filtered set
       const pool = filtered || cases;
       const stageCounts = STAGES.map((s) => ({
         ...s,
@@ -4213,33 +4259,6 @@
         stageHtml += renderDrillList(hit ? hit.list : [], hit ? hit.label : "Stage");
       }
       document.getElementById("dashChartStage").innerHTML = stageHtml;
-
-      const monthKeysForSales = (range.months || []).map((m) => m.key);
-      const salesRows = COMPANY_SALES.filter((name) => dashSalesFilter === "all" || name === dashSalesFilter).map((name) => {
-        const list = pool.filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed");
-        const weighted = list.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
-        const amt = list.reduce((s, c) => s + (c.amount || 0), 0);
-        const meets = list.filter((c) => c.meetingDone).length;
-        const closedAmt = salesClosedAmountInRange(name, range.from, range.to);
-        const targetAmt = salesClosingTargetSum(name, monthKeysForSales);
-        return { name, n: list.length, weighted, amt, meets, list, closedAmt, targetAmt };
-      });
-      const salesLineItems = salesRows.map((r) => ({
-        name: r.name,
-        closedAmt: r.closedAmt,
-        targetAmt: r.targetAmt,
-        drillType: "sales",
-        drillKey: r.name,
-      }));
-      let salesHtml = chartHeadHtml(
-        "團隊 Sales",
-        `下方 Sales · 右邊 $ · ${range.title} · 點擊節點可鑽取 Pipeline`
-      ) + renderSalesLineChart(salesLineItems);
-      if (dashDrill && dashDrill.type === "sales") {
-        const hit = salesRows.find((r) => r.name === dashDrill.key);
-        salesHtml += renderDrillList(hit ? hit.list : [], dashDrill.key);
-      }
-      document.getElementById("dashChartSales").innerHTML = salesHtml;
 
       // ---- Sales Target $ vs Closing $ ----
       const salesTargetRoot = document.getElementById("dashChartSalesTarget");
@@ -6605,9 +6624,7 @@
         if (dashFrom && dashTo) renderDashboard();
         else {
           syncDashPeriodUi();
-          document.getElementById("dashMonths").innerHTML =
-            `<h2 style="font-size:1.2rem">自訂日期</h2><p class="muted">請揀「由日期」同「至日期」，再按「套用」</p>`;
-          ["dashChartStage", "dashChartSales", "dashChartFunnel", "dashChartSalesTarget"].forEach((id) => {
+          ["dashChartStage", "dashChartFunnel", "dashChartSalesTarget"].forEach((id) => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = `<h2>等待日期</h2><p class="muted">套用自訂期間後顯示 chart</p>`;
           });
