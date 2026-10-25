@@ -1,0 +1,3891 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Achiever CRM</title>
+  <link rel="icon" type="image/png" href="./images/achiever-icon.png?v=2" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --ink: #1a1630;
+      --ink-soft: #5a5470;
+      --muted: #9a93ad;
+      --paper: #f6f3fb;
+      --panel: #ffffff;
+      --line: #ebe6f4;
+      --teal: #6b46fe;
+      --teal-deep: #5530e8;
+      --amber: #ff8a4c;
+      --sky: #4aa8ff;
+      --rose: #ff6b9d;
+      --mint: #27c281;
+      --peach: #ffb086;
+      --navy: #2a2440;
+      --navy-2: #3b3454;
+      --accent: #6b46fe;
+      --accent-soft: #efeaff;
+      --success: #27c281;
+      --success-soft: #e8faf2;
+      --shadow: 0 14px 36px rgba(80, 55, 160, 0.08);
+      --radius: 20px;
+      --sidebar-w: 228px;
+      --sidebar-w-collapsed: 72px;
+      --font-display: "IBM Plex Sans", "Noto Sans TC", sans-serif;
+      --font-body: "IBM Plex Sans", "Noto Sans TC", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--ink);
+      font-family: var(--font-body);
+      background:
+        radial-gradient(900px 520px at 8% -10%, rgba(167, 139, 250, .42), transparent 60%),
+        radial-gradient(820px 480px at 92% 4%, rgba(251, 182, 206, .38), transparent 58%),
+        radial-gradient(700px 420px at 70% 95%, rgba(165, 243, 252, .28), transparent 55%),
+        linear-gradient(165deg, #fbf8ff 0%, #f4f0fb 48%, #eef4ff 100%);
+      background-attachment: fixed;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: .35;
+      background-image:
+        radial-gradient(circle at 1px 1px, rgba(107, 70, 254, .12) 1px, transparent 0);
+      background-size: 22px 22px;
+    }
+    body.mode-board {
+      overflow: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button, input, select, textarea { font: inherit; }
+    .hidden { display: none !important; }
+
+    .app-shell {
+      display: flex;
+      min-height: 100%;
+      height: 100%;
+      position: relative;
+      z-index: 1;
+    }
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, .82);
+      backdrop-filter: blur(14px);
+      color: var(--ink-soft);
+      display: flex;
+      flex-direction: column;
+      padding: 18px 14px;
+      z-index: 50;
+      transition: width .2s ease, padding .2s ease;
+      overflow: hidden;
+      border-right: 1px solid rgba(235, 230, 244, .9);
+      box-shadow: 8px 0 28px rgba(107, 70, 254, .04);
+    }
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 6px 20px;
+      min-height: 56px;
+    }
+    .sidebar-brand a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      background: transparent;
+      border-radius: 0;
+      padding: 4px 6px;
+    }
+    .sidebar-brand img.logo-full {
+      display: block;
+      width: min(100%, 156px);
+      height: auto;
+      object-fit: contain;
+    }
+    .sidebar-brand img.logo-mark {
+      display: none;
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+    .nav-pills {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .nav-pills button {
+      border: 0;
+      background: transparent;
+      color: var(--ink-soft);
+      text-align: left;
+      padding: 11px 12px;
+      border-radius: 12px;
+      font-size: .84rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-pills button .nav-ico {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: #f3effc;
+      color: var(--muted);
+    }
+    .nav-pills button .nav-ico svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .nav-pills button .nav-label { overflow: hidden; text-overflow: ellipsis; }
+    .nav-pills button:hover { background: var(--accent-soft); color: var(--ink); }
+    .nav-pills button:hover .nav-ico { color: var(--accent); background: #fff; }
+    .nav-pills button.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 12px 24px rgba(107, 70, 254, .32);
+    }
+    .nav-pills button.active .nav-ico {
+      color: #fff;
+      background: rgba(255, 255, 255, .18);
+    }
+    .app-shell.sidebar-collapsed .sidebar {
+      width: var(--sidebar-w-collapsed);
+      padding: 14px 10px;
+    }
+    .app-shell.sidebar-collapsed .sidebar-brand a { padding: 6px; }
+    .app-shell.sidebar-collapsed .sidebar-brand img.logo-full { display: none; }
+    .app-shell.sidebar-collapsed .sidebar-brand img.logo-mark { display: block; }
+    .app-shell.sidebar-collapsed .nav-pills button {
+      justify-content: center;
+      padding: 10px 8px;
+      gap: 0;
+    }
+    .app-shell.sidebar-collapsed .nav-pills button .nav-ico {
+      width: 38px;
+      height: 38px;
+    }
+    .app-shell.sidebar-collapsed .nav-pills button .nav-label { display: none; }
+    .app-main {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: transparent;
+      position: relative;
+    }
+    .app-main::before {
+      content: "";
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      right: -60px;
+      top: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(167, 139, 250, .28), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .app-main::after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      left: 12%;
+      bottom: 8%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(251, 182, 206, .22), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .topbar, .wrap { position: relative; z-index: 1; }
+    .topbar {
+      flex-shrink: 0;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 18px 0 14px;
+      background: transparent;
+      border-bottom: 0;
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .sidebar-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 0;
+      background: transparent;
+      color: var(--ink-soft);
+      cursor: pointer;
+      padding: 8px 10px;
+      border-radius: 12px;
+    }
+    .sidebar-toggle:hover { background: #fff; color: var(--accent); box-shadow: var(--shadow); }
+    .sidebar-toggle .toggle-chev {
+      width: 0;
+      height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-right: 6px solid currentColor;
+      transition: transform .2s ease;
+    }
+    .app-shell.sidebar-collapsed .sidebar-toggle .toggle-chev {
+      transform: rotate(180deg);
+    }
+    .sidebar-toggle .toggle-burger {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      width: 16px;
+    }
+    .sidebar-toggle .toggle-burger i {
+      display: block;
+      height: 2px;
+      background: currentColor;
+      border-radius: 2px;
+    }
+    .topbar-company {
+      font-weight: 600;
+      font-size: .88rem;
+      color: var(--ink-soft);
+      white-space: nowrap;
+    }
+    .topbar-title {
+      font-weight: 700;
+      font-size: .95rem;
+      color: var(--ink);
+      padding-left: 10px;
+      border-left: 1px solid var(--line);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .topbar-meta {
+      font-size: .75rem;
+      color: var(--muted);
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .wrap {
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 20px 20px 40px;
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+    }
+    body.mode-board .app-main { overflow: hidden; }
+    body.mode-board .wrap {
+      max-width: none;
+      padding: 14px 16px 12px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(28, 31, 42, .28);
+      z-index: 45;
+    }
+    @media (max-width: 900px) {
+      .app-shell { flex-direction: column; height: auto; min-height: 100%; }
+      .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        height: 100%;
+        width: min(82vw, var(--sidebar-w));
+        padding: 18px 12px;
+        transform: translateX(-105%);
+        transition: transform .2s ease;
+        box-shadow: 12px 0 30px rgba(28, 31, 42, .12);
+      }
+      .app-shell.sidebar-open-mobile .sidebar { transform: translateX(0); }
+      .app-shell.sidebar-collapsed .sidebar {
+        width: min(82vw, var(--sidebar-w));
+        padding: 18px 12px;
+      }
+      .app-shell.sidebar-collapsed .sidebar-brand img.logo-full { display: block; }
+      .app-shell.sidebar-collapsed .sidebar-brand img.logo-mark { display: none; }
+      .app-shell.sidebar-collapsed .nav-pills button { justify-content: flex-start; padding: 10px 12px; }
+      .app-shell.sidebar-collapsed .nav-pills button .nav-label { display: inline; }
+      .sidebar-brand img.logo-full { width: 140px; }
+      .topbar { display: flex; }
+      .topbar-company { display: none; }
+      .app-shell.sidebar-open-mobile .sidebar-backdrop { display: block; }
+    }
+    #view-board {
+      flex: 1;
+      min-height: 0;
+      display: none;
+      flex-direction: column;
+    }
+    #view-board:not(.hidden) { display: flex; }
+    .board-toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: end;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+    .board-toolbar-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex: 1;
+      justify-content: flex-end;
+      min-width: min(100%, 280px);
+    }
+    .board-search-wrap {
+      position: relative;
+      flex: 1;
+      max-width: 360px;
+      min-width: 160px;
+    }
+    #boardSearch {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 9px 14px;
+      background: #fff;
+      font-size: .85rem;
+      box-shadow: var(--shadow);
+    }
+    #boardSearch:focus {
+      outline: 0;
+      box-shadow: 0 0 0 3px rgba(107,70,254,.16);
+      border-color: var(--accent);
+    }
+    .board-suggest {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 40;
+      max-height: 280px;
+      overflow: auto;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, .12);
+      padding: 6px;
+    }
+    .board-suggest.hidden { display: none !important; }
+    .board-suggest-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: 100%;
+      text-align: left;
+      border: 0;
+      background: transparent;
+      border-radius: 10px;
+      padding: 8px 10px;
+      cursor: pointer;
+      color: var(--ink);
+    }
+    .board-suggest-item:hover,
+    .board-suggest-item.active {
+      background: var(--paper);
+    }
+    .board-suggest-item .kind {
+      font-size: .66rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .board-suggest-item .label {
+      font-size: .84rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    .board-suggest-item .meta {
+      font-size: .7rem;
+      color: var(--muted);
+    }
+    .board-suggest-empty {
+      padding: 10px;
+      font-size: .78rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .mgmt-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 12px 0;
+      padding: 5px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      width: fit-content;
+      max-width: 100%;
+      box-shadow: var(--shadow);
+    }
+    .mgmt-tabs button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: .78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .mgmt-tabs button.active {
+      background: var(--accent);
+      color: #fff;
+    }
+    .mgmt-alert {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      align-items: center;
+      margin: 10px 0 14px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      color: #9f1239;
+      font-size: .84rem;
+      font-weight: 600;
+    }
+    .mgmt-alert.ok {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      color: #047857;
+    }
+    .mgmt-panel { display: none; }
+    .mgmt-panel.active { display: block; }
+    .mgmt-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    @media (min-width: 800px) {
+      .mgmt-stats { grid-template-columns: repeat(4, 1fr); }
+    }
+    .tag-overdue {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: #ffe4e6;
+      color: #be123c;
+      font-size: .68rem;
+      font-weight: 700;
+    }
+    .tag-ok {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: #d1fae5;
+      color: #047857;
+      font-size: .68rem;
+      font-weight: 700;
+    }
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .chip-list span {
+      background: var(--paper);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: .7rem;
+      font-weight: 600;
+      color: var(--ink-soft);
+    }
+    .partner-tree { display: grid; gap: 12px; }
+    .partner-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .partner-card-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+    .partner-card-head h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-family: var(--font-display);
+    }
+    .partner-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .partner-metrics span {
+      background: var(--paper);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: .72rem;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+    .partner-metrics strong {
+      display: block;
+      font-size: .95rem;
+      color: var(--ink);
+      font-family: var(--font-display);
+    }
+    .team-row {
+      border-top: 1px solid var(--line);
+    }
+    .team-row:first-child { border-top: 0; }
+    .team-row-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      padding: 12px 16px;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+    }
+    .team-row-head:hover { background: #f5f6fa; }
+    .team-row-head .chev {
+      display: inline-block;
+      width: 1em;
+      color: var(--muted);
+      transition: transform .15s ease;
+    }
+    .team-row.open .team-row-head .chev { transform: rotate(90deg); }
+    .team-row-title {
+      font-weight: 700;
+      font-size: .9rem;
+    }
+    .team-row-sub {
+      margin-top: 2px;
+      font-size: .7rem;
+      color: var(--muted);
+    }
+    .team-row-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      justify-content: flex-end;
+      font-size: .72rem;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+    .team-row-metrics b { color: var(--ink); font-family: var(--font-display); font-size: .88rem; }
+    .team-row-metrics .dq { color: #9f1239; }
+    .team-row-metrics .q { color: #15803d; }
+    .team-sales {
+      display: none;
+      padding: 0 12px 14px;
+    }
+    .team-row.open .team-sales { display: block; }
+    .team-sales table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .8rem;
+    }
+    .team-sales th, .team-sales td {
+      padding: 8px 10px;
+      border-top: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    .team-sales th {
+      font-size: .68rem;
+      color: var(--muted);
+      font-weight: 700;
+      background: #f5f6fa;
+    }
+    .team-sales td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+    .team-sales td.dq { color: #9f1239; text-align: right; font-weight: 700; }
+    .team-sales td.q { color: #15803d; text-align: right; font-weight: 700; }
+    .board-dash {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+    @media (min-width: 900px) {
+      .board-dash { grid-template-columns: repeat(5, 1fr); }
+    }
+    .board-dash .stat { padding: 12px; }
+    .board-dash .stat .value { font-size: 1.25rem; }
+    .board-dash .stat-ico { width: 34px; height: 34px; border-radius: 12px; }
+    .board-dash .stat-ico svg { width: 16px; height: 16px; }
+    .board-dash .stat-trend { display: none; }
+    .stage-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      flex-shrink: 0;
+      box-shadow: var(--shadow);
+    }
+    .stage-filter label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: .74rem;
+      font-weight: 600;
+      color: var(--ink-soft);
+      cursor: pointer;
+      user-select: none;
+    }
+    .stage-filter label input { accent-color: var(--teal); }
+    .kanban-shell {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .kanban-nav {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 6px;
+      flex-shrink: 0;
+    }
+    .hero-card, .panel {
+      background: rgba(255, 255, 255, .92);
+      border: 1px solid rgba(235, 230, 244, .95);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 20px 22px;
+      backdrop-filter: blur(8px);
+    }
+    .hero-card {
+      position: relative;
+      overflow: hidden;
+      padding: 28px 26px;
+    }
+    .hero-card::before,
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero-card::before {
+      width: 180px; height: 180px; right: -40px; top: -50px;
+      background: radial-gradient(circle, rgba(107, 70, 254, .22), transparent 70%);
+    }
+    .hero-card::after {
+      width: 140px; height: 140px; right: 70px; bottom: -60px;
+      background: radial-gradient(circle, rgba(255, 138, 76, .18), transparent 70%);
+    }
+    .hero-deco {
+      position: absolute;
+      right: 28px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: min(180px, 28vw);
+      height: 120px;
+      pointer-events: none;
+      opacity: .95;
+    }
+    .hero-deco svg { width: 100%; height: 100%; display: block; }
+    @media (max-width: 720px) {
+      .hero-deco { display: none; }
+    }
+    h1, h2 { font-family: var(--font-display); margin: 0; font-weight: 700; color: var(--ink); }
+    h1 { font-size: 1.5rem; }
+    .eyebrow {
+      font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      background: linear-gradient(90deg, #4aa8ff, #6b46fe, #ff6b9d);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .muted { color: var(--muted); font-size: .88rem; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      border: 0; border-radius: 999px; padding: 10px 16px; font-weight: 600; font-size: .84rem; cursor: pointer;
+    }
+    .btn-teal { background: linear-gradient(135deg, #7b5cff, var(--accent)); color: #fff; box-shadow: 0 10px 22px rgba(107,70,254,.32); }
+    .btn-teal:hover { background: var(--teal-deep); }
+    .btn-ink { background: var(--navy); color: #fff; }
+    .btn-ghost { background: rgba(255,255,255,.9); border: 1px solid #ddd5ef; color: var(--ink); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-sm { padding: 6px 12px; font-size: .75rem; }
+    .grid-stats { display: grid; gap: 14px; grid-template-columns: repeat(2, 1fr); margin: 16px 0; }
+    @media (min-width: 800px) { .grid-stats { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 1100px) { .grid-stats.cols-5 { grid-template-columns: repeat(5, 1fr); } }
+    .stat {
+      background: rgba(255,255,255,.95); border: 1px solid var(--line); border-radius: 22px; padding: 16px 16px 14px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .stat-ico {
+      width: 42px; height: 42px; border-radius: 14px;
+      display: inline-flex; align-items: center; justify-content: center;
+      color: #fff; flex-shrink: 0;
+      box-shadow: 0 8px 16px rgba(107, 70, 254, .18);
+    }
+    .stat-ico svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+    .stat-ico.purple { background: linear-gradient(145deg, #8b6fff, #6b46fe); }
+    .stat-ico.orange { background: linear-gradient(145deg, #ffb086, #ff8a4c); }
+    .stat-ico.mint { background: linear-gradient(145deg, #5ee4b0, #27c281); }
+    .stat-ico.sky { background: linear-gradient(145deg, #7ec4ff, #4aa8ff); }
+    .stat-ico.rose { background: linear-gradient(145deg, #ff9abc, #ff6b9d); }
+    .stat-trend {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 4px 8px; border-radius: 999px;
+      background: var(--success-soft); color: #0f9f63;
+      font-size: .68rem; font-weight: 700; white-space: nowrap;
+    }
+    .stat .label { font-size: .68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .stat .value { font-family: var(--font-display); font-size: 1.55rem; font-weight: 700; margin-top: 2px; color: var(--ink); letter-spacing: -.02em; }
+    .field { display: block; margin-bottom: 12px; }
+    .field span { display: block; font-size: .72rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+    .field input, .field select, .field textarea {
+      width: 100%; border: 1px solid var(--line); background: #fff; border-radius: 12px;
+      padding: 9px 11px; outline: none; color: var(--ink);
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--accent); box-shadow: 0 0 0 3px rgba(107,70,254,.16);
+    }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag {
+      border: 1px solid transparent; background: #eef1f6; color: var(--ink-soft);
+      border-radius: 999px; padding: 6px 10px; font-size: .72rem; font-weight: 600; cursor: pointer;
+    }
+    .tag.on { background: var(--accent-soft); color: var(--accent); }
+    .mic {
+      width: 64px; height: 64px; border-radius: 50%; border: 0; background: var(--teal); color: #fff; cursor: pointer;
+    }
+    .mic.listening { background: var(--rose); animation: pulse 1.4s ease-out infinite; }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(107, 70, 254, .42); }
+      70% { box-shadow: 0 0 0 18px rgba(107, 70, 254, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(107, 70, 254, 0); }
+    }
+    .kanban {
+      display: flex;
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 2px 2px 10px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: #c9c6e8 transparent;
+    }
+    .kanban::-webkit-scrollbar { height: 8px; }
+    .kanban::-webkit-scrollbar-thumb {
+      background: #c9c6e8;
+      border-radius: 999px;
+    }
+    .kanban::-webkit-scrollbar-track { background: transparent; }
+    .col {
+      /* Exactly ~5 wider columns per viewport; scroll right for the rest */
+      flex: 0 0 calc((100% - 48px) / 5);
+      width: calc((100% - 48px) / 5);
+      min-width: calc((100% - 48px) / 5);
+      max-width: none;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      scroll-snap-align: start;
+      box-shadow: var(--shadow);
+    }
+    @media (max-width: 900px) {
+      .col {
+        flex-basis: calc((100% - 24px) / 2.2);
+        width: calc((100% - 24px) / 2.2);
+        min-width: calc((100% - 24px) / 2.2);
+      }
+    }
+    @media (max-width: 640px) {
+      .col {
+        flex-basis: 85vw;
+        width: 85vw;
+        min-width: 85vw;
+      }
+    }
+    .col-head { flex-shrink: 0; margin-bottom: 6px; }
+    .col-desc {
+      color: var(--muted);
+      font-size: .68rem;
+      margin: 0 0 8px;
+      flex-shrink: 0;
+      line-height: 1.35;
+    }
+    .col-items {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding-right: 2px;
+      scrollbar-width: thin;
+      scrollbar-color: #d4d1ee transparent;
+    }
+    .col-items::-webkit-scrollbar { width: 6px; }
+    .col-items::-webkit-scrollbar-thumb {
+      background: #d4d1ee;
+      border-radius: 999px;
+    }
+    .col-empty {
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 28px 12px;
+      text-align: center;
+      font-size: .72rem;
+      color: var(--muted);
+      height: 100%;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .badge {
+      display: inline-block; border-radius: 999px; padding: 3px 9px; font-size: .68rem; font-weight: 700;
+    }
+    .card-case {
+      background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px; margin-bottom: 8px;
+      cursor: grab; box-shadow: 0 6px 16px rgba(31,36,48,.05);
+    }
+    .card-case:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+    table { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 860px; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; background: var(--paper); }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: var(--shadow); }
+    .drawer-bg {
+      position: fixed; inset: 0; background: rgba(31, 36, 48, .28); backdrop-filter: blur(4px);
+      display: flex; justify-content: center; align-items: center; z-index: 60;
+      padding: 16px;
+    }
+    .drawer {
+      width: min(100%, 960px);
+      max-height: min(92vh, 880px);
+      background: #fff;
+      overflow-y: auto;
+      padding: 20px 22px 18px;
+      border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(31, 36, 48, .18);
+      border: 1px solid var(--line);
+    }
+    .modal-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px 22px;
+    }
+    @media (min-width: 820px) {
+      .modal-grid { grid-template-columns: 1fr 1fr; align-items: start; }
+    }
+    .modal-col { min-width: 0; }
+    .row3 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    @media (min-width: 640px) {
+      .row3 { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .check-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px 12px;
+      margin: 4px 0 10px;
+    }
+    @media (min-width: 640px) {
+      .check-row { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .check-row label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--ink-soft);
+      margin: 0;
+    }
+    .modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 6px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .modal-actions .btn { min-width: 120px; }
+    .modal-log-list {
+      max-height: 180px;
+      overflow: auto;
+      margin: 8px 0 10px;
+      padding-right: 4px;
+    }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin: 8px 0 12px;
+    }
+    @media (min-width: 640px) {
+      .contact-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .bar {
+      height: 10px; background: var(--paper); border-radius: 999px; overflow: hidden; margin: 4px 0 2px;
+    }
+    .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #4aa8ff, var(--accent), #ff6b9d); }
+    .dash-charts {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 960px) {
+      .dash-charts { grid-template-columns: repeat(2, 1fr); }
+      #dashChartStage { grid-column: 1 / -1; }
+    }
+    .chart-panel { min-height: 280px; }
+    #dashChartStage { min-height: 320px; }
+    .chart-panel h2 { font-size: 1.05rem; }
+    .chart-row {
+      display: grid;
+      grid-template-columns: minmax(72px, 96px) 1fr auto;
+      gap: 8px 10px;
+      align-items: center;
+      margin-top: 10px;
+    }
+    .chart-row .name {
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--ink-soft);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chart-row .count {
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--ink);
+      min-width: 2.2ch;
+      text-align: right;
+    }
+    .chart-bar {
+      height: 12px;
+      background: #f0ecf8;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .chart-bar > i {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #4aa8ff, var(--accent), #ff6b9d);
+      min-width: 4px;
+      transition: width .35s ease;
+    }
+    .chart-bar.tone-purple > i { background: linear-gradient(90deg, #8b6fff, #6b46fe); }
+    .chart-bar.tone-mint > i { background: linear-gradient(90deg, #5ee4b0, #27c281); }
+    .chart-bar.tone-orange > i { background: linear-gradient(90deg, #ffb086, #ff8a4c); }
+    .chart-bar.tone-sky > i { background: linear-gradient(90deg, #7ec4ff, #4aa8ff); }
+    .chart-bar.tone-rose > i { background: linear-gradient(90deg, #ff9abc, #ff6b9d); }
+    .funnel-stack { margin-top: 8px; display: grid; gap: 8px; }
+    .funnel-step {
+      position: relative;
+      border-radius: 14px;
+      padding: 10px 12px;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 8px 18px rgba(107, 70, 254, .12);
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .funnel-step .flabel { font-size: .78rem; font-weight: 700; }
+    .funnel-step .fval { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; }
+    .funnel-step .fsub { font-size: .68rem; opacity: .88; font-weight: 600; }
+    .sparkline {
+      width: 100%;
+      height: 86px;
+      margin-top: 8px;
+      display: block;
+    }
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      margin-top: 10px;
+    }
+    .chart-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .7rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .chart-legend i {
+      width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+    }
+    .chart-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 2px;
+    }
+    .chart-head h2 { margin: 0; }
+    .vbars {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 160px;
+      margin-top: 14px;
+      padding: 0 4px 0;
+    }
+    .vbar-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .vbar-track {
+      width: 100%;
+      max-width: 36px;
+      height: 120px;
+      background: #f0ecf8;
+      border-radius: 999px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .vbar-track > i {
+      display: block;
+      width: 100%;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #4aa8ff, #6b46fe, #ff6b9d);
+      min-height: 4px;
+    }
+    .vbar-col .vlbl {
+      font-size: .62rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.2;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .vbar-col .vnum {
+      font-size: .72rem;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .grouped-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      height: 200px;
+      margin-top: 14px;
+      padding: 0 4px;
+      overflow-x: auto;
+    }
+    .grouped-col {
+      flex: 1 0 56px;
+      min-width: 56px;
+      max-width: 88px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+    .grouped-pair {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 140px;
+      width: 100%;
+      justify-content: center;
+    }
+    .grouped-pair .gbar {
+      width: 16px;
+      height: 100%;
+      background: #f0ecf8;
+      border-radius: 999px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .grouped-pair .gbar > i {
+      display: block;
+      width: 100%;
+      min-height: 3px;
+      border-radius: 999px;
+    }
+    .grouped-pair .gbar.target > i { background: linear-gradient(180deg, #8b6fff, #6b46fe); }
+    .grouped-pair .gbar.closed > i { background: linear-gradient(180deg, #5ee4b0, #27c281); }
+    .grouped-col .glbl {
+      font-size: .62rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.2;
+    }
+    .grouped-col .gnums {
+      font-size: .66rem;
+      font-weight: 800;
+      color: var(--ink-soft);
+      text-align: center;
+      line-height: 1.25;
+    }
+    .month-row {
+      margin-top: 12px;
+      padding: 10px 10px 8px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease;
+      user-select: none;
+    }
+    .month-row:hover { background: rgba(107, 70, 254, 0.05); }
+    .month-row.open {
+      background: rgba(107, 70, 254, 0.06);
+      border-color: rgba(107, 70, 254, 0.18);
+    }
+    .month-row-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: .86rem;
+      align-items: center;
+    }
+    .month-row-top .chev {
+      font-size: .7rem;
+      color: var(--muted);
+      margin-left: 6px;
+      transition: transform .15s ease;
+    }
+    .month-row.open .chev { transform: rotate(90deg); color: var(--teal); }
+    .month-breakdown {
+      display: none;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--line);
+    }
+    .month-row.open .month-breakdown { display: block; }
+    .breakdown-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px 12px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid var(--line);
+      margin-top: 6px;
+      font-size: .78rem;
+    }
+    .breakdown-item strong { font-size: .84rem; }
+    .breakdown-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      color: var(--muted);
+      font-size: .72rem;
+      grid-column: 1 / -1;
+    }
+    .breakdown-empty {
+      padding: 10px;
+      text-align: center;
+      color: var(--muted);
+      font-size: .75rem;
+    }
+    .toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+      background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 999px; font-size: .82rem; z-index: 80;
+    }
+    .setup-box {
+      border: 1px dashed #c4b5fd; background: #f5f3ff; border-radius: 18px; padding: 14px; margin-bottom: 14px;
+    }
+    .setup-box pre {
+      white-space: pre-wrap; word-break: break-word; background: #fff; border: 1px solid var(--line);
+      border-radius: 12px; padding: 10px; font-size: .72rem; max-height: 180px; overflow: auto;
+    }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .home-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .dash-period {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: end;
+      margin: 12px 0 4px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+    .dash-period .seg {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      background: #f3f4f8;
+      padding: 4px;
+      border-radius: 999px;
+    }
+    .dash-period .seg button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: .75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .dash-period .seg button.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 8px 16px rgba(107,70,254,.28);
+    }
+    .dash-period, .stage-filter, .mgmt-tabs {
+      background: rgba(255,255,255,.92);
+    }
+    .dash-period .custom-range {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: end;
+    }
+    .dash-period .custom-range label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: .68rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .dash-period .custom-range input {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 7px 10px;
+      background: #fff;
+      font-size: .8rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <a href="https://achiever.hk/" target="_blank" rel="noopener" title="Achiever">
+          <img class="logo-full" src="./images/achiever-logo.png?v=2" alt="Achiever" />
+          <img class="logo-mark" src="./images/achiever-icon.png?v=2" alt="Achiever" />
+        </a>
+      </div>
+      <nav class="nav-pills" id="navPills">
+        <button data-view="dashboard" class="active"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V10M10 19V5M16 19v-7M22 19H2"/></svg></span><span class="nav-label">Dashboard</span></button>
+        <button data-view="board"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="5.5" height="16" rx="1.5"/><rect x="9.25" y="4" width="5.5" height="11" rx="1.5"/><rect x="15.5" y="4" width="5.5" height="14" rx="1.5"/></svg></span><span class="nav-label">Case Management</span></button>
+        <button data-view="cases"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span><span class="nav-label">列表</span></button>
+        <button data-view="agenda"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></span><span class="nav-label">會議／跟進</span></button>
+        <button data-view="mgmt"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><span class="nav-label">資料庫管理</span></button>
+        <button data-view="portal"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/></svg></span><span class="nav-label">手機 Portal</span></button>
+      </nav>
+    </aside>
+    <div class="app-main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" class="sidebar-toggle" id="btnSidebarToggle" aria-label="伸縮側欄" title="伸縮側欄">
+            <span class="toggle-chev" aria-hidden="true"></span>
+            <span class="toggle-burger" aria-hidden="true"><i></i><i></i><i></i></span>
+          </button>
+          <span class="topbar-company">Achiever Solutions Ltd.</span>
+          <div class="topbar-title" id="topbarTitle">Dashboard</div>
+        </div>
+        <div class="topbar-meta">ADMIN · Achiever</div>
+      </header>
+      <main class="wrap">
+    <div id="setupBanner" class="setup-box hidden">
+      <strong>需要匯入 Ricoh Excel／重建資料表</strong>
+      <p class="muted" style="margin:8px 0">請打開 Supabase → SQL Editor，執行完整檔案 <code>supabase/ricoh_import.sql</code>（會刪除 sample cases，匯入 Ricoh Event leads、多聯絡人與 log）。完成後按「重新檢查」。</p>
+      <p class="muted" style="margin:0 0 8px">Raw 連結：<a href="https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/ricoh_import.sql" target="_blank" rel="noopener">ricoh_import.sql</a></p>
+      <pre id="setupSqlPreview">載入中…</pre>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn btn-teal btn-sm" id="btnCopySql">複製 SQL（開頭預覽）</button>
+        <button class="btn btn-ghost btn-sm" id="btnRecheck">重新檢查</button>
+      </div>
+    </div>
+
+    <!-- HOME -->
+    <section id="view-home" class="hidden">
+      <div class="hero-card">
+        <div class="hero-deco" aria-hidden="true">
+          <svg viewBox="0 0 200 140" fill="none">
+            <defs>
+              <linearGradient id="hg1" x1="0" y1="0" x2="1" y2="1">
+                <stop stop-color="#6b46fe"/><stop offset="1" stop-color="#a78bfa"/>
+              </linearGradient>
+              <linearGradient id="hg2" x1="0" y1="1" x2="1" y2="0">
+                <stop stop-color="#ff8a4c"/><stop offset="1" stop-color="#ff6b9d"/>
+              </linearGradient>
+            </defs>
+            <rect x="18" y="28" width="110" height="78" rx="18" fill="#fff" fill-opacity=".72" stroke="#ebe6f4"/>
+            <path d="M34 78c10-18 22-28 34-28s24 16 36 10 18-22 28-18" stroke="url(#hg1)" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 5"/>
+            <path d="M34 92c12-10 24-6 36-14s20-8 34-4 22 2 34-8" stroke="url(#hg2)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 5" opacity=".85"/>
+            <circle cx="156" cy="42" r="22" fill="url(#hg1)" opacity=".9"/>
+            <circle cx="168" cy="98" r="14" fill="url(#hg2)" opacity=".85"/>
+            <rect x="40" y="42" width="36" height="8" rx="4" fill="#efeaff"/>
+            <rect x="40" y="56" width="54" height="8" rx="4" fill="#f3effc"/>
+          </svg>
+        </div>
+        <div class="eyebrow">Achiever · Sales CRM</div>
+        <h1 style="font-size:clamp(1.8rem,4vw,2.6rem);margin-top:8px;line-height:1.15;max-width:18ch">講出嚟，就變案件。</h1>
+        <p class="muted" style="max-width:520px;margin-top:12px;line-height:1.6">
+          手機 Portal 用語音／文字填表；後台用 Case Management 跟進會見→報價→確認／關閉，並預測未來成交額。
+        </p>
+        <div class="home-actions">
+          <button class="btn btn-teal" data-go="portal">開啟手機 Portal</button>
+          <button class="btn btn-ghost" data-go="dashboard">進入後台 Dashboard</button>
+          <button class="btn btn-ghost" data-go="agenda">會議／跟進</button>
+          <button class="btn btn-ghost" data-go="mgmt">資料庫管理</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PORTAL -->
+    <section id="view-portal" class="hidden">
+      <div class="panel" style="max-width:520px;margin:0 auto 12px">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+          <div>
+            <div class="eyebrow">Mobile Portal</div>
+            <h1 style="font-size:1.6rem;margin-top:4px">語音建案</h1>
+            <p class="muted" id="portalStatus" style="margin-top:8px">按麥克風講出案件，或貼文字後解析</p>
+          </div>
+          <button class="mic" id="micBtn" title="語音輸入">🎤</button>
+        </div>
+        <label class="field" style="margin-top:12px">
+          <span>語音／文字輸入</span>
+          <textarea id="transcript" rows="3" placeholder="例如：客戶係新里程製造，來自 Partner A，用緊 ERP 同 SCM，需求係整合庫存，數量三個模組，budget 大約四十五萬"></textarea>
+        </label>
+        <button class="btn btn-teal btn-sm" id="btnParse">解析並填入表格</button>
+        <div id="parsePreview" class="hidden" style="margin-top:12px;padding:12px;border-radius:14px;background:#efeefe;border:1px solid #d8d4fb;font-size:.82rem"></div>
+      </div>
+      <form class="panel" id="caseForm" style="max-width:520px;margin:0 auto">
+        <label class="field"><span>客戶名稱</span><input name="customerName" required placeholder="公司／客戶名稱" /></label>
+        <label class="field"><span>來自邊個 Partner</span>
+          <select name="partner" id="partnerSelect"></select>
+        </label>
+        <div class="field"><span>客見有用咩系統</span><div class="tags" id="systemTags"></div></div>
+        <label class="field"><span>需求</span><textarea name="requirements" rows="3" placeholder="客戶主要需求"></textarea></label>
+        <div class="row2">
+          <label class="field"><span>數量</span><input name="quantity" placeholder="例如 20 用戶" /></label>
+          <label class="field"><span>Budget (HKD)</span><input name="budget" type="number" placeholder="0" /></label>
+        </div>
+        <button class="btn btn-ink" style="width:100%" type="submit">建立案件（首次會見）</button>
+      </form>
+    </section>
+
+    <!-- DASHBOARD (default home) -->
+    <section id="view-dashboard">
+      <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+        <button class="btn btn-ink btn-sm" data-go="board">開 Case Management</button>
+        <button class="btn btn-ghost btn-sm" data-go="cases">睇列表</button>
+      </div>
+      <div class="grid-stats" id="dashStats"></div>
+      <div class="dash-period" id="dashPeriodBar">
+        <div class="seg" id="dashPeriodSeg">
+          <button type="button" data-period="month">當月</button>
+          <button type="button" data-period="3">未來 3 個月</button>
+          <button type="button" data-period="6" class="active">未來 6 個月</button>
+          <button type="button" data-period="12">未來 12 個月</button>
+          <button type="button" data-period="custom">自訂日期</button>
+        </div>
+        <div class="custom-range hidden" id="dashCustomRange">
+          <label>由日期<input type="date" id="dashFrom" /></label>
+          <label>至日期<input type="date" id="dashTo" /></label>
+          <button type="button" class="btn btn-teal btn-sm" id="dashApplyCustom">套用</button>
+        </div>
+      </div>
+      <div style="display:grid;gap:12px;grid-template-columns:1fr;margin-top:8px">
+        <div class="panel" id="dashMonths"></div>
+        <div class="dash-charts" id="dashCharts">
+          <div class="panel chart-panel" id="dashChartStage"></div>
+          <div class="panel chart-panel" id="dashChartSales"></div>
+          <div class="panel chart-panel" id="dashChartFunnel"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOARD -->
+    <section id="view-board" class="hidden">
+      <div class="board-toolbar">
+        <div>
+          <h1>Case Management</h1>
+        </div>
+        <div class="board-toolbar-actions">
+          <div class="board-search-wrap">
+            <input id="boardSearch" type="search" placeholder="搜尋公司名／聯絡人…" autocomplete="off" aria-autocomplete="list" aria-controls="boardSuggest" aria-expanded="false" />
+            <div id="boardSuggest" class="board-suggest hidden" role="listbox"></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="btnRefreshBoard">重新整理</button>
+        </div>
+      </div>
+      <div class="board-dash" id="boardDash"></div>
+      <div class="stage-filter" id="stageFilter"></div>
+      <div class="kanban-shell">
+        <div class="kanban-nav">
+          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanLeft" aria-label="向左">←</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanRight" aria-label="向右">→</button>
+        </div>
+        <div class="kanban" id="kanban"></div>
+      </div>
+    </section>
+
+    <!-- CASES LIST -->
+    <section id="view-cases" class="hidden">
+      <div style="margin-bottom:12px">
+        <h1>案件列表</h1>
+        <p class="muted">details、target closing date、case amount</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <input id="caseSearch" placeholder="搜尋客戶／partner／需求…" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff" />
+        <select id="caseStageFilter" style="border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff"></select>
+      </div>
+      <div class="table-wrap"><table><thead><tr>
+        <th>公司／Case</th><th>Partner／House</th><th>系統</th><th>階段</th><th>約見</th><th>會面</th><th>跟進機會</th><th>操作</th>
+      </tr></thead><tbody id="casesBody"></tbody></table></div>
+    </section>
+
+    <!-- DATABASE MANAGEMENT -->
+    <section id="view-mgmt" class="hidden">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
+        <div>
+          <h1>資料庫管理</h1>
+          <p class="muted">客戶 · Partner · 銷售員統計與跟進提示</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnRefreshMgmt">重新整理</button>
+      </div>
+      <div id="mgmtAlterBanner" class="setup-box hidden" style="margin-top:12px">
+        <strong>建議執行欄位升級 SQL</strong>
+        <p class="muted" style="margin:8px 0">為啟用「下次跟進日期」、Team Leader、本公司銷售員（Vincent／Tim／Andrew／Kelly／Sophia）欄位，請在 Supabase SQL Editor Run：<code>supabase/mgmt_alter.sql</code></p>
+        <p class="muted" style="margin:0 0 8px">Raw：<a href="https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql" target="_blank" rel="noopener">mgmt_alter.sql</a></p>
+        <button class="btn btn-teal btn-sm" id="btnCopyMgmtSql">複製升級 SQL</button>
+      </div>
+      <div class="mgmt-tabs" id="mgmtTabs">
+        <button type="button" data-mgmt="customers" class="active">客戶管理</button>
+        <button type="button" data-mgmt="partners">Partner 管理</button>
+        <button type="button" data-mgmt="sales">銷售員管理</button>
+      </div>
+
+      <div class="mgmt-panel active" id="mgmt-customers">
+        <div id="customerOverdueAlert"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <input id="customerSearch" placeholder="搜尋公司／聯絡人／Sales…" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff" />
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;color:var(--muted)"><input type="checkbox" id="customerOnlyOverdue" /> 只睇逾期跟進</label>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr>
+            <th>客戶公司</th><th>VISIT 次數</th><th>上次會議</th><th>下次跟進</th><th>狀態</th><th>Sales／Partner</th><th>操作</th>
+          </tr></thead>
+          <tbody id="customersBody"></tbody>
+        </table></div>
+      </div>
+
+      <div class="mgmt-panel" id="mgmt-partners">
+        <div class="mgmt-stats" id="partnerStats"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 12px;align-items:center">
+          <input id="partnerSearch" placeholder="搜尋 Partner／Team Leader／Sales…" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff" />
+          <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerExpandAll">全部展開</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerCollapseAll">全部收合</button>
+        </div>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Qualified = 非 DQ 且（已會面／有跟進機會／報價或之後階段）</p>
+        <div class="partner-tree" id="partnersTree"></div>
+      </div>
+
+      <div class="mgmt-panel" id="mgmt-sales">
+        <div class="mgmt-stats" id="salesStats"></div>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">本公司銷售員：Vincent／Tim／Andrew／Kelly／Sophia（唔係 Partner Sales）· 會面數依會面完成日期 · 成功簽單 = 確認簽單／won · 請喺案件詳情指派「本公司銷售員」</p>
+        <div class="table-wrap"><table>
+          <thead><tr>
+            <th>本公司銷售員</th><th>負責 Case</th><th>近 1 月會面客人</th><th>近 3 月會面客人</th><th>DQ</th><th>Qualified</th><th>成功簽單</th><th>簽單金額</th>
+          </tr></thead>
+          <tbody id="salesBody"></tbody>
+        </table></div>
+        <div id="salesUnassigned" style="margin-top:12px"></div>
+      </div>
+    </section>
+
+    <!-- AGENDA: meetings + follow-ups -->
+    <section id="view-agenda" class="hidden">
+      <div class="dash-period">
+        <div class="seg" id="agendaPeriodSeg">
+          <button type="button" data-agenda-period="today" class="active">當天</button>
+          <button type="button" data-agenda-period="week">本星期</button>
+          <button type="button" data-agenda-period="custom">由日期至</button>
+        </div>
+        <div class="custom-range" id="agendaCustomRange">
+          <label>由日期<input type="date" id="agendaFrom" /></label>
+          <label>至日期<input type="date" id="agendaTo" /></label>
+          <button type="button" class="btn btn-teal btn-sm" id="agendaApplyCustom">套用</button>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:.68rem;font-weight:700;color:var(--muted)">
+          銷售員
+          <select id="agendaSalesFilter" style="border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:#fff;font-size:.8rem;min-width:140px">
+            <option value="all">全部銷售員</option>
+          </select>
+        </label>
+      </div>
+      <div class="mgmt-stats" id="agendaStats" style="margin-top:4px"></div>
+      <div id="agendaAlert"></div>
+      <div class="table-wrap" style="margin-top:8px"><table>
+        <thead><tr>
+          <th>日期</th><th>類型</th><th>本公司銷售員</th><th>客戶</th><th>階段</th><th>Partner Sales</th><th>備註</th><th>操作</th>
+        </tr></thead>
+        <tbody id="agendaBody"></tbody>
+      </table></div>
+    </section>
+  </main>
+    </div>
+  </div>
+
+  <div id="drawerRoot"></div>
+  <div id="toastRoot"></div>
+
+  <script>
+    const SUPABASE_URL = "https://xdjzkcqhwamfajsjyclq.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkanprY3Fod2FtZmFqc2p5Y2xxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMTMzNjksImV4cCI6MjA5Mjc4OTM2OX0.-jQ0kcFD5CYWejJsg54BWogvr_upKwKWeDSaungnAo8";
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const STAGES = [
+      { id: "new_lead", label: "新 Lead", short: "新客", color: "#0891b2", bg: "#e0f7fa", desc: "活動／渠道新進客戶" },
+      { id: "contacting", label: "聯絡中", short: "聯絡", color: "#6b46fe", bg: "#efeaff", desc: "致電／跟進中（含聯絡不到 log）" },
+      { id: "unreachable", label: "聯絡不到", short: "失聯", color: "#e11d48", bg: "#ffe4e6", desc: "多次無法聯繫" },
+      { id: "appointment_set", label: "已約會面", short: "已約", color: "#2563eb", bg: "#e8efff", desc: "已約時間，待確認／會面" },
+      { id: "first_interview", label: "已會面", short: "會見", color: "#0d9488", bg: "#d1fae5", desc: "會面完成，可寫會後 comment" },
+      { id: "quotation", label: "報價", short: "報價", color: "#6366f1", bg: "#eef2ff", desc: "提交報價／方案" },
+      { id: "follow_up", label: "跟進", short: "跟進", color: "#d97706", bg: "#ffedd5", desc: "有機會繼續跟進" },
+      { id: "final_stage", label: "最終階段", short: "最終", color: "#ea580c", bg: "#ffedd5", desc: "接近簽單" },
+      { id: "confirmation", label: "確認簽單", short: "確認", color: "#059669", bg: "#d1fae5", desc: "客戶確認成交" },
+      { id: "closed", label: "已關閉", short: "關閉", color: "#64748b", bg: "#eef1f6", desc: "DQ／失敗關閉" },
+    ];
+    const PARTNERS = ["Ricoh Partner", "直銷", "Partner A", "Partner B", "Partner C", "轉介", "活動／展覽", "其他"];
+    // 本公司銷售員（唔係 Partner / Ricoh Sales）
+    const COMPANY_SALES = ["Vincent", "Tim", "Andrew", "Kelly", "Sophia"];
+    const LOG_TYPES = [
+      { id: "call_attempt", label: "致電／聯絡" },
+      { id: "call_no_answer", label: "聯絡不到／無人接" },
+      { id: "appointment", label: "約會面" },
+      { id: "appointment_confirmed", label: "客人確認會面" },
+      { id: "meeting_done", label: "會面完成／會後" },
+      { id: "follow_up", label: "跟進機會" },
+      { id: "remark", label: "備註" },
+      { id: "ricoh_remark", label: "Ricoh Remark" },
+      { id: "status", label: "狀態更新" },
+    ];
+    const SYSTEMS = ["BOOKING", "ACCOUNT", "FAS", "WORKFLOW", "HRM", "ERP", "CRM", "PMS", "PPMS", "SCM", "BI", "其他"];
+    const SYSTEM_ALIASES = [
+      { id: "BOOKING", keys: ["booking", "bookingsystem", "預約系統", "預約", "booking system"] },
+      { id: "ACCOUNT", keys: ["account system", "accountsystem", "accounting", "account", "會計系統", "會計", "賬系統", "帳系統"] },
+      { id: "FAS", keys: ["f a s", "f.a.s", "fas", "財務會計", "財務系統"] },
+      { id: "WORKFLOW", keys: ["workflow", "work flow", "工作流", "流程系統", "workflow系統"] },
+      { id: "HRM", keys: ["hrm", "人事", "hr系統"] },
+      { id: "ERP", keys: ["erp"] },
+      { id: "CRM", keys: ["crm"] },
+      { id: "PMS", keys: ["pms"] },
+      { id: "PPMS", keys: ["ppms"] },
+      { id: "SCM", keys: ["scm", "供應鏈"] },
+      { id: "BI", keys: ["bi", "商業智能"] },
+    ];
+
+    let cases = [];
+    let contactsByCase = {};
+    let logsByCase = {};
+    let selectedSystems = new Set();
+    let dragId = null;
+    let dbReady = false;
+    let mgmtColsReady = false;
+    let mgmtTab = "customers";
+    let agendaPeriod = localStorage.getItem("crm_agenda_period") || "today";
+    let agendaFrom = localStorage.getItem("crm_agenda_from") || "";
+    let agendaTo = localStorage.getItem("crm_agenda_to") || "";
+    let agendaSalesFilter = localStorage.getItem("crm_agenda_sales") || "all";
+    const FOLLOWUP_LS_KEY = "crm_followup_dates";
+    const ALL_BOARD_STAGES = () => STAGES.map((s) => s.id);
+    let visibleStages = loadVisibleStages();
+    const QUALIFIED_STAGES = new Set(["first_interview", "quotation", "follow_up", "final_stage", "confirmation"]);
+
+    function loadVisibleStages() {
+      try {
+        const raw = localStorage.getItem("crm_visible_stages");
+        if (raw) {
+          const arr = JSON.parse(raw).filter((id) => STAGES.some((s) => s.id === id));
+          // Migrate old "default 5 only" preference → show all statuses
+          if (arr.length && arr.length < STAGES.length) {
+            const oldDefault = ["new_lead", "contacting", "unreachable", "appointment_set", "first_interview"];
+            const looksLikeOldDefault = arr.length === 5 && oldDefault.every((id) => arr.includes(id));
+            if (looksLikeOldDefault) {
+              localStorage.removeItem("crm_visible_stages");
+              return ALL_BOARD_STAGES();
+            }
+          }
+          if (arr.length) return arr;
+        }
+      } catch (_) {}
+      return ALL_BOARD_STAGES();
+    }
+    function saveVisibleStages() {
+      localStorage.setItem("crm_visible_stages", JSON.stringify(visibleStages));
+    }
+
+    const money = (n) => new Intl.NumberFormat("zh-HK", { style: "currency", currency: "HKD", maximumFractionDigits: 0 }).format(n || 0);
+    const pct = (n) => `${Math.round(n || 0)}%`;
+    const stageMeta = (id) => STAGES.find((s) => s.id === id) || STAGES[0];
+    const toast = (msg) => {
+      const el = document.createElement("div");
+      el.className = "toast";
+      el.textContent = msg;
+      document.getElementById("toastRoot").appendChild(el);
+      setTimeout(() => el.remove(), 2200);
+    };
+
+    const VIEW_TITLES = {
+      home: "Dashboard",
+      portal: "手機 Portal",
+      dashboard: "Dashboard",
+      board: "Case Management · Case 跟進",
+      cases: "案件列表",
+      agenda: "銷售員會議及 Case 跟進",
+      mgmt: "資料庫管理",
+    };
+
+    function showView(name) {
+      if (name === "home") name = "dashboard";
+      ["home", "portal", "dashboard", "board", "cases", "agenda", "mgmt"].forEach((v) => {
+        document.getElementById(`view-${v}`).classList.toggle("hidden", v !== name);
+      });
+      document.body.classList.toggle("mode-board", name === "board");
+      document.querySelectorAll("#navPills button").forEach((b) => b.classList.toggle("active", b.dataset.view === name));
+      const titleEl = document.getElementById("topbarTitle");
+      if (titleEl) titleEl.textContent = VIEW_TITLES[name] || "Achiever";
+      if (name === "dashboard") renderDashboard();
+      if (name === "board") renderBoard();
+      if (name === "cases") renderCasesTable();
+      if (name === "portal") initPortalForm();
+      if (name === "agenda") renderAgenda();
+      if (name === "mgmt") renderMgmt();
+      location.hash = (name === "dashboard" || name === "home") ? "" : name;
+    }
+
+    async function checkDb() {
+      const { data, error } = await db.from("crm_cases").select("id,ricoh_sales").limit(1);
+      const contactsProbe = await db.from("crm_contacts").select("id").limit(1);
+      dbReady = !error && !contactsProbe.error;
+      document.getElementById("setupBanner").classList.toggle("hidden", dbReady);
+      if (dbReady) {
+        const probe = await db.from("crm_cases").select("next_follow_up_at,team_leader,company_sales").limit(1);
+        mgmtColsReady = !probe.error;
+        document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady);
+      }
+      if (error || contactsProbe.error) {
+        console.warn(error || contactsProbe.error);
+        const preview = document.getElementById("setupSqlPreview");
+        if (preview && !preview.dataset.ricoh) {
+          preview.dataset.ricoh = "1";
+          fetch("./supabase/ricoh_import.sql")
+            .then((r) => r.text())
+            .then((t) => { preview.textContent = t.slice(0, 2500) + "\n\n…（完整檔案請開 supabase/ricoh_import.sql）"; })
+            .catch(() => {});
+        }
+        return false;
+      }
+      return true;
+    }
+
+    async function loadCases() {
+      if (!(await checkDb())) {
+        cases = [];
+        contactsByCase = {};
+        logsByCase = {};
+        return;
+      }
+      const { data, error } = await db.from("crm_cases").select("*").order("updated_at", { ascending: false });
+      if (error) {
+        toast("載入失敗：" + error.message);
+        cases = [];
+        return;
+      }
+      cases = (data || []).map(fromRow);
+      const [{ data: contacts }, { data: logs }] = await Promise.all([
+        db.from("crm_contacts").select("*").order("name"),
+        db.from("crm_activity_logs").select("*").order("created_at", { ascending: false }),
+      ]);
+      contactsByCase = {};
+      (contacts || []).forEach((c) => {
+        (contactsByCase[c.case_id] ||= []).push(c);
+      });
+      logsByCase = {};
+      (logs || []).forEach((l) => {
+        (logsByCase[l.case_id] ||= []).push(l);
+      });
+    }
+
+    function fromRow(r) {
+      return {
+        id: r.id,
+        customerName: r.customer_name,
+        partner: r.partner || "Ricoh Partner",
+        systems: r.systems || [],
+        requirements: r.requirements || "",
+        quantity: r.quantity || "",
+        budget: Number(r.budget) || 0,
+        amount: Number(r.amount) || 0,
+        successRate: Number(r.success_rate) || 0,
+        targetClosingDate: r.target_closing_date || "",
+        stage: r.stage || "new_lead",
+        closeReason: r.close_reason,
+        notes: r.notes || "",
+        ricohHouse: r.ricoh_house || "",
+        ricohSales: r.ricoh_sales || "",
+        ricohConsultant: r.ricoh_consultant || "",
+        companySales: normalizeCompanySales(r.company_sales),
+        appointmentFlag: !!r.appointment_flag,
+        appointmentAt: r.appointment_at || "",
+        appointmentConfirmed: !!r.appointment_confirmed,
+        meetingDone: !!r.meeting_done,
+        meetingNotes: r.meeting_notes || "",
+        followUpOpportunity: !!r.follow_up_opportunity,
+        nextFollowUpAt: r.next_follow_up_at || localFollowUpGet(r.id) || "",
+        leadStatus: r.lead_status || "Processing",
+        sourceEvent: r.source_event || "",
+        teamLeader: r.team_leader || parseTeamLeader(r.ricoh_house || "") || "",
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      };
+    }
+
+    function toRow(c) {
+      const row = {
+        id: c.id,
+        customer_name: c.customerName,
+        partner: c.partner,
+        systems: c.systems,
+        requirements: c.requirements,
+        quantity: c.quantity,
+        budget: c.budget,
+        amount: c.amount,
+        success_rate: c.successRate,
+        target_closing_date: c.targetClosingDate || null,
+        stage: c.stage,
+        close_reason: c.closeReason,
+        notes: c.notes,
+        ricoh_house: c.ricohHouse || "",
+        ricoh_sales: c.ricohSales || "",
+        ricoh_consultant: c.ricohConsultant || "",
+        appointment_flag: !!c.appointmentFlag,
+        appointment_at: c.appointmentAt || null,
+        appointment_confirmed: !!c.appointmentConfirmed,
+        meeting_done: !!c.meetingDone,
+        meeting_notes: c.meetingNotes || "",
+        follow_up_opportunity: !!c.followUpOpportunity,
+        lead_status: c.leadStatus || "Processing",
+        source_event: c.sourceEvent || "",
+        updated_at: new Date().toISOString(),
+      };
+      if (mgmtColsReady) {
+        row.next_follow_up_at = c.nextFollowUpAt || null;
+        row.team_leader = c.teamLeader || "";
+        row.company_sales = c.companySales || "";
+      }
+      return row;
+    }
+
+    function normalizeCompanySales(raw) {
+      const s = String(raw || "").trim();
+      if (!s) return "";
+      const hit = COMPANY_SALES.find((n) => n.toLowerCase() === s.toLowerCase());
+      return hit || "";
+    }
+
+    function parseTeamLeader(house) {
+      const m = String(house || "").match(/\(([^)]+)\s+Team\)/i);
+      return m ? m[1].trim() : "";
+    }
+
+    function localFollowUpMap() {
+      try { return JSON.parse(localStorage.getItem(FOLLOWUP_LS_KEY) || "{}"); } catch (_) { return {}; }
+    }
+    function localFollowUpGet(id) {
+      return localFollowUpMap()[id] || "";
+    }
+    function localFollowUpSet(id, dateStr) {
+      const map = localFollowUpMap();
+      if (dateStr) map[id] = dateStr;
+      else delete map[id];
+      localStorage.setItem(FOLLOWUP_LS_KEY, JSON.stringify(map));
+    }
+
+    function companyKey(c) {
+      return ((c.customerName || "").split("\n")[0] || c.id).trim();
+    }
+
+    function isDq(c) {
+      return c.leadStatus === "DQ" || c.closeReason === "disqualified";
+    }
+
+    function isQualified(c) {
+      if (isDq(c) || c.closeReason === "failed") return false;
+      return !!c.meetingDone || !!c.followUpOpportunity || QUALIFIED_STAGES.has(c.stage) || c.closeReason === "won";
+    }
+
+    function isWon(c) {
+      return c.stage === "confirmation" || c.closeReason === "won";
+    }
+
+    function daysAgo(n) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - n);
+      return d;
+    }
+
+    function inLastDays(dateLike, days) {
+      if (!dateLike) return false;
+      const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+      if (Number.isNaN(d.getTime())) return false;
+      return d >= daysAgo(days);
+    }
+
+    function meetingDatesForCase(c) {
+      const logs = (logsByCase[c.id] || []).filter((l) => l.log_type === "meeting_done");
+      const dates = logs
+        .map((l) => new Date(l.happened_at || l.created_at))
+        .filter((d) => !Number.isNaN(d.getTime()));
+      if (!dates.length && c.meetingDone) {
+        const fallback = c.appointmentAt ? new Date(c.appointmentAt) : (c.updatedAt ? new Date(c.updatedAt) : null);
+        if (fallback && !Number.isNaN(fallback.getTime())) dates.push(fallback);
+      }
+      return dates.sort((a, b) => b - a);
+    }
+
+    function visitCount(c) {
+      const n = meetingDatesForCase(c).length;
+      if (n) return n;
+      return c.meetingDone ? 1 : 0;
+    }
+
+    function lastMeetingDate(c) {
+      const dates = meetingDatesForCase(c);
+      return dates[0] || null;
+    }
+
+    function todayStart() {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    function isFollowUpOverdue(c) {
+      if (!c.nextFollowUpAt || isDq(c) || c.stage === "closed") return false;
+      const d = parseLocalDate(c.nextFollowUpAt);
+      if (!d) return false;
+      return d < todayStart();
+    }
+
+    /* -------- voice parse (natural Cantonese / Chinese notes) -------- */
+    function parseVoice(text) {
+      const raw = text.trim();
+      const flat = raw.replace(/\s+/g, " ");
+      const compact = raw.replace(/\s+/g, "");
+      const lower = flat.toLowerCase();
+
+      const customerName = extractCustomerName(raw, flat, compact);
+      const partner = extractPartner(compact, lower);
+      const systems = extractSystems(lower, compact);
+      const quantity = extractQuantity(compact, flat);
+      const budgetRaw = (compact.match(/(?:budget|預算)(?:係|是|大約|約|有)?[:：]?([0-9０-９,.一二三四五六七八九十兩]+[萬千]?)/i) || compact.match(/([0-9０-９,.一二三四五六七八九十兩]+萬)/) || [])[1];
+      const requirements = extractRequirements(raw, flat, systems);
+
+      return {
+        customerName,
+        partner: partner || "直銷",
+        systems,
+        requirements,
+        quantity,
+        budget: budgetRaw ? parseMoneyZh(budgetRaw) : undefined,
+      };
+    }
+
+    function extractCustomerName(raw, flat, compact) {
+      const patterns = [
+        /客戶名稱[，,\s]*叫\s*([^\n。.!！；;]{2,60})/i,
+        /名稱[，,\s]*叫\s*([^\n。.!！；;]{2,60})/i,
+        /叫\s*([A-Za-z][A-Za-z0-9 .&'’\-]{1,50}(?:group|ltd|limited|company|co\.?|clinic|centre|center)?)/i,
+        /客戶(?:公司|名稱)?(?:名叫|叫|係|是|為)\s*([^\n，,。.!！；;]{2,60})/,
+        /公司(?:名叫|叫|係|是|為)\s*([^\n，,。.!！；;]{2,60})/,
+      ];
+      for (const re of patterns) {
+        const m = raw.match(re) || flat.match(re) || compact.match(re);
+        if (m?.[1]) {
+          let name = m[1]
+            .replace(/^(係|是|為|叫|名稱|公司)/, "")
+            .replace(/[，,。.!！].*$/, "")
+            .replace(/(做|係|現時|而家|目前).*$/, "")
+            .trim();
+          // Prefer English brand if mixed with Chinese trailing noise
+          const eng = name.match(/[A-Za-z][A-Za-z0-9 .&'’\-]{1,50}/);
+          if (eng && /[A-Za-z]{2,}/.test(eng[0]) && eng[0].trim().length >= 3) {
+            name = eng[0].replace(/\s+/g, " ").trim();
+          }
+          if (name.length >= 2) return name.slice(0, 80);
+        }
+      }
+      return "";
+    }
+
+    function extractPartner(compact, lower) {
+      const known = PARTNERS.find((p) => lower.includes(p.toLowerCase()) || compact.toLowerCase().includes(p.toLowerCase().replace(/\s+/g, "")));
+      if (known) return known;
+      if (/轉介|介紹人|經人介紹/.test(compact)) return "轉介";
+      if (/partner\s*a/i.test(lower)) return "Partner A";
+      if (/partner\s*b/i.test(lower)) return "Partner B";
+      if (/partner\s*c/i.test(lower)) return "Partner C";
+      return "";
+    }
+
+    function extractSystems(lower, compact) {
+      const found = new Set();
+      const hay = `${lower} ${compact.toLowerCase().replace(/fas/gi, "fas")}`;
+      // normalize "F A S" / "F.A.S"
+      const norm = hay.replace(/f\s*a\s*s/gi, "fas").replace(/f\.a\.s/gi, "fas");
+      for (const item of SYSTEM_ALIASES) {
+        if (item.keys.some((k) => norm.includes(k.toLowerCase()))) found.add(item.id);
+      }
+      // direct tag match
+      for (const s of SYSTEMS) {
+        if (s !== "其他" && norm.toUpperCase().includes(s)) found.add(s);
+      }
+      return [...found];
+    }
+
+    function extractQuantity(compact, flat) {
+      const map = { 一:1,二:2,兩:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,十:10 };
+      const patterns = [
+        /有([0-9０-９一二三四五六七八九十兩]+)個?人/,
+        /([0-9０-９一二三四五六七八九十兩]+)個?(?:人|用戶|users?)/i,
+        /數量(?:係|是|為)?[:：]?([0-9０-９一二三四五六七八九十兩]+(?:個|套|用戶|人|店|模組)?)/,
+        /([0-9０-９一二三四五六七八九十兩]+個模組)/,
+      ];
+      for (const re of patterns) {
+        const m = compact.match(re) || flat.replace(/\s+/g, "").match(re);
+        if (!m?.[1]) continue;
+        let q = m[1];
+        q = q.replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0));
+        const zh = q.match(/^([一二三四五六七八九十兩]+)(人|用戶)?$/);
+        if (zh) {
+          let n = zh[1];
+          let num = n.includes("十")
+            ? ((n.split("十")[0] ? map[n.split("十")[0]] || 0 : 1) * 10 + (map[n.split("十")[1]] || 0))
+            : (map[n] || 0);
+          return `${num} 用戶`;
+        }
+        if (/^\d+$/.test(q)) return `${q} 用戶`;
+        return q;
+      }
+      return "";
+    }
+
+    function extractRequirements(raw, flat, systems) {
+      const bits = [];
+      const compact = raw.replace(/\s+/g, "");
+
+      const biz = compact.match(/做([^。.!！，,]{2,30})(?:嘅|的)/);
+      if (biz?.[1] && !/系統|booking|account/i.test(biz[1])) {
+        bits.push(`行業／服務：${biz[1]}`);
+      }
+
+      if (/沒有用[緊着]?任何系統|未有系統|冇用系統|沒有系統|currently\s*no\s*system/i.test(raw + compact)) {
+        bits.push("現時未有使用任何系統");
+      }
+
+      const interest = [];
+      if (/booking/i.test(raw) || /預約/.test(compact)) interest.push("Booking System");
+      if (/account/i.test(raw) || /會計/.test(compact)) interest.push("Account System");
+      if (interest.length) bits.push(`特別有興趣：${interest.join("、")}`);
+
+      const introduced = [];
+      if (/workflow/i.test(raw) || /工作流|流程系統/.test(compact)) introduced.push("Workflow");
+      if (/f\s*a\s*s|fas|f\.a\.s/i.test(raw)) introduced.push("FAS");
+      if (introduced.length && /介紹/.test(compact)) {
+        bits.push(`已介紹：${introduced.join("、")}`);
+      } else if (introduced.length && systems.length) {
+        // still note if mentioned
+      }
+
+      if (/scan|掃描|ocr|影相|張單|單據|發票|receipt|invoice/i.test(raw) || /scan張|掃/.test(compact)) {
+        bits.push("希望以系統掃描單據／發票，自動擷取內容與銀碼並入會計系統");
+      }
+
+      // Explicit 需求 clause if present
+      const explicit = ((flat.match(/需求(?:係|是|為|：|:)\s*(.+?)(?:預算|數量|幾多|amount|成功|$)/i) || [])[1] || "").trim();
+      if (explicit) bits.unshift(explicit.replace(/[，,；;]+$/g, ""));
+
+      if (!bits.length && systems.length) {
+        bits.push(`有興趣系統：${systems.join("、")}`);
+      }
+
+      // Keep a short cleaned original for context if we got structure
+      if (bits.length) return bits.join("；");
+
+      // Fallback: use a condensed version of the note (not empty)
+      return flat.replace(/\s+/g, " ").slice(0, 280);
+    }
+
+    function parseMoneyZh(raw) {
+      const half = raw.replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0)).replace(/,/g, "");
+      const map = { 一:1,二:2,兩:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,十:10 };
+      const cm = half.match(/([一二三四五六七八九十兩]+)(萬|千)?/);
+      if (cm) {
+        let n = 0;
+        const s = cm[1];
+        if (s.includes("十")) {
+          const [a, b] = s.split("十");
+          n = (a ? map[a] || 0 : 1) * 10 + (b ? map[b] || 0 : 0);
+        } else n = [...s].reduce((acc, ch) => acc * 10 + (map[ch] || 0), 0);
+        if (cm[2] === "萬") n *= 10000;
+        if (cm[2] === "千") n *= 1000;
+        return Math.round(n);
+      }
+      const m = half.match(/([0-9.]+)(萬|千)?/);
+      if (!m) return 0;
+      let n = parseFloat(m[1]);
+      if (m[2] === "萬") n *= 10000;
+      if (m[2] === "千") n *= 1000;
+      return Math.round(n);
+    }
+
+    function initPortalForm() {
+      const sel = document.getElementById("partnerSelect");
+      sel.innerHTML = PARTNERS.map((p) => `<option value="${p}">${p}</option>`).join("");
+      const tags = document.getElementById("systemTags");
+      tags.innerHTML = SYSTEMS.map((s) => `<button type="button" class="tag ${selectedSystems.has(s) ? "on" : ""}" data-sys="${s}">${s}</button>`).join("");
+      tags.querySelectorAll(".tag").forEach((t) => {
+        t.onclick = () => {
+          const s = t.dataset.sys;
+          selectedSystems.has(s) ? selectedSystems.delete(s) : selectedSystems.add(s);
+          t.classList.toggle("on");
+        };
+      });
+    }
+
+    function fillPortal(parsed) {
+      const form = document.getElementById("caseForm");
+      selectedSystems = new Set(parsed.systems || []);
+      initPortalForm();
+      if (parsed.customerName) form.customerName.value = parsed.customerName;
+      form.partner.value = parsed.partner || "直銷";
+      form.requirements.value = parsed.requirements || "";
+      form.quantity.value = parsed.quantity || "";
+      if (parsed.budget != null) form.budget.value = parsed.budget;
+      else if (!form.budget.value) form.budget.value = "";
+
+      const summary = [
+        parsed.customerName ? `客戶：${parsed.customerName}` : null,
+        parsed.quantity ? `人數／數量：${parsed.quantity}` : null,
+        parsed.systems?.length ? `系統：${parsed.systems.join("、")}` : null,
+        parsed.partner ? `Partner：${parsed.partner}` : null,
+        parsed.budget != null ? `Budget：${parsed.budget}` : null,
+      ].filter(Boolean);
+      const status = document.getElementById("portalStatus");
+      status.textContent = summary.length
+        ? `已填入：${summary.join(" ｜ ")}`
+        : "未能可靠識別欄位，請手動修正";
+      const box = document.getElementById("parsePreview");
+      if (box) {
+        box.classList.toggle("hidden", !summary.length);
+        box.innerHTML = summary.length
+          ? `<strong>解析結果</strong>
+             <div style="margin-top:6px;line-height:1.55;color:var(--ink-soft)">
+               ${summary.map((s) => escapeHtml(s)).join("<br>")}
+               ${parsed.requirements ? `<div style="margin-top:8px"><strong>需求摘要</strong><div style="margin-top:4px">${escapeHtml(parsed.requirements)}</div></div>` : ""}
+             </div>`
+          : "";
+      }
+    }
+
+    /* -------- dashboard / board / list -------- */
+    let dashPeriod = localStorage.getItem("crm_dash_period") || "6";
+    let dashFrom = localStorage.getItem("crm_dash_from") || "";
+    let dashTo = localStorage.getItem("crm_dash_to") || "";
+
+    function parseLocalDate(raw) {
+      if (!raw) return null;
+      const s = String(raw).slice(0, 10);
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+      if (!m) return null;
+      const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function formatLocalDate(d) {
+      if (!d) return "—";
+      const y = d.getFullYear();
+      const mo = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${mo}-${day}`;
+    }
+
+    function endOfDay(d) {
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+    }
+
+    function caseForecastDate(c) {
+      // Prefer target closing; fallback to appointment for Ricoh leads
+      return parseLocalDate(c.targetClosingDate || (c.appointmentAt ? String(c.appointmentAt).slice(0, 10) : ""));
+    }
+
+    function caseClosingDate(c) {
+      // Actual closed / won cases — use updated day when possible, else target closing
+      if (!(c.stage === "confirmation" || c.closeReason === "won" || isWon(c))) return null;
+      if (c.updatedAt) {
+        const d = parseLocalDate(String(c.updatedAt).slice(0, 10));
+        if (d) return d;
+        const t = new Date(c.updatedAt);
+        if (!Number.isNaN(t.getTime())) return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+      }
+      return caseForecastDate(c);
+    }
+
+    function getDashRange() {
+      const now = new Date();
+      const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      if (dashPeriod === "custom") {
+        const from = parseLocalDate(dashFrom);
+        const to = parseLocalDate(dashTo);
+        if (from && to && from <= to) {
+          return {
+            mode: "custom",
+            from,
+            to: endOfDay(to),
+            title: `${dashFrom} 至 ${dashTo}`,
+            months: buildMonthBuckets(from, to),
+          };
+        }
+        // Custom selected but incomplete — show empty range until Apply
+        return {
+          mode: "custom",
+          from: startMonth,
+          to: endOfDay(startMonth),
+          title: "請選擇由日期至日期後按「套用」",
+          months: [],
+        };
+      }
+      const count = dashPeriod === "month" ? 1 : Number(dashPeriod) || 3;
+      const end = endOfDay(new Date(startMonth.getFullYear(), startMonth.getMonth() + count, 0));
+      const title =
+        count === 1 ? `${startMonth.getFullYear()}年${startMonth.getMonth() + 1}月（當月）`
+        : `未來 ${count} 個月 Closing`;
+      return {
+        mode: dashPeriod,
+        from: startMonth,
+        to: end,
+        title,
+        months: buildMonthBuckets(startMonth, end),
+      };
+    }
+
+    function buildMonthBuckets(from, to) {
+      const months = [];
+      const cursor = new Date(from.getFullYear(), from.getMonth(), 1);
+      const last = new Date(to.getFullYear(), to.getMonth(), 1);
+      while (cursor <= last) {
+        const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+        months.push({
+          key,
+          label: `${cursor.getFullYear()}年${cursor.getMonth() + 1}月`,
+          monthStart: new Date(cursor),
+          monthEnd: new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 23, 59, 59),
+        });
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+      return months;
+    }
+
+    function syncDashPeriodUi() {
+      document.querySelectorAll("#dashPeriodSeg button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.period === dashPeriod);
+      });
+      const custom = document.getElementById("dashCustomRange");
+      custom.classList.toggle("hidden", dashPeriod !== "custom");
+      if (dashFrom) document.getElementById("dashFrom").value = dashFrom;
+      if (dashTo) document.getElementById("dashTo").value = dashTo;
+    }
+
+    const STAT_ICONS = {
+      cases: '<path d="M7 7h10v12H7z"/><path d="M9 4h6v3H9z"/>',
+      meet: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>',
+      check: '<circle cx="12" cy="12" r="8"/><path d="m8.5 12.5 2.2 2.2 4.8-5"/>',
+      chart: '<path d="M4 19V10M10 19V5M16 19v-7M22 19H2"/>',
+      phone: '<path d="M8 4h3l1.5 4-2 1.5a10 10 0 0 0 4 4L16 12l4 1.5V17a2 2 0 0 1-2 2A12 12 0 0 1 6 7a2 2 0 0 1 2-2z"/>',
+      follow: '<path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="8"/>',
+      people: '<circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M3.5 18c1.2-3 3.2-4.5 5.5-4.5S13.3 15 14.5 18M14 13.5c1.5.2 2.8 1 3.8 2.5"/>',
+      money: '<circle cx="12" cy="12" r="8"/><path d="M12 7v10M9.5 9.5c.6-1 1.5-1.5 2.5-1.5s2 .7 2 1.8-1 1.6-2.5 2-2.5 1-2.5 2.2 1.1 1.8 2.5 1.8 1.9-.5 2.5-1.5"/>',
+      clock: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 2"/>',
+    };
+
+    function renderStatCard({ label, value, sub = "", tone = "purple", icon = "cases", trend = "", valueStyle = "" }) {
+      const path = STAT_ICONS[icon] || STAT_ICONS.cases;
+      const trendHtml = trend ? `<span class="stat-trend">↑ ${escapeHtml(String(trend))}</span>` : "";
+      return `<article class="stat">
+        <div class="stat-top">
+          <span class="stat-ico ${tone}" aria-hidden="true"><svg viewBox="0 0 24 24">${path}</svg></span>
+          ${trendHtml}
+        </div>
+        <div class="label">${escapeHtml(label)}</div>
+        <div class="value" style="${valueStyle}">${typeof value === "number" ? value : escapeHtml(String(value))}</div>
+        ${sub ? `<div class="muted" style="font-size:.72rem;margin-top:4px">${escapeHtml(sub)}</div>` : ""}
+      </article>`;
+    }
+
+    function renderDashboard() {
+      syncDashPeriodUi();
+      const open = cases.filter((c) => c.stage !== "closed");
+      const closed = cases.filter((c) => c.stage === "closed");
+      const range = getDashRange();
+      const inRange = open.filter((c) => {
+        const d = caseForecastDate(c);
+        if (!d) return false;
+        return d >= range.from && d <= range.to;
+      });
+      const apptN = cases.filter((c) => c.appointmentFlag || c.appointmentAt).length;
+      const meetN = cases.filter((c) => c.meetingDone).length;
+      const followN = cases.filter((c) => c.followUpOpportunity).length;
+      const rangeAmt = inRange.reduce((s, c) => s + (c.amount || 0), 0);
+      const rangeWeighted = inRange.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
+      const winHint = open.length ? `${Math.min(99, Math.round((meetN / Math.max(open.length, 1)) * 100))}%` : "";
+      document.getElementById("dashStats").innerHTML = [
+        renderStatCard({ label: "公司 Cases", value: open.length, sub: `${closed.length} 宗 DQ／關閉`, tone: "purple", icon: "cases", trend: winHint }),
+        renderStatCard({ label: "已約會面", value: apptN, sub: "含待確認／已確認", tone: "orange", icon: "meet" }),
+        renderStatCard({ label: "已完成會面", value: meetN, sub: "會後可寫 comment", tone: "mint", icon: "check" }),
+        renderStatCard({ label: "所選期間案件", value: inRange.length, sub: `${money(rangeAmt)} · 加權 ${money(rangeWeighted)}`, tone: "sky", icon: "chart" }),
+      ].join("");
+
+      let maxAmt = 1;
+      const months = range.months.map((m) => {
+        // Target closing: pipeline cases aiming to close in this month
+        const list = cases.filter((c) => {
+          if (c.stage === "closed" && c.closeReason !== "won") return false;
+          const d = caseForecastDate(c);
+          if (!d) return false;
+          return d >= m.monthStart && d <= m.monthEnd;
+        });
+        // Closing case: actually won / confirmation in this month
+        const closedList = cases.filter((c) => {
+          const d = caseClosingDate(c);
+          if (!d) return false;
+          return d >= m.monthStart && d <= m.monthEnd;
+        });
+        const total = list.reduce((s, c) => s + (c.amount || 0), 0);
+        const closedAmt = closedList.reduce((s, c) => s + (c.amount || 0), 0);
+        maxAmt = Math.max(maxAmt, total, closedAmt);
+        return {
+          ...m,
+          list,
+          closedList,
+          targetCount: list.length,
+          closedCount: closedList.length,
+          total,
+          closedAmt,
+          weighted: list.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0),
+          avg: list.length ? Math.round(list.reduce((s, c) => s + (c.successRate || 0), 0) / list.length) : 0,
+        };
+      });
+
+      renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt });
+    }
+
+    function renderGroupedMonthBars(months) {
+      const maxN = Math.max(1, ...months.map((m) => Math.max(m.targetCount || 0, m.closedCount || 0)));
+      return `<div class="chart-legend">
+          <span><i style="background:#6b46fe"></i>Target Closing</span>
+          <span><i style="background:#27c281"></i>Closing Case</span>
+        </div>
+        <div class="grouped-bars">${months.map((m) => {
+          const tH = Math.max((m.targetCount || 0) ? 4 : 0, ((m.targetCount || 0) / maxN) * 100);
+          const cH = Math.max((m.closedCount || 0) ? 4 : 0, ((m.closedCount || 0) / maxN) * 100);
+          const short = m.label.replace(/^\d{4}年/, "");
+          return `<div class="grouped-col" title="${escapeHtml(m.label)} · Target ${m.targetCount || 0} · Closed ${m.closedCount || 0}">
+            <div class="gnums">${m.targetCount || 0} / ${m.closedCount || 0}</div>
+            <div class="grouped-pair">
+              <div class="gbar target"><i style="height:${tH}%"></i></div>
+              <div class="gbar closed"><i style="height:${cH}%"></i></div>
+            </div>
+            <div class="glbl">${escapeHtml(short)}</div>
+          </div>`;
+        }).join("")}</div>`;
+    }
+
+    function chartHeadHtml(title, sub) {
+      return `<div class="chart-head">
+        <div>
+          <h2>${escapeHtml(title)}</h2>
+          <p class="muted" style="margin:4px 0 0">${escapeHtml(sub)}</p>
+        </div>
+      </div>`;
+    }
+
+    function renderVBars(items, { labelKey = "label", valueKey = "value", tone = "" } = {}) {
+      const maxV = Math.max(1, ...items.map((it) => Number(it[valueKey]) || 0));
+      return `<div class="vbars">${items.map((it) => {
+        const v = Number(it[valueKey]) || 0;
+        const h = Math.max(v ? 6 : 0, (v / maxV) * 100);
+        const style = it.color ? `background:linear-gradient(180deg, ${it.bg || it.color}, ${it.color})` : "";
+        return `<div class="vbar-col" title="${escapeHtml(String(it.fullLabel || it[labelKey]))}: ${v}">
+          <div class="vnum">${v}</div>
+          <div class="vbar-track"><i class="${tone}" style="height:${h}%;${style}"></i></div>
+          <div class="vlbl">${escapeHtml(String(it[labelKey]))}</div>
+        </div>`;
+      }).join("")}</div>`;
+    }
+
+    function renderHBars(items) {
+      const maxV = Math.max(1, ...items.map((it) => Number(it.value) || 0));
+      return items.map((it) => {
+        const w = Math.max((Number(it.value) || 0) ? 6 : 0, ((Number(it.value) || 0) / maxV) * 100);
+        const style = it.color ? `background:linear-gradient(90deg, ${it.bg || "#efeaff"}, ${it.color})` : "";
+        return `<div class="chart-row" title="${escapeHtml(it.fullLabel || it.label)}：${it.value}">
+          <div class="name">${escapeHtml(it.label)}</div>
+          <div class="chart-bar ${it.tone || ""}"><i style="width:${w}%;${style}"></i></div>
+          <div class="count">${it.value}</div>
+        </div>${it.sub ? `<div class="muted" style="font-size:.68rem;margin:-2px 0 2px 106px">${escapeHtml(it.sub)}</div>` : ""}`;
+      }).join("");
+    }
+
+    function bindMonthRows(root) {
+      root.querySelectorAll(".month-row").forEach((row) => {
+        const toggle = () => {
+          const openRow = row.classList.toggle("open");
+          row.setAttribute("aria-expanded", openRow ? "true" : "false");
+        };
+        row.addEventListener("click", (e) => {
+          if (e.target.closest("[data-case-id]")) {
+            openDrawer(e.target.closest("[data-case-id]").dataset.caseId);
+            return;
+          }
+          toggle();
+        });
+        row.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggle();
+          }
+        });
+      });
+    }
+
+    function renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt }) {
+      // ---- Months closing (棒圖 only) ----
+      const monthsRoot = document.getElementById("dashMonths");
+      let monthsBody = renderGroupedMonthBars(months);
+      monthsBody += months.map((m) => {
+        const width = Math.max(4, ((m.targetCount || 0) / Math.max(...months.map((x) => x.targetCount || 0), 1)) * 100);
+        const breakdownTarget = m.list.length
+          ? m.list.map((c) => {
+              const s = stageMeta(c.stage);
+              const fd = caseForecastDate(c);
+              return `<div class="breakdown-item" data-case-id="${c.id}">
+                <div><strong>${escapeHtml((c.customerName || "").split("\n")[0])}</strong></div>
+                <div><strong>${money(c.amount)}</strong></div>
+                <div class="breakdown-meta">
+                  <span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span>
+                  <span>Target ${formatLocalDate(fd)}</span>
+                </div>
+              </div>`;
+            }).join("")
+          : `<div class="breakdown-empty">呢個月未有 Target Closing</div>`;
+        const breakdownClosed = (m.closedList || []).length
+          ? m.closedList.map((c) => {
+              const s = stageMeta(c.stage);
+              const cd = caseClosingDate(c);
+              return `<div class="breakdown-item" data-case-id="${c.id}">
+                <div><strong>${escapeHtml((c.customerName || "").split("\n")[0])}</strong></div>
+                <div><strong>${money(c.amount)}</strong></div>
+                <div class="breakdown-meta">
+                  <span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span>
+                  <span>Closed ${formatLocalDate(cd)}</span>
+                </div>
+              </div>`;
+            }).join("")
+          : `<div class="breakdown-empty">呢個月未有 Closing Case</div>`;
+        return `<div class="month-row" data-month="${m.key}" role="button" tabindex="0" aria-expanded="false">
+          <div class="month-row-top">
+            <strong>${m.label}<span class="chev">▸</span></strong>
+            <span class="muted">Target ${m.targetCount || 0} · Closed ${m.closedCount || 0} · ${money(m.total)}</span>
+          </div>
+          <div class="bar"><i style="width:${width}%"></i></div>
+          <div class="muted" style="font-size:.7rem">加權預測 ${money(m.weighted)} · 機率 ${pct(m.avg)}</div>
+          <div class="month-breakdown">
+            <div class="eyebrow" style="margin-bottom:4px">Target Closing</div>
+            ${breakdownTarget}
+            <div class="eyebrow" style="margin:10px 0 4px">Closing Case</div>
+            ${breakdownClosed}
+          </div>
+        </div>`;
+      }).join("");
+      const targetSum = months.reduce((s, m) => s + (m.targetCount || 0), 0);
+      const closedSum = months.reduce((s, m) => s + (m.closedCount || 0), 0);
+      monthsRoot.innerHTML = chartHeadHtml(
+        range.title,
+        `Target Closing vs Closing Case · Target ${targetSum} · Closed ${closedSum} · 跟進機會 ${followN}`
+      ) + monthsBody;
+      bindMonthRows(monthsRoot);
+
+      // ---- Stage ----
+      const stageCounts = STAGES.map((s) => ({
+        ...s,
+        n: cases.filter((c) => c.stage === s.id).length,
+      }));
+      const stageTotal = stageCounts.reduce((s, x) => s + x.n, 0) || 1;
+      const stageItems = stageCounts.map((s) => ({
+        label: s.short,
+        fullLabel: s.label,
+        value: s.n,
+        color: s.color,
+        bg: s.bg,
+      }));
+      document.getElementById("dashChartStage").innerHTML =
+        chartHeadHtml("Stage Pipeline", `全部案件階段分佈 · 共 ${stageTotal} 宗`) + renderHBars(stageItems);
+
+      // ---- Sales ----
+      const salesRows = COMPANY_SALES.map((name) => {
+        const list = cases.filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed");
+        const weighted = list.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
+        const meets = list.filter((c) => c.meetingDone).length;
+        return { name, n: list.length, weighted, meets };
+      });
+      const salesItems = salesRows.map((r, idx) => ({
+        label: r.name,
+        value: r.n,
+        tone: ["purple", "orange", "mint", "sky", "rose"][idx % 5],
+        sub: `${money(r.weighted)} 加權 · 會面 ${r.meets}`,
+        color: "#6b46fe",
+        bg: "#c4b5fd",
+      }));
+      document.getElementById("dashChartSales").innerHTML =
+        chartHeadHtml("銷售員 Pipeline", "本公司銷售員 open cases") + renderVBars(salesItems);
+
+      // ---- Funnel ----
+      const allN = cases.length;
+      const funnel = [
+        { label: "全部 Lead", short: "Lead", n: allN, sub: "資料庫總數", color: "#6b46fe", bg: "#c4b5fd", width: 100 },
+        { label: "已約／會面", short: "會面", n: Math.max(apptN, meetN), sub: `約見 ${apptN} · 完成 ${meetN}`, color: "#4aa8ff", bg: "#bfdbfe", width: 86 },
+        { label: "跟進機會", short: "跟進", n: followN, sub: "有機會繼續", color: "#ff8a4c", bg: "#fed7aa", width: 72 },
+        { label: "報價／最終", short: "報價", n: cases.filter((c) => ["quotation", "follow_up", "final_stage"].includes(c.stage)).length, sub: "接近成交", color: "#ff6b9d", bg: "#fbcfe8", width: 58 },
+        { label: "確認簽單", short: "簽單", n: cases.filter((c) => c.stage === "confirmation" || c.closeReason === "won").length, sub: `關閉 ${closed.length}`, color: "#27c281", bg: "#a7f3d0", width: 44 },
+      ];
+      const top = Math.max(1, funnel[0].n);
+      const funnelBody = `<div class="funnel-stack">
+          ${funnel.map((f) => {
+            const rate = Math.round((f.n / top) * 100);
+            return `<div class="funnel-step" style="width:${f.width}%;background:linear-gradient(135deg, ${f.bg}, ${f.color})">
+              <div>
+                <div class="flabel">${escapeHtml(f.label)}</div>
+                <div class="fsub">${escapeHtml(f.sub)}</div>
+              </div>
+              <div style="text-align:right">
+                <div class="fval">${f.n}</div>
+                <div class="fsub">${rate}%</div>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>
+        <div class="chart-legend">
+          <span><i style="background:#6b46fe"></i>Lead</span>
+          <span><i style="background:#4aa8ff"></i>會面</span>
+          <span><i style="background:#ff8a4c"></i>跟進</span>
+          <span><i style="background:#ff6b9d"></i>報價</span>
+          <span><i style="background:#27c281"></i>簽單</span>
+        </div>`;
+      document.getElementById("dashChartFunnel").innerHTML =
+        chartHeadHtml("轉換漏斗", `由 Lead 到簽單 · 所選期間 ${inRange.length} 宗`) + funnelBody;
+    }
+
+    function renderBoardDash() {
+      const open = cases.filter((c) => c.stage !== "closed");
+      const apptN = cases.filter((c) => c.appointmentFlag || c.appointmentAt).length;
+      const meetN = cases.filter((c) => c.meetingDone).length;
+      const followN = cases.filter((c) => c.followUpOpportunity).length;
+      const contactingN = cases.filter((c) => ["contacting", "unreachable"].includes(c.stage)).length;
+      document.getElementById("boardDash").innerHTML = [
+        renderStatCard({ label: "公司 Cases", value: open.length, sub: `${cases.length} 總數`, tone: "purple", icon: "cases" }),
+        renderStatCard({ label: "聯絡中／失聯", value: contactingN, sub: "需要跟進致電", tone: "rose", icon: "phone" }),
+        renderStatCard({ label: "已約會面", value: apptN, sub: "含待確認", tone: "orange", icon: "meet" }),
+        renderStatCard({ label: "已會面", value: meetN, sub: "可寫會後 comment", tone: "mint", icon: "check" }),
+        renderStatCard({ label: "跟進機會", value: followN, sub: "有機會繼續", tone: "sky", icon: "follow" }),
+      ].join("");
+    }
+
+    function renderStageFilter() {
+      const box = document.getElementById("stageFilter");
+      box.innerHTML = `<span class="eyebrow" style="margin-right:4px">顯示 Status</span>` +
+        STAGES.map((s) => {
+          const n = cases.filter((c) => c.stage === s.id).length;
+          const checked = visibleStages.includes(s.id) ? "checked" : "";
+          return `<label><input type="checkbox" data-stage-toggle="${s.id}" ${checked}/> ${s.label} <span class="muted">(${n})</span></label>`;
+        }).join("") +
+        `<button type="button" class="btn btn-ghost btn-sm" id="btnStagesAll">顯示全部 Status</button>
+         <button type="button" class="btn btn-ghost btn-sm" id="btnStagesClearEmpty">隱藏 0 宗</button>`;
+      box.querySelectorAll("[data-stage-toggle]").forEach((input) => {
+        input.onchange = () => {
+          const id = input.dataset.stageToggle;
+          if (input.checked) {
+            if (!visibleStages.includes(id)) visibleStages.push(id);
+            // keep pipeline order
+            visibleStages = STAGES.map((s) => s.id).filter((x) => visibleStages.includes(x));
+          } else {
+            if (visibleStages.length <= 1) {
+              input.checked = true;
+              toast("至少保留 1 個 status");
+              return;
+            }
+            visibleStages = visibleStages.filter((x) => x !== id);
+          }
+          saveVisibleStages();
+          paintKanbanColumns();
+        };
+      });
+      document.getElementById("btnStagesAll").onclick = () => {
+        visibleStages = ALL_BOARD_STAGES();
+        saveVisibleStages();
+        renderStageFilter();
+        paintKanbanColumns();
+      };
+      document.getElementById("btnStagesClearEmpty").onclick = () => {
+        const next = STAGES.map((s) => s.id).filter((id) => cases.some((c) => c.stage === id));
+        visibleStages = next.length ? next : ALL_BOARD_STAGES();
+        saveVisibleStages();
+        renderStageFilter();
+        paintKanbanColumns();
+      };
+    }
+
+    let boardSuggestActive = -1;
+
+    function caseMatchesBoardSearch(c) {
+      const q = (document.getElementById("boardSearch")?.value || "").trim().toLowerCase();
+      if (!q) return true;
+      const company = (c.customerName || "").toLowerCase();
+      if (company.includes(q)) return true;
+      return (contactsByCase[c.id] || []).some((p) => (p.name || "").toLowerCase().includes(q));
+    }
+
+    function buildBoardSuggestions(qRaw) {
+      const q = (qRaw || "").trim().toLowerCase();
+      if (!q) return [];
+      const seen = new Set();
+      const out = [];
+      const push = (item) => {
+        const key = `${item.kind}|${item.value.toLowerCase()}|${item.caseId || ""}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push(item);
+      };
+      for (const c of cases) {
+        const company = (c.customerName || "").split("\n")[0].trim();
+        if (company && company.toLowerCase().includes(q)) {
+          push({
+            kind: "公司",
+            label: company,
+            value: company,
+            meta: stageMeta(c.stage).label,
+            caseId: c.id,
+          });
+        }
+        for (const p of (contactsByCase[c.id] || [])) {
+          const name = (p.name || "").trim();
+          if (!name || !name.toLowerCase().includes(q)) continue;
+          push({
+            kind: "聯絡人",
+            label: name,
+            value: name,
+            meta: company || "—",
+            caseId: c.id,
+          });
+        }
+        if (out.length >= 12) break;
+      }
+      return out.slice(0, 12);
+    }
+
+    function hideBoardSuggest() {
+      const box = document.getElementById("boardSuggest");
+      box.classList.add("hidden");
+      box.innerHTML = "";
+      boardSuggestActive = -1;
+      document.getElementById("boardSearch").setAttribute("aria-expanded", "false");
+    }
+
+    function renderBoardSuggest() {
+      const input = document.getElementById("boardSearch");
+      const box = document.getElementById("boardSuggest");
+      const q = (input.value || "").trim();
+      if (!q) {
+        hideBoardSuggest();
+        return;
+      }
+      const items = buildBoardSuggestions(q);
+      if (!items.length) {
+        box.innerHTML = `<div class="board-suggest-empty">沒有相似公司／聯絡人</div>`;
+        box.classList.remove("hidden");
+        input.setAttribute("aria-expanded", "true");
+        boardSuggestActive = -1;
+        return;
+      }
+      box.innerHTML = items.map((it, i) => `
+        <button type="button" class="board-suggest-item${i === boardSuggestActive ? " active" : ""}" role="option" data-suggest-idx="${i}" data-value="${escapeAttr(it.value)}" data-case-id="${escapeAttr(it.caseId || "")}">
+          <span class="kind">${escapeHtml(it.kind)}</span>
+          <span class="label">${escapeHtml(it.label)}</span>
+          <span class="meta">${escapeHtml(it.meta || "")}</span>
+        </button>
+      `).join("");
+      box.classList.remove("hidden");
+      input.setAttribute("aria-expanded", "true");
+      box.querySelectorAll(".board-suggest-item").forEach((btn) => {
+        btn.onmousedown = (e) => e.preventDefault(); // keep focus for click
+        btn.onclick = () => applyBoardSuggestion(btn.dataset.value, btn.dataset.caseId);
+      });
+    }
+
+    function applyBoardSuggestion(value, caseId) {
+      const input = document.getElementById("boardSearch");
+      input.value = value || "";
+      hideBoardSuggest();
+      paintKanbanColumns();
+      if (caseId) openDrawer(caseId);
+    }
+
+    function paintKanbanColumns() {
+      const root = document.getElementById("kanban");
+      const shown = STAGES.filter((s) => visibleStages.includes(s.id));
+      const q = (document.getElementById("boardSearch")?.value || "").trim();
+      const matched = cases.filter(caseMatchesBoardSearch);
+      root.innerHTML = shown.map((s) => {
+        const items = matched.filter((c) => c.stage === s.id);
+        const emptyMsg = q ? "沒有符合搜尋" : "拖曳案件到此";
+        return `<section class="col" data-stage="${s.id}">
+          <div class="col-head" style="display:flex;justify-content:space-between;align-items:center">
+            <span class="badge" style="color:${s.color};background:${s.bg}">${s.label}</span>
+            <span class="muted" style="font-size:.72rem">${items.length}</span>
+          </div>
+          <p class="col-desc">${s.desc}</p>
+          <div class="col-items">${items.map(cardHtml).join("") || `<div class="col-empty">${emptyMsg}</div>`}</div>
+        </section>`;
+      }).join("") || `<div class="breakdown-empty" style="padding:40px">請至少勾選一個 status</div>`;
+
+      root.querySelectorAll(".card-case").forEach((el) => {
+        el.draggable = true;
+        el.ondragstart = (e) => { dragId = el.dataset.id; e.dataTransfer.setData("text/case-id", el.dataset.id); };
+        el.onclick = () => openDrawer(el.dataset.id);
+      });
+      root.querySelectorAll(".col").forEach((col) => {
+        col.ondragover = (e) => e.preventDefault();
+        col.ondrop = async (e) => {
+          e.preventDefault();
+          const id = e.dataTransfer.getData("text/case-id") || dragId;
+          if (!id) return;
+          let stage = col.dataset.stage;
+          let closeReason = null;
+          if (stage === "closed") {
+            closeReason = confirm("按「確定」= Disqualified；「取消」= 失敗") ? "disqualified" : "failed";
+          }
+          await updateCase(id, { stage, closeReason, successRate: stage === "closed" ? 0 : undefined });
+        };
+      });
+    }
+
+    function renderBoard() {
+      renderBoardDash();
+      renderStageFilter();
+      paintKanbanColumns();
+    }
+
+    function cardHtml(c) {
+      const s = stageMeta(c.stage);
+      const contacts = contactsByCase[c.id] || [];
+      const logs = logsByCase[c.id] || [];
+      const companyLine = (c.customerName || "").split("\n")[0];
+      const appt = c.appointmentAt ? new Date(c.appointmentAt) : null;
+      const apptText = appt && !Number.isNaN(appt.getTime())
+        ? appt.toLocaleString("zh-HK", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+        : "";
+      return `<article class="card-case" data-id="${c.id}">
+        <strong style="white-space:pre-line;font-size:.9rem">${escapeHtml(companyLine)}</strong>
+        <div class="muted" style="font-size:.7rem;margin-top:3px">Sales: ${escapeHtml(c.ricohSales || "—")} · ${contacts.length} contacts · ${logs.length} logs</div>
+        <div class="tags" style="margin-top:6px">${(c.systems || []).slice(0, 3).map((x) => `<span class="tag on" style="cursor:default;padding:2px 8px">${escapeHtml(x)}</span>`).join("")}</div>
+        <div style="margin-top:8px;font-size:.72rem;color:var(--ink-soft)">
+          ${c.appointmentFlag || apptText ? `📅 ${apptText || "已約"}${c.appointmentConfirmed ? " · 已確認" : " · 待確認"}` : "未約會面"}
+          ${c.meetingDone ? " · ✅ 已會面" : ""}
+          ${c.followUpOpportunity ? " · 有跟進機會" : ""}
+        </div>
+        ${c.leadStatus === "DQ" || (c.stage === "closed" && c.closeReason) ? `<div style="margin-top:6px;font-size:.68rem;color:var(--rose);font-weight:700">${c.leadStatus === "DQ" || c.closeReason === "disqualified" ? "DQ" : "失敗"}</div>` : ""}
+        <div style="margin-top:6px"><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></div>
+      </article>`;
+    }
+
+    function renderCasesTable() {
+      const q = (document.getElementById("caseSearch").value || "").trim().toLowerCase();
+      const stage = document.getElementById("caseStageFilter").value;
+      const list = cases.filter((c) => {
+        if (stage !== "all" && c.stage !== stage) return false;
+        if (!q) return true;
+        const contactHay = (contactsByCase[c.id] || []).map((x) => [x.name, x.email, x.mobile, x.tel].join(" ")).join(" ");
+        return [c.customerName, c.partner, c.ricohSales, c.ricohHouse, c.requirements, (c.systems || []).join(" "), contactHay].join(" ").toLowerCase().includes(q);
+      });
+      document.getElementById("casesBody").innerHTML = list.map((c) => {
+        const s = stageMeta(c.stage);
+        const n = (contactsByCase[c.id] || []).length;
+        const companyLine = (c.customerName || "").split("\n")[0];
+        return `<tr>
+          <td><strong>${escapeHtml(companyLine)}</strong><div class="muted" style="font-size:.72rem">${n} contacts · ${escapeHtml(c.ricohSales || "—")}</div></td>
+          <td>${escapeHtml(c.partner)}<div class="muted" style="font-size:.68rem">${escapeHtml(c.ricohHouse || "")}</div></td>
+          <td>${(c.systems || []).map((x) => `<span class="badge" style="background:var(--accent-soft);color:var(--accent);margin:1px">${escapeHtml(x)}</span>`).join(" ") || "—"}</td>
+          <td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>
+          <td>${c.appointmentAt ? new Date(c.appointmentAt).toLocaleString("zh-HK") : "—"}<div class="muted" style="font-size:.68rem">${c.appointmentConfirmed ? "已確認" : (c.appointmentFlag ? "待確認" : "")}</div></td>
+          <td>${c.meetingDone ? "已會面" : "未會面"}</td>
+          <td>${c.followUpOpportunity ? "有" : "—"}</td>
+          <td><button class="btn btn-ghost btn-sm" data-open="${c.id}">詳情</button></td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="8" style="text-align:center;padding:28px" class="muted">沒有符合的案件</td></tr>`;
+      document.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => openDrawer(b.dataset.open));
+    }
+
+    function setMgmtTab(tab) {
+      mgmtTab = tab;
+      document.querySelectorAll("#mgmtTabs button").forEach((b) => b.classList.toggle("active", b.dataset.mgmt === tab));
+      document.querySelectorAll(".mgmt-panel").forEach((p) => p.classList.toggle("active", p.id === `mgmt-${tab}`));
+      renderMgmt();
+    }
+
+    function renderMgmt() {
+      document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady);
+      if (mgmtTab === "customers") renderCustomersMgmt();
+      else if (mgmtTab === "partners") renderPartnersMgmt();
+      else renderSalesMgmt();
+    }
+
+    function buildCustomerRows() {
+      const map = new Map();
+      for (const c of cases) {
+        const key = companyKey(c);
+        if (!map.has(key)) {
+          map.set(key, {
+            key,
+            name: key,
+            cases: [],
+            visit: 0,
+            lastMeeting: null,
+            nextFollowUp: "",
+            overdue: false,
+            sales: new Set(),
+            partners: new Set(),
+            primaryCaseId: c.id,
+          });
+        }
+        const row = map.get(key);
+        row.cases.push(c);
+        row.visit += visitCount(c);
+        const lm = lastMeetingDate(c);
+        if (lm && (!row.lastMeeting || lm > row.lastMeeting)) row.lastMeeting = lm;
+        if (c.ricohSales) row.sales.add(c.ricohSales);
+        if (c.partner) row.partners.add(c.partner);
+        // Prefer soonest upcoming / any follow-up date across cases
+        if (c.nextFollowUpAt) {
+          if (!row.nextFollowUp || c.nextFollowUpAt < row.nextFollowUp) {
+            row.nextFollowUp = c.nextFollowUpAt;
+            row.primaryCaseId = c.id;
+          }
+        }
+        if (isFollowUpOverdue(c)) row.overdue = true;
+      }
+      for (const row of map.values()) {
+        if (!row.nextFollowUp) {
+          const open = row.cases.find((c) => c.stage !== "closed") || row.cases[0];
+          row.primaryCaseId = open.id;
+          row.nextFollowUp = open.nextFollowUpAt || "";
+          row.overdue = row.cases.some(isFollowUpOverdue);
+        }
+      }
+      return [...map.values()].sort((a, b) => {
+        if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+        return a.name.localeCompare(b.name, "zh-HK");
+      });
+    }
+
+    function renderCustomersMgmt() {
+      const q = (document.getElementById("customerSearch")?.value || "").trim().toLowerCase();
+      const onlyOverdue = !!document.getElementById("customerOnlyOverdue")?.checked;
+      let rows = buildCustomerRows();
+      const overdueN = rows.filter((r) => r.overdue).length;
+      const alert = document.getElementById("customerOverdueAlert");
+      alert.innerHTML = overdueN
+        ? `<div class="mgmt-alert">⚠ 有 <strong>${overdueN}</strong> 個客戶已超過下次跟進日期仍未更新 — 請盡快跟進</div>`
+        : `<div class="mgmt-alert ok">✓ 暫時沒有逾期跟進客戶</div>`;
+
+      if (onlyOverdue) rows = rows.filter((r) => r.overdue);
+      if (q) {
+        rows = rows.filter((r) => {
+          const contactHay = r.cases.flatMap((c) => (contactsByCase[c.id] || []).map((p) => p.name || "")).join(" ");
+          return [r.name, [...r.sales].join(" "), [...r.partners].join(" "), contactHay].join(" ").toLowerCase().includes(q);
+        });
+      }
+
+      document.getElementById("customersBody").innerHTML = rows.map((r) => {
+        const lastText = r.lastMeeting ? formatLocalDate(r.lastMeeting) : "—";
+        const status = r.overdue
+          ? `<span class="tag-overdue">逾期未跟進</span>`
+          : (r.nextFollowUp ? `<span class="tag-ok">已排期</span>` : `<span class="muted">未設跟進日</span>`);
+        return `<tr data-customer-key="${escapeAttr(r.key)}">
+          <td><strong>${escapeHtml(r.name)}</strong><div class="muted" style="font-size:.68rem">${r.cases.length} 宗案件</div></td>
+          <td><strong>${r.visit}</strong></td>
+          <td>${lastText}</td>
+          <td>
+            <input type="date" class="cust-follow" data-case-id="${escapeAttr(r.primaryCaseId)}" value="${escapeAttr(r.nextFollowUp || "")}" style="border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:#fff;font-size:.78rem" />
+          </td>
+          <td>${status}</td>
+          <td>
+            <div class="muted" style="font-size:.72rem">${escapeHtml([...r.sales].join("、") || "—")}</div>
+            <div class="muted" style="font-size:.68rem">${escapeHtml([...r.partners].join("、") || "")}</div>
+          </td>
+          <td><button class="btn btn-ghost btn-sm" data-open="${escapeAttr(r.primaryCaseId)}">詳情</button></td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="7" style="text-align:center;padding:28px" class="muted">沒有客戶</td></tr>`;
+
+      document.querySelectorAll("#customersBody [data-open]").forEach((b) => b.onclick = () => openDrawer(b.dataset.open));
+      document.querySelectorAll("#customersBody .cust-follow").forEach((input) => {
+        input.onchange = async () => {
+          const id = input.dataset.caseId;
+          const val = input.value || "";
+          localFollowUpSet(id, val);
+          await updateCase(id, { nextFollowUpAt: val });
+          renderCustomersMgmt();
+        };
+      });
+    }
+
+    function emptyCaseBucket() {
+      return { cases1m: 0, cases3m: 0, dq: 0, qualified: 0, total: 0 };
+    }
+
+    function bumpCaseBucket(bucket, c) {
+      bucket.total += 1;
+      if (inLastDays(c.createdAt, 30)) bucket.cases1m += 1;
+      if (inLastDays(c.createdAt, 90)) bucket.cases3m += 1;
+      if (isDq(c)) bucket.dq += 1;
+      if (isQualified(c)) bucket.qualified += 1;
+    }
+
+    function teamKeyForCase(c) {
+      return (c.teamLeader || parseTeamLeader(c.ricohHouse) || c.ricohHouse || "未分配團隊").trim() || "未分配團隊";
+    }
+
+    function buildPartnerTree() {
+      const partners = new Map();
+      for (const c of cases) {
+        const partnerName = (c.partner || "未分類").trim() || "未分類";
+        if (!partners.has(partnerName)) {
+          partners.set(partnerName, {
+            name: partnerName,
+            ...emptyCaseBucket(),
+            teams: new Map(),
+          });
+        }
+        const partner = partners.get(partnerName);
+        bumpCaseBucket(partner, c);
+
+        const teamName = teamKeyForCase(c);
+        if (!partner.teams.has(teamName)) {
+          partner.teams.set(teamName, {
+            name: teamName,
+            house: c.ricohHouse || "",
+            ...emptyCaseBucket(),
+            sales: new Map(),
+          });
+        }
+        const team = partner.teams.get(teamName);
+        bumpCaseBucket(team, c);
+        if (c.ricohHouse && !team.house) team.house = c.ricohHouse;
+
+        const salesName = (c.ricohSales || "").trim() || "未指派";
+        if (!team.sales.has(salesName)) {
+          team.sales.set(salesName, { name: salesName, ...emptyCaseBucket() });
+        }
+        bumpCaseBucket(team.sales.get(salesName), c);
+      }
+
+      return [...partners.values()]
+        .map((p) => ({
+          ...p,
+          teams: [...p.teams.values()]
+            .map((t) => ({
+              ...t,
+              sales: [...t.sales.values()].sort((a, b) => b.cases3m - a.cases3m || a.name.localeCompare(b.name, "zh-HK")),
+            }))
+            .sort((a, b) => b.cases3m - a.cases3m || a.name.localeCompare(b.name, "zh-HK")),
+        }))
+        .sort((a, b) => b.cases3m - a.cases3m || a.name.localeCompare(b.name, "zh-HK"));
+    }
+
+    function partnerMetricPills(b) {
+      return `<div class="partner-metrics">
+        <span><strong>${b.cases1m}</strong>近 1 個月</span>
+        <span><strong>${b.cases3m}</strong>近 3 個月</span>
+        <span><strong style="color:#9f1239">${b.dq}</strong>DQ</span>
+        <span><strong style="color:#15803d">${b.qualified}</strong>Qualified</span>
+        <span><strong>${b.total}</strong>總 Case</span>
+      </div>`;
+    }
+
+    function renderPartnersMgmt(forceOpen) {
+      const q = (document.getElementById("partnerSearch")?.value || "").trim().toLowerCase();
+      const tree = buildPartnerTree().map((p) => {
+        if (!q) return p;
+        const partnerHit = p.name.toLowerCase().includes(q);
+        const teams = p.teams
+          .map((t) => {
+            const teamHit = t.name.toLowerCase().includes(q) || (t.house || "").toLowerCase().includes(q);
+            const sales = t.sales.filter((s) => partnerHit || teamHit || s.name.toLowerCase().includes(q));
+            if (partnerHit || teamHit || sales.length) {
+              return { ...t, sales: partnerHit || teamHit ? t.sales : sales };
+            }
+            return null;
+          })
+          .filter(Boolean);
+        return teams.length || partnerHit ? { ...p, teams } : null;
+      }).filter(Boolean);
+
+      const total1 = tree.reduce((s, r) => s + r.cases1m, 0);
+      const total3 = tree.reduce((s, r) => s + r.cases3m, 0);
+      const totalDq = tree.reduce((s, r) => s + r.dq, 0);
+      const totalQ = tree.reduce((s, r) => s + r.qualified, 0);
+      const teamN = tree.reduce((s, r) => s + r.teams.length, 0);
+      document.getElementById("partnerStats").innerHTML = [
+        renderStatCard({ label: "Partner", value: tree.length, sub: `${teamN} 個 Team`, tone: "purple", icon: "people" }),
+        renderStatCard({ label: "近 1 個月 Case", value: total1, sub: "按建立日期", tone: "sky", icon: "cases" }),
+        renderStatCard({ label: "近 3 個月 Case", value: total3, sub: "按建立日期", tone: "orange", icon: "chart" }),
+        renderStatCard({ label: "DQ / Qualified", value: `${totalDq} / ${totalQ}`, sub: "目前篩選合計", tone: "mint", icon: "check", valueStyle: "font-size:1.2rem" }),
+      ].join("");
+
+      const openAll = forceOpen === true || !!q;
+      const closeAll = forceOpen === false;
+
+      document.getElementById("partnersTree").innerHTML = tree.map((p) => `
+        <article class="partner-card" data-partner="${escapeAttr(p.name)}">
+          <div class="partner-card-head">
+            <div>
+              <div class="eyebrow">Partner</div>
+              <h3>${escapeHtml(p.name)}</h3>
+              <div class="muted" style="font-size:.72rem;margin-top:2px">${p.teams.length} 個 Team Leader · 點擊 Team 展開 Sales</div>
+            </div>
+            ${partnerMetricPills(p)}
+          </div>
+          <div>
+            ${p.teams.map((t, idx) => {
+              const open = closeAll ? false : (openAll || (!q && idx === 0));
+              return `<div class="team-row${open ? " open" : ""}" data-team-key="${escapeAttr(p.name + "::" + t.name)}">
+                <button type="button" class="team-row-head">
+                  <div>
+                    <div class="team-row-title"><span class="chev">▸</span> ${escapeHtml(t.name)}</div>
+                    <div class="team-row-sub">${t.house && t.house !== t.name ? escapeHtml(t.house) + " · " : ""}${t.sales.length} 位 Sales</div>
+                  </div>
+                  <div class="team-row-metrics">
+                    <span>1月 <b>${t.cases1m}</b></span>
+                    <span>3月 <b>${t.cases3m}</b></span>
+                    <span class="dq">DQ <b>${t.dq}</b></span>
+                    <span class="q">Q <b>${t.qualified}</b></span>
+                  </div>
+                </button>
+                <div class="team-sales">
+                  <table>
+                    <thead><tr>
+                      <th>Sales</th><th>近 1 個月</th><th>近 3 個月</th><th>DQ</th><th>Qualified</th><th>總 Case</th>
+                    </tr></thead>
+                    <tbody>
+                      ${t.sales.map((s) => `<tr>
+                        <td><strong>${escapeHtml(s.name)}</strong></td>
+                        <td class="num">${s.cases1m}</td>
+                        <td class="num">${s.cases3m}</td>
+                        <td class="dq">${s.dq}</td>
+                        <td class="q">${s.qualified}</td>
+                        <td class="num">${s.total}</td>
+                      </tr>`).join("") || `<tr><td colspan="6" class="muted">未有 Sales</td></tr>`}
+                    </tbody>
+                  </table>
+                </div>
+              </div>`;
+            }).join("") || `<div class="breakdown-empty" style="padding:18px">呢個 Partner 未有 Team</div>`}
+          </div>
+        </article>
+      `).join("") || `<div class="breakdown-empty" style="padding:28px">未有 Partner 資料</div>`;
+
+      document.querySelectorAll("#partnersTree .team-row-head").forEach((btn) => {
+        btn.onclick = () => btn.closest(".team-row")?.classList.toggle("open");
+      });
+    }
+
+    function emptySalesBucket(name) {
+      return {
+        name,
+        caseIds: new Set(),
+        meet1m: new Set(),
+        meet3m: new Set(),
+        dq: 0,
+        qualified: 0,
+        wonN: 0,
+        wonAmt: 0,
+      };
+    }
+
+    function accumulateSalesStats(row, c) {
+      row.caseIds.add(c.id);
+      const company = companyKey(c);
+      for (const md of meetingDatesForCase(c)) {
+        if (inLastDays(md, 30)) row.meet1m.add(company);
+        if (inLastDays(md, 90)) row.meet3m.add(company);
+      }
+      if (isDq(c)) row.dq += 1;
+      if (isQualified(c)) row.qualified += 1;
+      if (isWon(c)) {
+        row.wonN += 1;
+        row.wonAmt += Number(c.amount) || 0;
+      }
+    }
+
+    function buildSalesRows() {
+      const map = new Map(COMPANY_SALES.map((name) => [name, emptySalesBucket(name)]));
+      for (const c of cases) {
+        const name = normalizeCompanySales(c.companySales);
+        if (!name || !map.has(name)) continue;
+        accumulateSalesStats(map.get(name), c);
+      }
+      return COMPANY_SALES.map((name) => map.get(name));
+    }
+
+    function startOfWeek(d = new Date()) {
+      const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const day = x.getDay(); // 0 Sun
+      const diff = day === 0 ? -6 : 1 - day; // Monday start
+      x.setDate(x.getDate() + diff);
+      return x;
+    }
+
+    function endOfWeek(d = new Date()) {
+      const s = startOfWeek(d);
+      return endOfDay(new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6));
+    }
+
+    function getAgendaRange() {
+      const now = new Date();
+      if (agendaPeriod === "week") {
+        const from = startOfWeek(now);
+        const to = endOfWeek(now);
+        return { mode: "week", from, to, title: `${formatLocalDate(from)} 至 ${formatLocalDate(to)}（本星期）` };
+      }
+      if (agendaPeriod === "custom") {
+        const from = parseLocalDate(agendaFrom);
+        const to = parseLocalDate(agendaTo);
+        if (from && to && from <= to) {
+          return { mode: "custom", from, to: endOfDay(to), title: `${agendaFrom} 至 ${agendaTo}` };
+        }
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        return { mode: "custom", from: today, to: endOfDay(today), title: "請選擇由日期至日期後按「套用」", incomplete: true };
+      }
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return { mode: "today", from: today, to: endOfDay(today), title: `${formatLocalDate(today)}（當天）` };
+    }
+
+    function dateInAgendaRange(dateLike, range) {
+      if (!dateLike || !range) return false;
+      const d = dateLike instanceof Date ? dateLike : (String(dateLike).length <= 10 ? parseLocalDate(dateLike) : new Date(dateLike));
+      if (!d || Number.isNaN(d.getTime())) return false;
+      return d >= range.from && d <= range.to;
+    }
+
+    function buildAgendaItems(range) {
+      const items = [];
+      for (const c of cases) {
+        if (c.stage === "closed" && isDq(c)) continue;
+        const sales = normalizeCompanySales(c.companySales) || "未指派";
+        if (agendaSalesFilter !== "all" && sales !== agendaSalesFilter) continue;
+
+        if (c.nextFollowUpAt && dateInAgendaRange(c.nextFollowUpAt, range)) {
+          const d = parseLocalDate(c.nextFollowUpAt);
+          items.push({
+            sortKey: formatLocalDate(d) + "T00:00|1|" + sales,
+            date: d,
+            dateText: formatLocalDate(d),
+            timeText: "",
+            kind: "followup",
+            kindLabel: "Case 跟進",
+            overdue: isFollowUpOverdue(c),
+            sales,
+            case: c,
+            note: c.followUpOpportunity ? "有跟進機會" : (c.requirements || "").slice(0, 60),
+          });
+        }
+
+        if (c.appointmentAt && dateInAgendaRange(c.appointmentAt, range)) {
+          const d = new Date(c.appointmentAt);
+          if (!Number.isNaN(d.getTime())) {
+            items.push({
+              sortKey: d.toISOString() + "|0|" + sales,
+              date: d,
+              dateText: formatLocalDate(d),
+              timeText: d.toLocaleTimeString("zh-HK", { hour: "2-digit", minute: "2-digit" }),
+              kind: "meeting",
+              kindLabel: c.meetingDone ? "會議（已完成）" : (c.appointmentConfirmed ? "會議（已確認）" : "會議（待確認）"),
+              overdue: false,
+              sales,
+              case: c,
+              note: c.meetingNotes ? String(c.meetingNotes).slice(0, 60) : (c.appointmentConfirmed ? "已確認會面" : "約見"),
+            });
+          }
+        }
+      }
+      return items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+    }
+
+    function syncAgendaPeriodUi() {
+      document.querySelectorAll("#agendaPeriodSeg button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.agendaPeriod === agendaPeriod);
+      });
+      // 當天／本星期／自訂 都顯示由－至日期
+      const range = getAgendaRange();
+      const fromStr = formatLocalDate(range.from);
+      const toStr = formatLocalDate(range.to);
+      if (agendaPeriod === "today" || agendaPeriod === "week") {
+        agendaFrom = fromStr;
+        agendaTo = toStr;
+        document.getElementById("agendaFrom").value = fromStr;
+        document.getElementById("agendaTo").value = toStr;
+      } else {
+        document.getElementById("agendaFrom").value = agendaFrom || "";
+        document.getElementById("agendaTo").value = agendaTo || "";
+      }
+      const sel = document.getElementById("agendaSalesFilter");
+      const cur = agendaSalesFilter;
+      sel.innerHTML = `<option value="all">全部銷售員</option>` +
+        COMPANY_SALES.map((n) => `<option value="${n}">${n}</option>`).join("") +
+        `<option value="未指派">未指派</option>`;
+      sel.value = [...sel.options].some((o) => o.value === cur) ? cur : "all";
+      agendaSalesFilter = sel.value;
+    }
+
+    function renderAgenda() {
+      syncAgendaPeriodUi();
+      const range = getAgendaRange();
+      const items = range.incomplete ? [] : buildAgendaItems(range);
+      const followN = items.filter((i) => i.kind === "followup").length;
+      const meetN = items.filter((i) => i.kind === "meeting").length;
+      const overdueN = items.filter((i) => i.overdue).length;
+      const salesHit = new Set(items.map((i) => i.sales));
+
+      document.getElementById("agendaStats").innerHTML = [
+        renderStatCard({ label: "期間", value: range.title.replace(/（.*）/, "") || "—", sub: range.mode === "today" ? "當天" : (range.mode === "week" ? "本星期" : "自訂"), tone: "purple", icon: "clock", valueStyle: "font-size:1.05rem" }),
+        renderStatCard({ label: "跟進 Case", value: followN, sub: "已設下次跟進日期", tone: "orange", icon: "follow" }),
+        renderStatCard({ label: "會議", value: meetN, sub: "約見日期落喺期間內", tone: "mint", icon: "meet" }),
+        renderStatCard({ label: "涉及銷售員", value: salesHit.size, sub: [...salesHit].slice(0, 5).join(" · ") || "—", tone: "sky", icon: "people" }),
+      ].join("");
+
+      const alert = document.getElementById("agendaAlert");
+      if (range.incomplete) {
+        alert.innerHTML = `<div class="mgmt-alert">請揀「由日期」同「至日期」，再按「套用」</div>`;
+      } else if (overdueN) {
+        alert.innerHTML = `<div class="mgmt-alert">期間內有 <strong>${overdueN}</strong> 宗跟進已過期仍未更新</div>`;
+      } else if (!items.length) {
+        alert.innerHTML = `<div class="mgmt-alert ok">呢段期間暫時未有會議或跟進 Case</div>`;
+      } else {
+        alert.innerHTML = `<div class="mgmt-alert ok">共 <strong>${items.length}</strong> 項 · ${escapeHtml(range.title)}</div>`;
+      }
+
+      document.getElementById("agendaBody").innerHTML = items.map((it) => {
+        const c = it.case;
+        const s = stageMeta(c.stage);
+        const kindClass = it.kind === "meeting" ? "tag-ok" : (it.overdue ? "tag-overdue" : "tag-ok");
+        return `<tr>
+          <td>
+            <strong>${escapeHtml(it.dateText)}</strong>
+            ${it.timeText ? `<div class="muted" style="font-size:.72rem">${escapeHtml(it.timeText)}</div>` : ""}
+            ${it.overdue ? `<div style="margin-top:4px"><span class="tag-overdue">逾期</span></div>` : ""}
+          </td>
+          <td><span class="${kindClass}">${escapeHtml(it.kindLabel)}</span></td>
+          <td><strong>${escapeHtml(it.sales)}</strong></td>
+          <td>
+            <strong>${escapeHtml(companyKey(c))}</strong>
+            <div class="muted" style="font-size:.68rem">${escapeHtml(c.partner || "")}</div>
+          </td>
+          <td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>
+          <td class="muted" style="font-size:.75rem">${escapeHtml(c.ricohSales || "—")}</td>
+          <td class="muted" style="font-size:.75rem">${escapeHtml(it.note || "—")}</td>
+          <td><button class="btn btn-ghost btn-sm" data-open="${escapeAttr(c.id)}">詳情</button></td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="8" style="text-align:center;padding:28px" class="muted">${range.incomplete ? "請先套用日期範圍" : "沒有符合項目"}</td></tr>`;
+
+      document.querySelectorAll("#agendaBody [data-open]").forEach((b) => {
+        b.onclick = () => openDrawer(b.dataset.open);
+      });
+    }
+
+    function renderSalesMgmt() {
+      const rows = buildSalesRows();
+      const assigned = cases.filter((c) => !!normalizeCompanySales(c.companySales)).length;
+      const unassigned = cases.length - assigned;
+      const meet1 = rows.reduce((s, r) => s + r.meet1m.size, 0);
+      const meet3 = rows.reduce((s, r) => s + r.meet3m.size, 0);
+      const wonN = rows.reduce((s, r) => s + r.wonN, 0);
+      const wonAmt = rows.reduce((s, r) => s + r.wonAmt, 0);
+      document.getElementById("salesStats").innerHTML = [
+        renderStatCard({ label: "本公司銷售員", value: COMPANY_SALES.length, sub: COMPANY_SALES.join(" · "), tone: "purple", icon: "people" }),
+        renderStatCard({ label: "已指派 Case", value: `${assigned} / ${cases.length}`, sub: unassigned ? `${unassigned} 宗未指派` : "全部已指派", tone: "sky", icon: "cases", valueStyle: "font-size:1.2rem" }),
+        renderStatCard({ label: "近 1／3 月會面", value: `${meet1} / ${meet3}`, sub: "去重公司數合計", tone: "orange", icon: "meet", valueStyle: "font-size:1.2rem" }),
+        renderStatCard({ label: "成功簽單", value: `${wonN} · ${money(wonAmt)}`, sub: "確認簽單／won", tone: "mint", icon: "money", valueStyle: "font-size:1.05rem", trend: wonN ? `${wonN}` : "" }),
+      ].join("");
+
+      document.getElementById("salesBody").innerHTML = rows.map((r) => `<tr>
+        <td><strong>${escapeHtml(r.name)}</strong></td>
+        <td><strong>${r.caseIds.size}</strong></td>
+        <td><strong>${r.meet1m.size}</strong></td>
+        <td><strong>${r.meet3m.size}</strong></td>
+        <td style="color:#9f1239;font-weight:700">${r.dq}</td>
+        <td style="color:#15803d;font-weight:700">${r.qualified}</td>
+        <td><strong>${r.wonN}</strong></td>
+        <td>${money(r.wonAmt)}</td>
+      </tr>`).join("");
+
+      const unset = cases.filter((c) => !normalizeCompanySales(c.companySales));
+      const box = document.getElementById("salesUnassigned");
+      if (!unset.length) {
+        box.innerHTML = `<div class="mgmt-alert ok">✓ 所有案件都已指派本公司銷售員</div>`;
+        return;
+      }
+      box.innerHTML = `<div class="mgmt-alert">尚有 <strong>${unset.length}</strong> 宗未指派本公司銷售員（Partner Sales 唔算）— 可喺下方快速指派</div>
+        <div class="table-wrap" style="margin-top:8px"><table>
+          <thead><tr><th>客戶公司</th><th>Partner Sales</th><th>指派本公司銷售員</th></tr></thead>
+          <tbody>
+            ${unset.slice(0, 40).map((c) => `<tr>
+              <td><strong>${escapeHtml(companyKey(c))}</strong></td>
+              <td class="muted" style="font-size:.75rem">${escapeHtml(c.ricohSales || "—")}</td>
+              <td>
+                <select class="assign-company-sales" data-case-id="${escapeAttr(c.id)}" style="border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:#fff;font-size:.78rem">
+                  <option value="">未指派</option>
+                  ${COMPANY_SALES.map((n) => `<option value="${n}">${n}</option>`).join("")}
+                </select>
+              </td>
+            </tr>`).join("")}
+          </tbody>
+        </table></div>
+        ${unset.length > 40 ? `<p class="muted" style="margin-top:8px;font-size:.75rem">只顯示前 40 宗，其餘請開案件詳情指派</p>` : ""}`;
+      box.querySelectorAll(".assign-company-sales").forEach((sel) => {
+        sel.onchange = async () => {
+          await updateCase(sel.dataset.caseId, { companySales: sel.value || "" });
+          renderSalesMgmt();
+        };
+      });
+    }
+
+    function openDrawer(id) {
+      const c = cases.find((x) => x.id === id);
+      if (!c) return;
+      const contacts = contactsByCase[c.id] || [];
+      const logs = logsByCase[c.id] || [];
+      const root = document.getElementById("drawerRoot");
+      const apptLocal = c.appointmentAt ? new Date(c.appointmentAt) : null;
+      const apptValue = apptLocal && !Number.isNaN(apptLocal.getTime())
+        ? new Date(apptLocal.getTime() - apptLocal.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+        : "";
+      root.innerHTML = `<div class="drawer-bg"><div class="drawer" role="dialog" aria-modal="true">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:14px">
+          <div>
+            <div class="eyebrow">Case · Multi contact</div>
+            <h2 style="font-size:1.25rem;white-space:pre-line;margin-top:2px">${escapeHtml(c.customerName)}</h2>
+            <div class="muted" style="font-size:.72rem;margin-top:4px">${escapeHtml(c.partner || "")}${c.ricohSales ? " · " + escapeHtml(c.ricohSales) : ""}</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="drawerClose">關閉</button>
+        </div>
+
+        <div class="modal-grid">
+          <div class="modal-col">
+            <div class="eyebrow">本公司銷售員</div>
+            <label class="field"><span>負責銷售員（Vincent／Tim／Andrew／Kelly／Sophia）</span>
+              <select id="d_companySales">
+                <option value="">未指派</option>
+                ${COMPANY_SALES.map((n) => `<option value="${n}" ${c.companySales === n ? "selected" : ""}>${n}</option>`).join("")}
+              </select>
+            </label>
+
+            <div class="eyebrow">Partner／Ricoh 跟進</div>
+            <div class="row2">
+              <label class="field"><span>Ricoh House</span><input id="d_house" value="${escapeAttr(c.ricohHouse)}" /></label>
+              <label class="field"><span>Partner Sales（Ricoh）</span><input id="d_sales" value="${escapeAttr(c.ricohSales)}" /></label>
+            </div>
+            <div class="row2">
+              <label class="field"><span>Team Leader</span><input id="d_leader" value="${escapeAttr(c.teamLeader || parseTeamLeader(c.ricohHouse))}" placeholder="例如 Polly Lee" /></label>
+              <label class="field"><span>Ricoh Consultant</span><input id="d_consultant" value="${escapeAttr(c.ricohConsultant)}" /></label>
+            </div>
+
+            <div class="eyebrow" style="margin-top:4px">Multi Contact（${contacts.length}）</div>
+            <div class="contact-grid">${contacts.map((p) => `
+              <div class="breakdown-item">
+                <div><strong>${escapeHtml(p.name)}</strong><div class="muted" style="font-size:.72rem">${escapeHtml(p.title || "聯絡人")}</div></div>
+                <div class="breakdown-meta">
+                  ${p.tel ? `<span>Tel ${escapeHtml(p.tel)}</span>` : ""}
+                  ${p.mobile ? `<span>Mobile ${escapeHtml(p.mobile)}</span>` : ""}
+                  ${p.email ? `<span>${escapeHtml(p.email)}</span>` : ""}
+                  ${p.fax ? `<span>Fax ${escapeHtml(p.fax)}</span>` : ""}
+                </div>
+              </div>`).join("") || `<div class="breakdown-empty">未有聯絡人</div>`}
+            </div>
+
+            <div class="eyebrow">會面／跟進狀態</div>
+            <div class="row3">
+              <label class="field"><span>Stage</span>
+                <select id="d_stage">${STAGES.map((s) => `<option value="${s.id}" ${s.id === c.stage ? "selected" : ""}>${s.label}</option>`).join("")}</select>
+              </label>
+              <label class="field"><span>Lead Status</span>
+                <select id="d_lead"><option value="Processing" ${c.leadStatus!=="DQ"?"selected":""}>Processing</option><option value="DQ" ${c.leadStatus==="DQ"?"selected":""}>DQ</option></select>
+              </label>
+              <label class="field"><span>關閉原因</span>
+                <select id="d_close"><option value="">—</option><option value="disqualified" ${c.closeReason === "disqualified" ? "selected" : ""}>Disqualified</option><option value="failed" ${c.closeReason === "failed" ? "selected" : ""}>失敗</option><option value="won" ${c.closeReason === "won" ? "selected" : ""}>成功簽單</option></select>
+              </label>
+            </div>
+            <div class="row2">
+              <label class="field"><span>約見時間</span><input id="d_appt" type="datetime-local" value="${escapeAttr(apptValue)}" /></label>
+              <label class="field"><span>下次跟進日期 ${isFollowUpOverdue(c) ? '<span class="tag-overdue">已逾期</span>' : ""}</span>
+                <input id="d_nextFollow" type="date" value="${escapeAttr(c.nextFollowUpAt || "")}" />
+              </label>
+            </div>
+            <div class="check-row">
+              <label><input type="checkbox" id="d_apptConf" ${c.appointmentConfirmed?"checked":""}/> 客人已確認會面</label>
+              <label><input type="checkbox" id="d_meetDone" ${c.meetingDone?"checked":""}/> 會面已完成</label>
+              <label><input type="checkbox" id="d_follow" ${c.followUpOpportunity?"checked":""}/> 有機會跟進</label>
+            </div>
+            <div class="row2">
+              <label class="field"><span>系統（逗號分隔）</span><input id="d_systems" value="${escapeAttr((c.systems || []).join(", "))}" /></label>
+              <label class="field"><span>需求／Product</span><textarea id="d_requirements" rows="2">${escapeHtml(c.requirements)}</textarea></label>
+            </div>
+            <label class="field"><span>會後 Comment</span><textarea id="d_meetNotes" rows="2">${escapeHtml(c.meetingNotes)}</textarea></label>
+          </div>
+
+          <div class="modal-col">
+            <div class="eyebrow">Activity Log（每次聯絡都要留下）</div>
+            <div class="modal-log-list">${logs.map((l) => {
+              const typeLabel = (LOG_TYPES.find((t) => t.id === l.log_type) || { label: l.log_type }).label;
+              const when = l.happened_at || l.created_at;
+              return `<div class="breakdown-item">
+                <div><strong>${escapeHtml(typeLabel)}</strong></div>
+                <div class="muted" style="font-size:.68rem">${when ? new Date(when).toLocaleString("zh-HK") : ""}</div>
+                <div class="breakdown-meta">${escapeHtml(l.content || "")}</div>
+              </div>`;
+            }).join("") || `<div class="breakdown-empty">未有 log</div>`}</div>
+
+            <div class="row2">
+              <label class="field"><span>新增 Log 類型</span>
+                <select id="d_logType">${LOG_TYPES.map((t) => `<option value="${t.id}">${t.label}</option>`).join("")}</select>
+              </label>
+              <label class="field"><span>Log 內容</span><textarea id="d_logContent" rows="2" placeholder="例如：3/10 上午致電無人接聽"></textarea></label>
+            </div>
+            <button class="btn btn-ink" style="width:100%" id="drawerAddLog">加入 Log Record</button>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="drawerCancel">取消</button>
+          <button class="btn btn-teal" id="drawerSave">儲存案件</button>
+        </div>
+      </div></div>`;
+      const closeModal = () => { root.innerHTML = ""; };
+      root.querySelector(".drawer-bg").onclick = (e) => { if (e.target.classList.contains("drawer-bg")) closeModal(); };
+      document.getElementById("drawerClose").onclick = closeModal;
+      document.getElementById("drawerCancel").onclick = closeModal;
+      document.getElementById("drawerSave").onclick = async () => {
+        const stage = document.getElementById("d_stage").value;
+        const appt = document.getElementById("d_appt").value;
+        const lead = document.getElementById("d_lead").value;
+        const closeVal = document.getElementById("d_close").value;
+        const nextFollow = document.getElementById("d_nextFollow").value || "";
+        localFollowUpSet(c.id, nextFollow);
+        const won = closeVal === "won" || stage === "confirmation";
+        await updateCase(c.id, {
+          companySales: document.getElementById("d_companySales").value || "",
+          ricohHouse: document.getElementById("d_house").value.trim(),
+          ricohSales: document.getElementById("d_sales").value.trim(),
+          ricohConsultant: document.getElementById("d_consultant").value.trim(),
+          teamLeader: document.getElementById("d_leader").value.trim(),
+          systems: document.getElementById("d_systems").value.split(",").map((x) => x.trim()).filter(Boolean),
+          requirements: document.getElementById("d_requirements").value,
+          stage: lead === "DQ" ? "closed" : stage,
+          closeReason: lead === "DQ" ? (closeVal || "disqualified")
+            : (stage === "closed" || won ? (closeVal || (won ? "won" : null)) : null),
+          leadStatus: lead,
+          appointmentFlag: !!appt || c.appointmentFlag,
+          appointmentAt: appt ? new Date(appt).toISOString() : null,
+          appointmentConfirmed: document.getElementById("d_apptConf").checked,
+          meetingDone: document.getElementById("d_meetDone").checked,
+          meetingNotes: document.getElementById("d_meetNotes").value,
+          followUpOpportunity: document.getElementById("d_follow").checked,
+          nextFollowUpAt: nextFollow,
+        });
+        openDrawer(c.id);
+      };
+      document.getElementById("drawerAddLog").onclick = async () => {
+        const content = document.getElementById("d_logContent").value.trim();
+        const logType = document.getElementById("d_logType").value;
+        if (!content) return toast("請輸入 log 內容");
+        const row = {
+          id: `log-${crypto.randomUUID().slice(0, 10)}`,
+          case_id: c.id,
+          contact_id: null,
+          log_type: logType,
+          content,
+          happened_at: new Date().toISOString(),
+        };
+        const { error } = await db.from("crm_activity_logs").insert(row);
+        if (error) return toast("Log 失敗：" + error.message);
+        // auto stage hints
+        if (logType === "call_no_answer" && ["new_lead", "contacting"].includes(c.stage)) {
+          await updateCase(c.id, { stage: "contacting" });
+        } else if (logType === "appointment_confirmed") {
+          await updateCase(c.id, { stage: "appointment_set", appointmentConfirmed: true, appointmentFlag: true });
+        } else if (logType === "meeting_done") {
+          await updateCase(c.id, { stage: "first_interview", meetingDone: true, meetingNotes: (c.meetingNotes ? c.meetingNotes + "\n" : "") + content });
+        } else if (logType === "follow_up") {
+          await updateCase(c.id, { followUpOpportunity: true, stage: c.stage === "first_interview" ? "follow_up" : c.stage });
+        } else {
+          await loadCases();
+        }
+        toast("已加入 log");
+        openDrawer(c.id);
+      };
+    }
+
+    async function updateCase(id, patch) {
+      const prev = cases.find((c) => c.id === id);
+      if (!prev) return;
+      const next = {
+        ...prev,
+        ...patch,
+      };
+      if (patch.closeReason !== undefined) next.closeReason = patch.closeReason;
+      if (next.stage === "confirmation" && !next.closeReason) next.closeReason = "won";
+      if (next.stage !== "closed" && next.closeReason !== "won") next.closeReason = null;
+      if (next.stage === "closed" && !next.closeReason) next.closeReason = "disqualified";
+      const { error } = await db.from("crm_cases").update(toRow(next)).eq("id", id);
+      if (error) return toast("更新失敗：" + error.message);
+      toast("已更新");
+      await loadCases();
+      renderBoard();
+      renderCasesTable();
+      renderDashboard();
+      if (!document.getElementById("view-mgmt").classList.contains("hidden")) renderMgmt();
+      if (!document.getElementById("view-agenda").classList.contains("hidden")) renderAgenda();
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    }
+    function escapeAttr(s) { return escapeHtml(s).replace(/`/g, "&#96;"); }
+
+    /* -------- events -------- */
+    (function setupSidebarToggle() {
+      const shell = document.getElementById("appShell");
+      const btn = document.getElementById("btnSidebarToggle");
+      const backdrop = document.getElementById("sidebarBackdrop");
+      const isMobile = () => window.matchMedia("(max-width: 900px)").matches;
+      const saved = localStorage.getItem("crm_sidebar_collapsed");
+      if (saved === "1" && !isMobile()) shell.classList.add("sidebar-collapsed");
+      if (isMobile()) shell.classList.add("sidebar-collapsed");
+
+      const syncAria = () => {
+        const collapsed = isMobile()
+          ? !shell.classList.contains("sidebar-open-mobile")
+          : shell.classList.contains("sidebar-collapsed");
+        btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      };
+      syncAria();
+
+      btn.onclick = () => {
+        if (isMobile()) {
+          shell.classList.toggle("sidebar-open-mobile");
+        } else {
+          shell.classList.toggle("sidebar-collapsed");
+          localStorage.setItem("crm_sidebar_collapsed", shell.classList.contains("sidebar-collapsed") ? "1" : "0");
+        }
+        syncAria();
+      };
+      backdrop.onclick = () => {
+        shell.classList.remove("sidebar-open-mobile");
+        syncAria();
+      };
+      window.addEventListener("resize", () => {
+        if (!isMobile()) {
+          shell.classList.remove("sidebar-open-mobile");
+          if (localStorage.getItem("crm_sidebar_collapsed") === "1") shell.classList.add("sidebar-collapsed");
+        } else {
+          shell.classList.add("sidebar-collapsed");
+          shell.classList.remove("sidebar-open-mobile");
+        }
+        syncAria();
+      });
+    })();
+
+    document.getElementById("navPills").onclick = (e) => {
+      const btn = e.target.closest("button[data-view]");
+      if (!btn) return;
+      showView(btn.dataset.view);
+      // mobile：選完頁面自動收埋側欄
+      if (window.matchMedia("(max-width: 900px)").matches) {
+        document.getElementById("appShell").classList.remove("sidebar-open-mobile");
+      }
+    };
+    document.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => showView(b.dataset.go));
+    document.getElementById("btnRefreshBoard").onclick = async () => { await loadCases(); renderBoard(); toast("已重新整理"); };
+    (function setupBoardSearch() {
+      const input = document.getElementById("boardSearch");
+      const box = document.getElementById("boardSuggest");
+      input.oninput = () => {
+        boardSuggestActive = -1;
+        paintKanbanColumns();
+        renderBoardSuggest();
+      };
+      input.onfocus = () => renderBoardSuggest();
+      input.onblur = () => setTimeout(hideBoardSuggest, 120);
+      input.onkeydown = (e) => {
+        const items = [...box.querySelectorAll(".board-suggest-item")];
+        if (e.key === "Escape") {
+          hideBoardSuggest();
+          return;
+        }
+        if (!items.length || box.classList.contains("hidden")) return;
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          boardSuggestActive = (boardSuggestActive + 1) % items.length;
+          renderBoardSuggest();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          boardSuggestActive = (boardSuggestActive - 1 + items.length) % items.length;
+          renderBoardSuggest();
+        } else if (e.key === "Enter" && boardSuggestActive >= 0) {
+          e.preventDefault();
+          const btn = items[boardSuggestActive];
+          if (btn) applyBoardSuggestion(btn.dataset.value, btn.dataset.caseId);
+        }
+      };
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".board-search-wrap")) hideBoardSuggest();
+      });
+    })();
+    document.getElementById("btnKanbanLeft").onclick = () => {
+      const el = document.getElementById("kanban");
+      const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 5;
+      el.scrollBy({ left: -(step + 12), behavior: "smooth" });
+    };
+    document.getElementById("btnKanbanRight").onclick = () => {
+      const el = document.getElementById("kanban");
+      const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 5;
+      el.scrollBy({ left: step + 12, behavior: "smooth" });
+    };
+    document.getElementById("caseSearch").oninput = () => renderCasesTable();
+    document.getElementById("caseStageFilter").innerHTML = `<option value="all">全部階段</option>` + STAGES.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
+    document.getElementById("caseStageFilter").onchange = () => renderCasesTable();
+
+    document.getElementById("dashPeriodSeg").onclick = (e) => {
+      const btn = e.target.closest("button[data-period]");
+      if (!btn) return;
+      dashPeriod = btn.dataset.period;
+      localStorage.setItem("crm_dash_period", dashPeriod);
+      if (dashPeriod === "custom") {
+        if (dashFrom && dashTo) renderDashboard();
+        else {
+          syncDashPeriodUi();
+          document.getElementById("dashMonths").innerHTML =
+            `<h2 style="font-size:1.2rem">自訂日期</h2><p class="muted">請揀「由日期」同「至日期」，再按「套用」</p>`;
+          ["dashChartStage", "dashChartSales", "dashChartFunnel"].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = `<h2>等待日期</h2><p class="muted">套用自訂期間後顯示 chart</p>`;
+          });
+        }
+        return;
+      }
+      renderDashboard();
+    };
+    document.getElementById("dashApplyCustom").onclick = () => {
+      dashFrom = document.getElementById("dashFrom").value || "";
+      dashTo = document.getElementById("dashTo").value || "";
+      if (!dashFrom || !dashTo) return toast("請揀齊由日期同至日期");
+      const from = parseLocalDate(dashFrom);
+      const to = parseLocalDate(dashTo);
+      if (!from || !to) return toast("日期格式唔正確");
+      if (from > to) return toast("「由日期」唔可以晚過「至日期」");
+      dashPeriod = "custom";
+      localStorage.setItem("crm_dash_period", "custom");
+      localStorage.setItem("crm_dash_from", dashFrom);
+      localStorage.setItem("crm_dash_to", dashTo);
+      renderDashboard();
+      toast(`已套用 ${dashFrom} 至 ${dashTo}`);
+    };
+    document.getElementById("dashFrom").onchange = () => {
+      dashFrom = document.getElementById("dashFrom").value || "";
+      localStorage.setItem("crm_dash_from", dashFrom);
+    };
+    document.getElementById("dashTo").onchange = () => {
+      dashTo = document.getElementById("dashTo").value || "";
+      localStorage.setItem("crm_dash_to", dashTo);
+    };
+
+    document.getElementById("btnParse").onclick = () => {
+      const text = document.getElementById("transcript").value.trim();
+      if (!text) return toast("請先輸入內容");
+      const parsed = parseVoice(text);
+      fillPortal(parsed);
+      if (parsed.customerName || parsed.systems?.length || parsed.requirements) {
+        toast("已解析並填入表格，請確認");
+      } else {
+        toast("解析唔完整，請手動修正");
+      }
+    };
+
+    document.getElementById("caseForm").onsubmit = async (e) => {
+      e.preventDefault();
+      if (!dbReady) return toast("請先完成 Supabase ricoh_import.sql");
+      const fd = new FormData(e.target);
+      const budget = Number(fd.get("budget")) || 0;
+      const item = {
+        id: `case-${crypto.randomUUID().slice(0, 8)}`,
+        customerName: String(fd.get("customerName") || "").trim(),
+        partner: String(fd.get("partner") || "直銷"),
+        systems: [...selectedSystems],
+        requirements: String(fd.get("requirements") || ""),
+        quantity: String(fd.get("quantity") || ""),
+        budget,
+        amount: budget,
+        successRate: 25,
+        targetClosingDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+        stage: "first_interview",
+        closeReason: null,
+        notes: document.getElementById("transcript").value.trim() ? `語音原文：${document.getElementById("transcript").value.trim()}` : "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      if (!item.customerName) return toast("請填客戶名稱");
+      const row = toRow(item);
+      row.created_at = item.createdAt;
+      const { error } = await db.from("crm_cases").insert(row);
+      if (error) return toast("建立失敗：" + error.message);
+      toast("案件已建立 " + item.id);
+      e.target.reset();
+      selectedSystems = new Set();
+      document.getElementById("transcript").value = "";
+      initPortalForm();
+      await loadCases();
+    };
+
+    // Speech
+    (function setupSpeech() {
+      const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const btn = document.getElementById("micBtn");
+      if (!Ctor) {
+        btn.title = "此瀏覽器不支援語音，請用文字";
+        return;
+      }
+      const rec = new Ctor();
+      rec.lang = "zh-HK";
+      rec.continuous = true;
+      rec.interimResults = true;
+      let finalText = "";
+      let listening = false;
+      rec.onresult = (ev) => {
+        let interim = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const t = ev.results[i][0].transcript;
+          if (ev.results[i].isFinal) finalText += t;
+          else interim += t;
+        }
+        document.getElementById("transcript").value = (finalText + " " + interim).trim();
+      };
+      rec.onend = () => {
+        listening = false;
+        btn.classList.remove("listening");
+        const text = document.getElementById("transcript").value.trim();
+        if (text) {
+          fillPortal(parseVoice(text));
+          document.getElementById("portalStatus").textContent = "已填入相關欄位，請確認後提交";
+        }
+      };
+      btn.onclick = () => {
+        if (listening) { rec.stop(); return; }
+        finalText = "";
+        document.getElementById("transcript").value = "";
+        listening = true;
+        btn.classList.add("listening");
+        document.getElementById("portalStatus").textContent = "聆聽中…";
+        rec.start();
+      };
+    })();
+
+    // Setup SQL preview
+    const SETUP_SQL_URL = "./supabase/ricoh_import.sql";
+    let cachedSetupSql = "";
+    fetch(SETUP_SQL_URL).then((r) => r.text()).then((t) => {
+      cachedSetupSql = t;
+      document.getElementById("setupSqlPreview").textContent = t.slice(0, 2500) + "\n\n…完整內容請用「複製 SQL」或開 raw 檔";
+      document.getElementById("btnCopySql").onclick = async () => {
+        await navigator.clipboard.writeText(cachedSetupSql || t);
+        toast("已複製完整 ricoh_import.sql");
+      };
+    }).catch(() => {
+      document.getElementById("setupSqlPreview").textContent = "請打開 repo 內 supabase/ricoh_import.sql";
+    });
+    document.getElementById("btnRecheck").onclick = async () => {
+      await loadCases();
+      if (dbReady) {
+        toast("資料表已就緒");
+        renderDashboard();
+        renderBoard();
+        renderCasesTable();
+        renderMgmt();
+      } else toast("仍未偵測到 crm_cases，請確認已 Run SQL");
+    };
+    document.getElementById("mgmtTabs").onclick = (e) => {
+      const btn = e.target.closest("button[data-mgmt]");
+      if (btn) setMgmtTab(btn.dataset.mgmt);
+    };
+    document.getElementById("btnRefreshMgmt").onclick = async () => {
+      await loadCases();
+      renderMgmt();
+      toast("已重新整理");
+    };
+    document.getElementById("customerSearch").oninput = () => renderCustomersMgmt();
+    document.getElementById("customerOnlyOverdue").onchange = () => renderCustomersMgmt();
+    document.getElementById("partnerSearch").oninput = () => renderPartnersMgmt();
+    document.getElementById("btnPartnerExpandAll").onclick = () => renderPartnersMgmt(true);
+    document.getElementById("btnPartnerCollapseAll").onclick = () => renderPartnersMgmt(false);
+
+    document.getElementById("agendaPeriodSeg").onclick = (e) => {
+      const btn = e.target.closest("button[data-agenda-period]");
+      if (!btn) return;
+      agendaPeriod = btn.dataset.agendaPeriod;
+      localStorage.setItem("crm_agenda_period", agendaPeriod);
+      // 切去當天／本星期時即時寫入對應日期到輸入框
+      renderAgenda();
+    };
+    document.getElementById("agendaApplyCustom").onclick = () => {
+      agendaFrom = document.getElementById("agendaFrom").value || "";
+      agendaTo = document.getElementById("agendaTo").value || "";
+      if (!agendaFrom || !agendaTo) return toast("請揀齊由日期同至日期");
+      const from = parseLocalDate(agendaFrom);
+      const to = parseLocalDate(agendaTo);
+      if (!from || !to) return toast("日期格式唔正確");
+      if (from > to) return toast("「由日期」唔可以晚過「至日期」");
+      agendaPeriod = "custom";
+      localStorage.setItem("crm_agenda_period", "custom");
+      localStorage.setItem("crm_agenda_from", agendaFrom);
+      localStorage.setItem("crm_agenda_to", agendaTo);
+      renderAgenda();
+      toast(`已套用 ${agendaFrom} 至 ${agendaTo}`);
+    };
+    document.getElementById("agendaFrom").onchange = () => {
+      agendaFrom = document.getElementById("agendaFrom").value || "";
+      localStorage.setItem("crm_agenda_from", agendaFrom);
+    };
+    document.getElementById("agendaTo").onchange = () => {
+      agendaTo = document.getElementById("agendaTo").value || "";
+      localStorage.setItem("crm_agenda_to", agendaTo);
+    };
+    document.getElementById("agendaSalesFilter").onchange = () => {
+      agendaSalesFilter = document.getElementById("agendaSalesFilter").value || "all";
+      localStorage.setItem("crm_agenda_sales", agendaSalesFilter);
+      renderAgenda();
+    };
+    fetch("./supabase/mgmt_alter.sql").then((r) => r.text()).then((t) => {
+      document.getElementById("btnCopyMgmtSql").onclick = async () => {
+        await navigator.clipboard.writeText(t);
+        toast("已複製 mgmt_alter.sql");
+      };
+    }).catch(() => {});
+
+    // boot
+    initPortalForm();
+    loadCases().then(() => {
+      const hash = (location.hash || "").replace("#", "");
+      showView(["portal", "dashboard", "board", "cases", "agenda", "mgmt"].includes(hash) ? hash : "dashboard");
+    });
+  </script>
+</body>
+</html>
