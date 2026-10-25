@@ -2392,7 +2392,7 @@
           <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerExpandAll">全部展開</button>
           <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerCollapseAll">全部收合</button>
         </div>
-        <p class="muted" style="margin-bottom:10px;font-size:.78rem">按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Qualified = 非 DQ 且（已會面／有跟進機會／報價或之後階段）</p>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">預設 Partner：RICOH／HKBN／HPE／ICO · 按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Qualified = 非 DQ 且（已會面／有跟進機會／報價或之後階段）</p>
         <div class="partner-tree" id="partnersTree"></div>
       </div>
 
@@ -2511,8 +2511,9 @@
       { id: "confirmation", label: "確認簽單", short: "確認", color: "#059669", bg: "#d1fae5", desc: "客戶確認成交" },
       { id: "closed", label: "已關閉", short: "關閉", color: "#64748b", bg: "#eef1f6", desc: "DQ／失敗關閉" },
     ];
-    const PARTNERS = ["Ricoh Partner", "直銷", "Partner A", "Partner B", "Partner C", "轉介", "活動／展覽", "其他"];
-    // 本公司銷售員（唔係 Partner / Ricoh Sales）
+    // Partner 管理預設清單（不限 RICOH）
+    const PARTNERS = ["RICOH", "HKBN", "HPE", "ICO"];
+    // 本公司銷售員（唔係 Partner Sales）
     const COMPANY_SALES = ["Vincent", "Tim", "Andrew", "Kelly", "Sophia"];
     const LOG_TYPES = [
       { id: "field_change", label: "欄位變更" },
@@ -2841,10 +2842,23 @@
       return Math.round((actual / target) * 100);
     }
 
+    function normalizePartner(name) {
+      const raw = String(name || "").trim();
+      if (!raw) return "";
+      if (/^ricoh(\s*partner)?$/i.test(raw)) return "RICOH";
+      const upper = raw.toUpperCase();
+      const preset = PARTNERS.find((p) => p.toUpperCase() === upper);
+      if (preset) return preset;
+      return raw;
+    }
     function partnerOptionsFromCases() {
       const set = new Set(PARTNERS);
-      cases.forEach((c) => { if (c.partner) set.add(c.partner); });
-      return [...set].filter(Boolean).sort((a, b) => a.localeCompare(b, "zh-HK"));
+      cases.forEach((c) => {
+        const p = normalizePartner(c.partner);
+        if (p) set.add(p);
+      });
+      const extras = [...set].filter((p) => !PARTNERS.includes(p)).sort((a, b) => a.localeCompare(b, "zh-HK"));
+      return [...PARTNERS, ...extras];
     }
     function fillFilterSelect(id, cur, kind) {
       const el = document.getElementById(id);
@@ -2867,7 +2881,7 @@
         if (s !== dashSalesFilter) return false;
       }
       if (dashPartnerFilter && dashPartnerFilter !== "all") {
-        if ((c.partner || "") !== dashPartnerFilter) return false;
+        if ((normalizePartner(c.partner) || "") !== dashPartnerFilter) return false;
       }
       return true;
     }
@@ -2877,7 +2891,7 @@
         if (s !== boardSalesFilter) return false;
       }
       if (boardPartnerFilter && boardPartnerFilter !== "all") {
-        if ((c.partner || "") !== boardPartnerFilter) return false;
+        if ((normalizePartner(c.partner) || "") !== boardPartnerFilter) return false;
       }
       if (boardFollowFilter === "yes" && !c.followUpOpportunity) return false;
       if (boardFollowFilter === "no" && c.followUpOpportunity) return false;
@@ -3027,7 +3041,7 @@
       return {
         id: r.id,
         customerName: r.customer_name,
-        partner: r.partner || "Ricoh Partner",
+        partner: normalizePartner(r.partner) || "RICOH",
         systems: r.systems || [],
         requirements: r.requirements || "",
         quantity: r.quantity || "",
@@ -3201,7 +3215,7 @@
 
       return {
         customerName,
-        partner: partner || "直銷",
+        partner: normalizePartner(partner) || "RICOH",
         systems,
         requirements,
         quantity,
@@ -3237,12 +3251,13 @@
     }
 
     function extractPartner(compact, lower) {
+      if (/ricoh/.test(lower)) return "RICOH";
+      if (/hkbn|香港寬頻/.test(lower)) return "HKBN";
+      if (/\bhpe\b|hewlett/.test(lower)) return "HPE";
+      if (/\bico\b/.test(lower)) return "ICO";
       const known = PARTNERS.find((p) => lower.includes(p.toLowerCase()) || compact.toLowerCase().includes(p.toLowerCase().replace(/\s+/g, "")));
       if (known) return known;
       if (/轉介|介紹人|經人介紹/.test(compact)) return "轉介";
-      if (/partner\s*a/i.test(lower)) return "Partner A";
-      if (/partner\s*b/i.test(lower)) return "Partner B";
-      if (/partner\s*c/i.test(lower)) return "Partner C";
       return "";
     }
 
@@ -3376,7 +3391,7 @@
       selectedSystems = new Set(parsed.systems || []);
       initPortalForm();
       if (parsed.customerName) form.customerName.value = parsed.customerName;
-      form.partner.value = parsed.partner || "直銷";
+      form.partner.value = normalizePartner(parsed.partner) || "RICOH";
       form.requirements.value = parsed.requirements || "";
       form.quantity.value = parsed.quantity || "";
       if (parsed.budget != null) form.budget.value = parsed.budget;
@@ -3661,7 +3676,7 @@
         return map.get(name);
       };
       for (const c of pool) {
-        const partner = (c.partner || "未分類").trim() || "未分類";
+        const partner = normalizePartner(c.partner) || "未分類";
         const row = ensure(partner);
         const created = caseCreatedDate(c);
         if (created && created >= range.from && created <= range.to) {
@@ -5072,16 +5087,22 @@
       return (c.teamLeader || parseTeamLeader(c.ricohHouse) || c.ricohHouse || "未分配團隊").trim() || "未分配團隊";
     }
 
+    function emptyPartnerNode(name) {
+      return {
+        name,
+        ...emptyCaseBucket(),
+        teams: new Map(),
+        isDefault: PARTNERS.includes(name),
+      };
+    }
     function buildPartnerTree() {
       const partners = new Map();
+      // 預設 Partner 永遠顯示（即使未有 Case）
+      PARTNERS.forEach((name) => partners.set(name, emptyPartnerNode(name)));
       for (const c of cases) {
-        const partnerName = (c.partner || "未分類").trim() || "未分類";
+        const partnerName = normalizePartner(c.partner) || "未分類";
         if (!partners.has(partnerName)) {
-          partners.set(partnerName, {
-            name: partnerName,
-            ...emptyCaseBucket(),
-            teams: new Map(),
-          });
+          partners.set(partnerName, emptyPartnerNode(partnerName));
         }
         const partner = partners.get(partnerName);
         bumpCaseBucket(partner, c);
@@ -5108,6 +5129,10 @@
         bumpCaseBucket(team.sales.get(salesName), c);
       }
 
+      const rank = (name) => {
+        const i = PARTNERS.indexOf(name);
+        return i >= 0 ? i : PARTNERS.length + 1;
+      };
       return [...partners.values()]
         .map((p) => ({
           ...p,
@@ -5118,7 +5143,7 @@
             }))
             .sort((a, b) => b.cases3m - a.cases3m || a.name.localeCompare(b.name, "zh-HK")),
         }))
-        .sort((a, b) => b.cases3m - a.cases3m || a.name.localeCompare(b.name, "zh-HK"));
+        .sort((a, b) => rank(a.name) - rank(b.name) || b.cases3m - a.cases3m || a.name.localeCompare(b.name, "zh-HK"));
     }
 
     function partnerMetricPills(b) {
@@ -5175,7 +5200,7 @@
             <div>
               <div class="eyebrow">Partner</div>
               <h3>${escapeHtml(p.name)}</h3>
-              <div class="muted" style="font-size:.72rem;margin-top:2px">${p.teams.length} 個 Team Leader · 點擊 Team 展開 Sales</div>
+              <div class="muted" style="font-size:.72rem;margin-top:2px">${p.teams.length ? `${p.teams.length} 個 Team Leader · 點擊 Team 展開 Sales` : "預設 Partner · 暫時未有 Case"}</div>
             </div>
             ${partnerMetricPills(p)}
           </div>
@@ -6034,14 +6059,14 @@
               </select>
             </label>
 
-            <div class="eyebrow">Partner／Ricoh 跟進</div>
+            <div class="eyebrow">PARTNER 跟進</div>
             <div class="row2">
-              <label class="field"><span>Ricoh House</span><input id="d_house" value="${escapeAttr(c.ricohHouse)}" /></label>
-              <label class="field"><span>Partner Sales（Ricoh）</span><input id="d_sales" value="${escapeAttr(c.ricohSales)}" /></label>
+              <label class="field"><span>Partner House</span><input id="d_house" value="${escapeAttr(c.ricohHouse)}" /></label>
+              <label class="field"><span>Partner Sales</span><input id="d_sales" value="${escapeAttr(c.ricohSales)}" /></label>
             </div>
             <div class="row2">
               <label class="field"><span>Team Leader</span><input id="d_leader" value="${escapeAttr(c.teamLeader || parseTeamLeader(c.ricohHouse))}" placeholder="例如 Polly Lee" /></label>
-              <label class="field"><span>Ricoh Consultant</span><input id="d_consultant" value="${escapeAttr(c.ricohConsultant)}" /></label>
+              <label class="field"><span>Partner Consultant</span><input id="d_consultant" value="${escapeAttr(c.ricohConsultant)}" /></label>
             </div>
 
             <div class="eyebrow" style="margin-top:4px">Multi Contact（${contacts.length}）</div>
@@ -6199,8 +6224,8 @@
       { key: "teamLeader", label: "Team Leader", fmt: (v) => v || "—" },
       { key: "partner", label: "Partner", fmt: (v) => v || "—" },
       { key: "ricohSales", label: "Partner Sales", fmt: (v) => v || "—" },
-      { key: "ricohHouse", label: "Ricoh House", fmt: (v) => v || "—" },
-      { key: "ricohConsultant", label: "Consultant", fmt: (v) => v || "—" },
+      { key: "ricohHouse", label: "Partner House", fmt: (v) => v || "—" },
+      { key: "ricohConsultant", label: "Partner Consultant", fmt: (v) => v || "—" },
       { key: "amount", label: "金額", fmt: (v) => money(Number(v) || 0) },
       { key: "budget", label: "Budget", fmt: (v) => money(Number(v) || 0) },
       { key: "successRate", label: "成功機率", fmt: (v) => pct(Number(v) || 0) },
@@ -6635,7 +6660,7 @@
       const item = {
         id: `case-${crypto.randomUUID().slice(0, 8)}`,
         customerName: String(fd.get("customerName") || "").trim(),
-        partner: String(fd.get("partner") || "直銷"),
+        partner: normalizePartner(fd.get("partner")) || "RICOH",
         systems: [...selectedSystems],
         requirements: String(fd.get("requirements") || ""),
         quantity: String(fd.get("quantity") || ""),
