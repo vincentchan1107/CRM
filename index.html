@@ -1824,6 +1824,57 @@
       border-radius: 999px;
       padding: 2px 7px;
     }
+    .sales-line-chart {
+      margin-top: 8px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .sales-line-chart svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .sales-line-chart .axis-label {
+      font-size: 11px;
+      font-weight: 700;
+      fill: #94a3b8;
+    }
+    .sales-line-chart .x-label {
+      font-size: 11px;
+      font-weight: 700;
+      fill: #64748b;
+    }
+    .sales-line-chart .grid-line {
+      stroke: #eef1f6;
+      stroke-width: 1;
+    }
+    .sales-line-chart .point-hit {
+      cursor: pointer;
+    }
+    .sales-line-legend {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+    .sales-line-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--ink-soft);
+    }
+    .sales-line-legend i {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .sales-line-tip {
+      pointer-events: none;
+    }
     .year-plan-toolbar {
       display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
       margin-top: 18px;
@@ -2580,15 +2631,14 @@
       plans[name].kpi = { ...DEFAULT_SALES_KPI, ...kpi };
       saveSalesPlans(plans);
     }
-    function isSalesMonthTargetEditable(ym) {
-      // Past months: allow manual target entry (backfill).
-      // Current month and future: locked.
+    function isSalesMonthClosingEditable(ym) {
+      // Past months: allow manual Actual Closing $ (no case data yet).
+      // Current month and future: locked to system case closings.
       const key = String(ym || "");
       if (!/^\d{4}-\d{2}$/.test(key)) return false;
       return key < currentMonthKey();
     }
     function setSalesMonthClosingTarget(name, ym, amount) {
-      if (!isSalesMonthTargetEditable(ym)) return false;
       const plans = loadSalesPlans();
       plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
       if (amount === "" || amount == null) {
@@ -2604,6 +2654,29 @@
       }
       saveSalesPlans(plans);
       return true;
+    }
+    function setSalesMonthClosingActual(name, ym, amount) {
+      if (!isSalesMonthClosingEditable(ym)) return false;
+      const plans = loadSalesPlans();
+      plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+      if (amount === "" || amount == null) {
+        const cur = { ...(plans[name].months[ym] || {}) };
+        delete cur.closingActual;
+        if (Object.keys(cur).length) plans[name].months[ym] = cur;
+        else delete plans[name].months[ym];
+      } else {
+        plans[name].months[ym] = {
+          ...(plans[name].months[ym] || {}),
+          closingActual: Number(amount) || 0,
+        };
+      }
+      saveSalesPlans(plans);
+      return true;
+    }
+    function getSalesMonthClosingActual(name, ym) {
+      const v = getSalesPlan(name).months[ym]?.closingActual;
+      if (v == null || v === "") return null;
+      return Number(v) || 0;
     }
     function monthKeyFromDate(d) {
       if (!d || Number.isNaN(d.getTime())) return "";
@@ -2663,9 +2736,7 @@
     function setSalesYearMonthsBulk(name, year, amountByMonth /* array length 12 */) {
       const plans = loadSalesPlans();
       plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
-      let changed = 0;
       listYearMonths(year).forEach((m, idx) => {
-        if (!isSalesMonthTargetEditable(m.key)) return;
         const amount = amountByMonth[idx];
         if (amount === "" || amount == null) {
           const cur = { ...(plans[name].months[m.key] || {}) };
@@ -2678,19 +2749,16 @@
             closingTarget: Number(amount) || 0,
           };
         }
-        changed += 1;
       });
       saveSalesPlans(plans);
-      return changed;
+      return 12;
     }
     function copySalesYearTargets(name, fromYear, toYear) {
       if (fromYear === toYear) return false;
       const plans = loadSalesPlans();
       plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
-      let changed = 0;
       listYearMonths(fromYear).forEach((m, idx) => {
         const dest = listYearMonths(toYear)[idx];
-        if (!isSalesMonthTargetEditable(dest.key)) return;
         const src = Number(plans[name].months[m.key]?.closingTarget);
         if (!src && src !== 0) {
           const cur = { ...(plans[name].months[dest.key] || {}) };
@@ -2703,18 +2771,38 @@
             closingTarget: src || 0,
           };
         }
-        changed += 1;
       });
       saveSalesPlans(plans);
-      return changed > 0;
+      return true;
     }
-    function salesClosedAmountInRange(name, from, to) {
+    function salesClosedAmountFromCases(name, from, to) {
       return cases.filter((c) => {
         if (normalizeCompanySales(c.companySales) !== name) return false;
         const d = caseClosingDate(c);
         if (!d) return false;
         return d >= from && d <= to;
       }).reduce((s, c) => s + (Number(c.amount) || 0), 0);
+    }
+    function salesClosedAmountInRange(name, from, to) {
+      if (!from || !to || from > to) return 0;
+      let total = 0;
+      const cursor = new Date(from.getFullYear(), from.getMonth(), 1);
+      const last = new Date(to.getFullYear(), to.getMonth(), 1);
+      while (cursor <= last) {
+        const key = monthKeyFromDate(cursor);
+        const mStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+        const mEnd = endOfDay(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0));
+        const oFrom = from > mStart ? from : mStart;
+        const oTo = to < mEnd ? to : mEnd;
+        if (oFrom <= oTo) {
+          const manual = getSalesMonthClosingActual(name, key);
+          const fullMonth = oFrom.getTime() <= mStart.getTime() && oTo.getTime() >= (mEnd.getTime() - 1);
+          if (manual != null && fullMonth) total += manual;
+          else total += salesClosedAmountFromCases(name, oFrom, oTo);
+        }
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+      return total;
     }
     function salesClosedCountInRange(name, from, to) {
       return cases.filter((c) => {
@@ -3793,6 +3881,121 @@
       }).join("")}</div>`;
     }
 
+    function moneyAxisLabel(n) {
+      const v = Math.max(0, Number(n) || 0);
+      if (v >= 1000000) {
+        const m = v / 1000000;
+        return "$" + (Number.isInteger(m) ? m : m.toFixed(1)) + "M";
+      }
+      if (v >= 1000) {
+        const k = v / 1000;
+        return "$" + (Number.isInteger(k) ? k : k.toFixed(1)) + "k";
+      }
+      return "$" + Math.round(v);
+    }
+
+    function smoothLinePath(points) {
+      if (!points.length) return "";
+      if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+      let d = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 0; i < points.length - 1; i++) {
+        const p0 = points[i - 1] || points[i];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = points[i + 2] || p2;
+        const cp1x = p1.x + (p2.x - p0.x) / 6;
+        const cp1y = p1.y + (p2.y - p0.y) / 6;
+        const cp2x = p2.x - (p3.x - p1.x) / 6;
+        const cp2y = p2.y - (p3.y - p1.y) / 6;
+        d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x} ${p2.y}`;
+      }
+      return d;
+    }
+
+    function renderSalesLineChart(items, {
+      primaryKey = "closedAmt",
+      secondaryKey = "targetAmt",
+      labelKey = "name",
+      primaryLabel = "已 Closing $",
+      secondaryLabel = "Closing 目標 $",
+      primaryColor = "#1d4ed8",
+      secondaryColor = "#fb7185",
+      tipIndex = -1,
+    } = {}) {
+      const W = 560;
+      const H = 260;
+      const padL = 18;
+      const padR = 54;
+      const padT = 28;
+      const padB = 36;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+      const n = Math.max(1, items.length);
+      const vals = items.flatMap((it) => [Number(it[primaryKey]) || 0, Number(it[secondaryKey]) || 0]);
+      const rawMax = Math.max(1, ...vals);
+      const niceMax = (() => {
+        const exp = Math.pow(10, Math.floor(Math.log10(rawMax)));
+        const norm = rawMax / exp;
+        const nice = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+        return nice * exp;
+      })();
+      const tickCount = 4;
+      const ticks = Array.from({ length: tickCount + 1 }, (_, i) => (niceMax * i) / tickCount);
+      const xAt = (i) => padL + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+      const yAt = (v) => padT + plotH - (Math.max(0, Number(v) || 0) / niceMax) * plotH;
+      const primaryPts = items.map((it, i) => ({ x: +xAt(i).toFixed(2), y: +yAt(it[primaryKey]).toFixed(2), v: Number(it[primaryKey]) || 0, label: it[labelKey], item: it }));
+      const secondaryPts = items.map((it, i) => ({ x: +xAt(i).toFixed(2), y: +yAt(it[secondaryKey]).toFixed(2), v: Number(it[secondaryKey]) || 0 }));
+      const primaryPath = smoothLinePath(primaryPts);
+      const secondaryPath = smoothLinePath(secondaryPts);
+      const areaPath = primaryPts.length
+        ? `${primaryPath} L ${primaryPts[primaryPts.length - 1].x} ${padT + plotH} L ${primaryPts[0].x} ${padT + plotH} Z`
+        : "";
+      const tipIdx = tipIndex >= 0 ? tipIndex : primaryPts.reduce((best, p, i) => (p.v > (primaryPts[best]?.v || -1) ? i : best), 0);
+      const tip = primaryPts[tipIdx];
+      const tipW = 64;
+      const tipH = 24;
+      const tipX = tip ? Math.min(W - tipW - 4, Math.max(4, tip.x - tipW / 2)) : 0;
+      const tipY = tip ? Math.max(4, tip.y - tipH - 12) : 0;
+      const gid = "salesAreaGrad_" + Math.random().toString(36).slice(2, 8);
+      return `<div class="sales-line-chart">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="團隊 Sales Closing 圖表">
+          <defs>
+            <linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="${primaryColor}" stop-opacity="0.28"/>
+              <stop offset="100%" stop-color="${primaryColor}" stop-opacity="0.02"/>
+            </linearGradient>
+          </defs>
+          ${ticks.map((t) => {
+            const y = yAt(t);
+            return `<line class="grid-line" x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" />
+              <text class="axis-label" x="${W - padR + 8}" y="${y + 4}" text-anchor="start">${escapeHtml(moneyAxisLabel(t))}</text>`;
+          }).join("")}
+          ${areaPath ? `<path d="${areaPath}" fill="url(#${gid})" stroke="none" />` : ""}
+          ${secondaryPath ? `<path d="${secondaryPath}" fill="none" stroke="${secondaryColor}" stroke-width="2.4" stroke-dasharray="5 5" stroke-linecap="round" stroke-linejoin="round" />` : ""}
+          ${primaryPath ? `<path d="${primaryPath}" fill="none" stroke="${primaryColor}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />` : ""}
+          ${primaryPts.map((p) => {
+            const drill = p.item?.drillKey
+              ? ` class="point-hit" data-drill-type="${escapeAttr(p.item.drillType || "sales")}" data-drill-key="${escapeAttr(p.item.drillKey)}" data-drill-title="${escapeAttr(p.label)}"`
+              : "";
+            return `<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="#fff" stroke="${primaryColor}" stroke-width="2.5"${drill}>
+              <title>${escapeHtml(String(p.label))}: ${money(p.v)}</title>
+            </circle>
+            <circle cx="${p.x}" cy="${p.y}" r="14" fill="transparent"${drill}></circle>`;
+          }).join("")}
+          ${items.map((it, i) => `<text class="x-label" x="${xAt(i)}" y="${H - 10}" text-anchor="middle">${escapeHtml(String(it[labelKey] || ""))}</text>`).join("")}
+          ${tip ? `<g class="sales-line-tip">
+            <rect x="${tipX}" y="${tipY}" width="${tipW}" height="${tipH}" rx="12" fill="${primaryColor}" />
+            <text x="${tipX + tipW / 2}" y="${tipY + 16}" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">${escapeHtml(money(tip.v))}</text>
+            <circle cx="${tip.x}" cy="${tip.y}" r="5.5" fill="${primaryColor}" stroke="#fff" stroke-width="2" />
+          </g>` : ""}
+        </svg>
+        <div class="sales-line-legend">
+          <span><i style="background:${primaryColor}"></i>${escapeHtml(primaryLabel)}</span>
+          <span><i style="background:${secondaryColor}"></i>${escapeHtml(secondaryLabel)}</span>
+        </div>
+      </div>`;
+    }
+
     function renderHBars(items) {
       const maxV = Math.max(1, ...items.map((it) => Number(it.value) || 0));
       return items.map((it) => {
@@ -3996,30 +4199,32 @@
       }
       document.getElementById("dashChartStage").innerHTML = stageHtml;
 
-      const salesRows = COMPANY_SALES.map((name) => {
+      const monthKeysForSales = (range.months || []).map((m) => m.key);
+      const salesRows = COMPANY_SALES.filter((name) => dashSalesFilter === "all" || name === dashSalesFilter).map((name) => {
         const list = pool.filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed");
         const weighted = list.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
         const amt = list.reduce((s, c) => s + (c.amount || 0), 0);
         const meets = list.filter((c) => c.meetingDone).length;
-        return { name, n: list.length, weighted, amt, meets, list };
+        const closedAmt = salesClosedAmountInRange(name, range.from, range.to);
+        const targetAmt = salesClosingTargetSum(name, monthKeysForSales);
+        return { name, n: list.length, weighted, amt, meets, list, closedAmt, targetAmt };
       });
-      const salesItems = salesRows.map((r, idx) => ({
-        label: r.name,
-        value: r.n,
-        tone: ["purple", "orange", "mint", "sky", "rose"][idx % 5],
-        sub: `${money(r.amt)} · 加權 ${money(r.weighted)}`,
-        color: "#6b46fe",
-        bg: "#c4b5fd",
+      const salesLineItems = salesRows.map((r) => ({
+        name: r.name,
+        closedAmt: r.closedAmt,
+        targetAmt: r.targetAmt,
         drillType: "sales",
         drillKey: r.name,
-        fullLabel: r.name,
       }));
-      let salesHtml = chartHeadHtml("銷售員 Pipeline", "點擊棒圖可鑽取案件") + renderVBars(salesItems);
+      let salesHtml = chartHeadHtml(
+        "團隊 Sales",
+        `下方 Sales · 右邊 $ · ${range.title} · 點擊節點可鑽取 Pipeline`
+      ) + renderSalesLineChart(salesLineItems);
       if (dashDrill && dashDrill.type === "sales") {
         const hit = salesRows.find((r) => r.name === dashDrill.key);
         salesHtml += renderDrillList(hit ? hit.list : [], dashDrill.key);
       }
-            document.getElementById("dashChartSales").innerHTML = salesHtml;
+      document.getElementById("dashChartSales").innerHTML = salesHtml;
 
       // ---- Sales Target $ vs Closing $ ----
       const salesTargetRoot = document.getElementById("dashChartSalesTarget");
@@ -5479,7 +5684,7 @@
           <div>
             <div class="eyebrow">銷售員 KPI · 全年目標設計</div>
             <h2 style="margin:2px 0 0;font-size:1.35rem">${escapeHtml(name)}</h2>
-            <p class="muted" style="margin:4px 0 0;font-size:.75rem">過去月份可人手補入 Closing 目標；由本月起鎖定，唔可以再改</p>
+            <p class="muted" style="margin:4px 0 0;font-size:.75rem">Closing 目標可隨時設定；過去月份可人手補入實際 Closing $，由本月起跟系統簽單鎖定</p>
           </div>
           <button type="button" class="btn btn-teal btn-sm" id="btnSaveSalesKpi">儲存 KPI</button>
         </div>
@@ -5559,12 +5764,17 @@
             <tbody>
               ${monthRows.map((r) => {
                 const gap = r.a - r.t;
-                const editable = isSalesMonthTargetEditable(r.key);
-                const lockHint = editable ? "" : ' <span class="month-target-locked">已鎖定</span>';
+                const closingEditable = isSalesMonthClosingEditable(r.key);
+                const manual = getSalesMonthClosingActual(name, r.key);
+                const actualInputVal = manual != null ? manual : (r.a || "");
+                const lockHint = closingEditable ? "" : ' <span class="month-target-locked">Closing $ 已鎖定</span>';
+                const futureBadge = r.key > cur ? ' <span class="badge" style="color:#0369a1;background:#e0f2fe">未來</span>' : "";
                 return `<tr>
-                  <td><strong>${escapeHtml(r.label)}</strong>${r.key === cur ? ' <span class="badge" style="color:#5b21b6;background:#efeefe">本月</span>' : ""}${!editable && r.key !== cur ? ' <span class="badge" style="color:#0369a1;background:#e0f2fe">未來</span>' : ""}${lockHint}</td>
-                  <td><input type="number" min="0" step="1000" data-ym="${escapeAttr(r.key)}" class="sales-month-target" value="${r.t || ""}" placeholder="${editable ? "0" : "—"}" ${editable ? "" : "disabled"} title="${editable ? "過去月份可人手輸入" : "由本月起不可人手修改"}" /></td>
-                  <td><strong>${money(r.a)}</strong></td>
+                  <td><strong>${escapeHtml(r.label)}</strong>${r.key === cur ? ' <span class="badge" style="color:#5b21b6;background:#efeefe">本月</span>' : ""}${futureBadge}${lockHint}</td>
+                  <td><input type="number" min="0" step="1000" data-ym="${escapeAttr(r.key)}" class="sales-month-target" value="${r.t || ""}" placeholder="0" title="Closing 目標（可隨時修改）" /></td>
+                  <td>${closingEditable
+                    ? `<input type="number" min="0" step="1000" data-ym="${escapeAttr(r.key)}" class="sales-month-actual" value="${actualInputVal}" placeholder="人手輸入" title="過去月份可人手補入實際 Closing $" />`
+                    : `<strong title="由本月起跟系統簽單計算">${money(r.a)}</strong>`}</td>
                   <td style="font-weight:800;color:${!r.t ? "var(--muted)" : (r.p >= 100 ? "#15803d" : (r.p < 60 ? "#9f1239" : "var(--ink)"))}">${r.t ? r.p + "%" : "—"}</td>
                   <td>${r.n}</td>
                   <td>${r.meet}</td>
@@ -5585,7 +5795,7 @@
             </tfoot>
           </table>
         </div>
-        <p class="muted" style="margin-top:8px;font-size:.72rem">過去月份可人手輸入 Closing 目標；由本月（${escapeHtml(currentMonthKey())}）起已鎖定 · Dashboard 會按期間月份合計顯示</p>
+        <p class="muted" style="margin-top:8px;font-size:.72rem">Closing 目標可隨時改 · 過去月份可人手輸入實際 Closing $ · 由本月（${escapeHtml(currentMonthKey())}）起 Closing $ 跟系統簽單 · Dashboard 按期間合計</p>
       `;
     }
 
@@ -5606,13 +5816,23 @@
       };
       panel.querySelectorAll(".sales-month-target").forEach((input) => {
         input.onchange = () => {
-          if (input.disabled || !isSalesMonthTargetEditable(input.dataset.ym)) {
-            toast("由本月起唔可以人手修改 Closing 目標");
+          setSalesMonthClosingTarget(name, input.dataset.ym, input.value);
+          toast(`已更新 ${name} · ${input.dataset.ym} Closing 目標`);
+          renderSalesMgmt();
+          refreshDash();
+        };
+      });
+      panel.querySelectorAll(".sales-month-actual").forEach((input) => {
+        input.onchange = () => {
+          if (!isSalesMonthClosingEditable(input.dataset.ym)) {
+            toast("由本月起 Closing $ 跟系統簽單，唔可以人手修改");
             renderSalesMgmt();
             return;
           }
-          setSalesMonthClosingTarget(name, input.dataset.ym, input.value);
-          toast(`已更新 ${name} · ${input.dataset.ym} Closing 目標`);
+          const ok = setSalesMonthClosingActual(name, input.dataset.ym, input.value);
+          toast(ok
+            ? (input.value === "" ? `已清除 ${name} · ${input.dataset.ym} 人手 Closing $` : `已更新 ${name} · ${input.dataset.ym} Closing $`)
+            : "無法更新 Closing $");
           renderSalesMgmt();
           refreshDash();
         };
@@ -5633,7 +5853,6 @@
         localStorage.setItem("crm_sales_kpi_year", String(salesKpiYear));
         renderSalesMgmt();
       };
-      const editableMonthKeys = () => listYearMonths(salesKpiYear).filter((m) => isSalesMonthTargetEditable(m.key));
       const readFillAmount = () => {
         const raw = document.getElementById("salesYearFillAmount").value;
         if (raw === "" || raw == null) {
@@ -5645,34 +5864,19 @@
       document.getElementById("btnFillYearEqual").onclick = () => {
         const total = readFillAmount();
         if (total == null) return;
-        const editable = editableMonthKeys();
-        if (!editable.length) {
-          toast("本年已無可編輯嘅過去月份");
-          return;
-        }
-        const base = Math.floor(total / editable.length);
-        const amounts = Array.from({ length: 12 }, () => null);
-        editable.forEach((m, i) => {
-          const idx = m.month - 1;
-          amounts[idx] = i === editable.length - 1 ? total - base * (editable.length - 1) : base;
-        });
+        const base = Math.floor(total / 12);
+        const amounts = Array.from({ length: 12 }, (_, i) => (i === 11 ? total - base * 11 : base));
         setSalesYearMonthsBulk(name, salesKpiYear, amounts);
-        toast(`已將 ${money(total)} 平均分配到 ${editable.length} 個可編輯月份`);
+        toast(`已將 ${money(total)} 平均分配到 12 個月目標`);
         renderSalesMgmt();
         refreshDash();
       };
       document.getElementById("btnFillYearSame").onclick = () => {
         const each = readFillAmount();
         if (each == null) return;
-        const editable = editableMonthKeys();
-        if (!editable.length) {
-          toast("本年已無可編輯嘅過去月份");
-          return;
-        }
-        const amounts = Array.from({ length: 12 }, () => null);
-        editable.forEach((m) => { amounts[m.month - 1] = each; });
+        const amounts = Array.from({ length: 12 }, () => each);
         setSalesYearMonthsBulk(name, salesKpiYear, amounts);
-        toast(`已設定 ${editable.length} 個過去月份 Closing 目標 ${money(each)}`);
+        toast(`已設定全年每月 Closing 目標 ${money(each)}`);
         renderSalesMgmt();
         refreshDash();
       };
@@ -5683,14 +5887,14 @@
           toast(`${fromY} 年尚未有目標可複製`);
           return;
         }
-        const ok = copySalesYearTargets(name, fromY, salesKpiYear);
-        toast(ok ? `已複製 ${fromY} → ${salesKpiYear} 年（只寫入可編輯月份）` : "沒有可寫入嘅過去月份");
+        copySalesYearTargets(name, fromY, salesKpiYear);
+        toast(`已複製 ${fromY} → ${salesKpiYear} 年 Closing 目標`);
         renderSalesMgmt();
         refreshDash();
       };
       document.getElementById("btnClearYearTargets").onclick = () => {
-        const n = setSalesYearMonthsBulk(name, salesKpiYear, Array.from({ length: 12 }, () => null));
-        toast(n ? `已清空 ${n} 個可編輯月份目標` : "沒有可清空嘅過去月份");
+        setSalesYearMonthsBulk(name, salesKpiYear, Array.from({ length: 12 }, () => ""));
+        toast(`已清空 ${salesKpiYear} 年 Closing 目標`);
         renderSalesMgmt();
         refreshDash();
       };
