@@ -174,6 +174,93 @@
       color: var(--muted);
       text-align: center;
     }
+    .mgmt-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 12px 0;
+      padding: 4px;
+      background: rgba(255,255,255,.75);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      width: fit-content;
+      max-width: 100%;
+    }
+    .mgmt-tabs button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: .78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .mgmt-tabs button.active {
+      background: var(--ink);
+      color: #fff;
+    }
+    .mgmt-alert {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      align-items: center;
+      margin: 10px 0 14px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      color: #9f1239;
+      font-size: .84rem;
+      font-weight: 600;
+    }
+    .mgmt-alert.ok {
+      background: #f0fdfa;
+      border-color: #99f6e4;
+      color: #0f766e;
+    }
+    .mgmt-panel { display: none; }
+    .mgmt-panel.active { display: block; }
+    .mgmt-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    @media (min-width: 800px) {
+      .mgmt-stats { grid-template-columns: repeat(4, 1fr); }
+    }
+    .tag-overdue {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #ffe4e6;
+      color: #9f1239;
+      font-size: .68rem;
+      font-weight: 800;
+    }
+    .tag-ok {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #dcfce7;
+      color: #15803d;
+      font-size: .68rem;
+      font-weight: 800;
+    }
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .chip-list span {
+      background: var(--paper);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: .7rem;
+      font-weight: 600;
+      color: var(--ink-soft);
+    }
     .board-dash {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -522,6 +609,7 @@
       <button data-view="dashboard">Dashboard</button>
       <button data-view="board">Kanban</button>
       <button data-view="cases">列表</button>
+      <button data-view="mgmt">資料庫管理</button>
     </nav>
   </header>
 
@@ -548,6 +636,7 @@
         <div class="home-actions">
           <button class="btn btn-teal" data-go="portal">開啟手機 Portal</button>
           <button class="btn btn-ghost" data-go="dashboard">進入後台 Dashboard</button>
+          <button class="btn btn-ghost" data-go="mgmt">資料庫管理</button>
         </div>
       </div>
     </section>
@@ -658,6 +747,64 @@
         <th>公司／Case</th><th>Partner／House</th><th>系統</th><th>階段</th><th>約見</th><th>會面</th><th>跟進機會</th><th>操作</th>
       </tr></thead><tbody id="casesBody"></tbody></table></div>
     </section>
+
+    <!-- DATABASE MANAGEMENT -->
+    <section id="view-mgmt" class="hidden">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
+        <div>
+          <h1>資料庫管理</h1>
+          <p class="muted">客戶 · Partner · 銷售員統計與跟進提示</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnRefreshMgmt">重新整理</button>
+      </div>
+      <div id="mgmtAlterBanner" class="setup-box hidden" style="margin-top:12px">
+        <strong>建議執行欄位升級 SQL</strong>
+        <p class="muted" style="margin:8px 0">為啟用「下次跟進日期」寫入資料庫與 Team Leader 欄位，請在 Supabase SQL Editor Run：<code>supabase/mgmt_alter.sql</code></p>
+        <p class="muted" style="margin:0 0 8px">Raw：<a href="https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql" target="_blank" rel="noopener">mgmt_alter.sql</a></p>
+        <button class="btn btn-teal btn-sm" id="btnCopyMgmtSql">複製升級 SQL</button>
+      </div>
+      <div class="mgmt-tabs" id="mgmtTabs">
+        <button type="button" data-mgmt="customers" class="active">客戶管理</button>
+        <button type="button" data-mgmt="partners">Partner 管理</button>
+        <button type="button" data-mgmt="sales">銷售員管理</button>
+      </div>
+
+      <div class="mgmt-panel active" id="mgmt-customers">
+        <div id="customerOverdueAlert"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <input id="customerSearch" placeholder="搜尋公司／聯絡人／Sales…" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff" />
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;color:var(--muted)"><input type="checkbox" id="customerOnlyOverdue" /> 只睇逾期跟進</label>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr>
+            <th>客戶公司</th><th>VISIT 次數</th><th>上次會議</th><th>下次跟進</th><th>狀態</th><th>Sales／Partner</th><th>操作</th>
+          </tr></thead>
+          <tbody id="customersBody"></tbody>
+        </table></div>
+      </div>
+
+      <div class="mgmt-panel" id="mgmt-partners">
+        <div class="mgmt-stats" id="partnerStats"></div>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">統計依案件建立日期 · Qualified = 非 DQ 且（已會面／有跟進機會／報價或之後階段）</p>
+        <div class="table-wrap"><table>
+          <thead><tr>
+            <th>Partner</th><th>Team Leader</th><th>Sales</th><th>近 1 個月 Case</th><th>近 3 個月 Case</th><th>DQ</th><th>Qualified</th>
+          </tr></thead>
+          <tbody id="partnersBody"></tbody>
+        </table></div>
+      </div>
+
+      <div class="mgmt-panel" id="mgmt-sales">
+        <div class="mgmt-stats" id="salesStats"></div>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">會面數依會面完成日期（activity log／約見日）· 成功簽單 = 確認簽單階段或 close_reason=won</p>
+        <div class="table-wrap"><table>
+          <thead><tr>
+            <th>銷售員</th><th>Team／House</th><th>近 1 月會面客人</th><th>近 3 月會面客人</th><th>DQ</th><th>Qualified</th><th>成功簽單</th><th>簽單金額</th>
+          </tr></thead>
+          <tbody id="salesBody"></tbody>
+        </table></div>
+      </div>
+    </section>
   </main>
 
   <div id="drawerRoot"></div>
@@ -713,8 +860,12 @@
     let selectedSystems = new Set();
     let dragId = null;
     let dbReady = false;
+    let mgmtColsReady = false;
+    let mgmtTab = "customers";
+    const FOLLOWUP_LS_KEY = "crm_followup_dates";
     const ALL_BOARD_STAGES = () => STAGES.map((s) => s.id);
     let visibleStages = loadVisibleStages();
+    const QUALIFIED_STAGES = new Set(["first_interview", "quotation", "follow_up", "final_stage", "confirmation"]);
 
     function loadVisibleStages() {
       try {
@@ -751,7 +902,7 @@
     };
 
     function showView(name) {
-      ["home", "portal", "dashboard", "board", "cases"].forEach((v) => {
+      ["home", "portal", "dashboard", "board", "cases", "mgmt"].forEach((v) => {
         document.getElementById(`view-${v}`).classList.toggle("hidden", v !== name);
       });
       document.body.classList.toggle("mode-board", name === "board");
@@ -760,6 +911,7 @@
       if (name === "board") renderBoard();
       if (name === "cases") renderCasesTable();
       if (name === "portal") initPortalForm();
+      if (name === "mgmt") renderMgmt();
       location.hash = name === "home" ? "" : name;
     }
 
@@ -768,6 +920,11 @@
       const contactsProbe = await db.from("crm_contacts").select("id").limit(1);
       dbReady = !error && !contactsProbe.error;
       document.getElementById("setupBanner").classList.toggle("hidden", dbReady);
+      if (dbReady) {
+        const probe = await db.from("crm_cases").select("next_follow_up_at,team_leader").limit(1);
+        mgmtColsReady = !probe.error;
+        document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady);
+      }
       if (error || contactsProbe.error) {
         console.warn(error || contactsProbe.error);
         const preview = document.getElementById("setupSqlPreview");
@@ -835,15 +992,17 @@
         meetingDone: !!r.meeting_done,
         meetingNotes: r.meeting_notes || "",
         followUpOpportunity: !!r.follow_up_opportunity,
+        nextFollowUpAt: r.next_follow_up_at || localFollowUpGet(r.id) || "",
         leadStatus: r.lead_status || "Processing",
         sourceEvent: r.source_event || "",
+        teamLeader: r.team_leader || parseTeamLeader(r.ricoh_house || "") || "",
         createdAt: r.created_at,
         updatedAt: r.updated_at,
       };
     }
 
     function toRow(c) {
-      return {
+      const row = {
         id: c.id,
         customer_name: c.customerName,
         partner: c.partner,
@@ -870,6 +1029,96 @@
         source_event: c.sourceEvent || "",
         updated_at: new Date().toISOString(),
       };
+      if (mgmtColsReady) {
+        row.next_follow_up_at = c.nextFollowUpAt || null;
+        row.team_leader = c.teamLeader || "";
+      }
+      return row;
+    }
+
+    function parseTeamLeader(house) {
+      const m = String(house || "").match(/\(([^)]+)\s+Team\)/i);
+      return m ? m[1].trim() : "";
+    }
+
+    function localFollowUpMap() {
+      try { return JSON.parse(localStorage.getItem(FOLLOWUP_LS_KEY) || "{}"); } catch (_) { return {}; }
+    }
+    function localFollowUpGet(id) {
+      return localFollowUpMap()[id] || "";
+    }
+    function localFollowUpSet(id, dateStr) {
+      const map = localFollowUpMap();
+      if (dateStr) map[id] = dateStr;
+      else delete map[id];
+      localStorage.setItem(FOLLOWUP_LS_KEY, JSON.stringify(map));
+    }
+
+    function companyKey(c) {
+      return ((c.customerName || "").split("\n")[0] || c.id).trim();
+    }
+
+    function isDq(c) {
+      return c.leadStatus === "DQ" || c.closeReason === "disqualified";
+    }
+
+    function isQualified(c) {
+      if (isDq(c) || c.closeReason === "failed") return false;
+      return !!c.meetingDone || !!c.followUpOpportunity || QUALIFIED_STAGES.has(c.stage) || c.closeReason === "won";
+    }
+
+    function isWon(c) {
+      return c.stage === "confirmation" || c.closeReason === "won";
+    }
+
+    function daysAgo(n) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - n);
+      return d;
+    }
+
+    function inLastDays(dateLike, days) {
+      if (!dateLike) return false;
+      const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+      if (Number.isNaN(d.getTime())) return false;
+      return d >= daysAgo(days);
+    }
+
+    function meetingDatesForCase(c) {
+      const logs = (logsByCase[c.id] || []).filter((l) => l.log_type === "meeting_done");
+      const dates = logs
+        .map((l) => new Date(l.happened_at || l.created_at))
+        .filter((d) => !Number.isNaN(d.getTime()));
+      if (!dates.length && c.meetingDone) {
+        const fallback = c.appointmentAt ? new Date(c.appointmentAt) : (c.updatedAt ? new Date(c.updatedAt) : null);
+        if (fallback && !Number.isNaN(fallback.getTime())) dates.push(fallback);
+      }
+      return dates.sort((a, b) => b - a);
+    }
+
+    function visitCount(c) {
+      const n = meetingDatesForCase(c).length;
+      if (n) return n;
+      return c.meetingDone ? 1 : 0;
+    }
+
+    function lastMeetingDate(c) {
+      const dates = meetingDatesForCase(c);
+      return dates[0] || null;
+    }
+
+    function todayStart() {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    function isFollowUpOverdue(c) {
+      if (!c.nextFollowUpAt || isDq(c) || c.stage === "closed") return false;
+      const d = parseLocalDate(c.nextFollowUpAt);
+      if (!d) return false;
+      return d < todayStart();
     }
 
     /* -------- voice parse (natural Cantonese / Chinese notes) -------- */
@@ -1547,6 +1796,235 @@
       document.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => openDrawer(b.dataset.open));
     }
 
+    function setMgmtTab(tab) {
+      mgmtTab = tab;
+      document.querySelectorAll("#mgmtTabs button").forEach((b) => b.classList.toggle("active", b.dataset.mgmt === tab));
+      document.querySelectorAll(".mgmt-panel").forEach((p) => p.classList.toggle("active", p.id === `mgmt-${tab}`));
+      renderMgmt();
+    }
+
+    function renderMgmt() {
+      document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady);
+      if (mgmtTab === "customers") renderCustomersMgmt();
+      else if (mgmtTab === "partners") renderPartnersMgmt();
+      else renderSalesMgmt();
+    }
+
+    function buildCustomerRows() {
+      const map = new Map();
+      for (const c of cases) {
+        const key = companyKey(c);
+        if (!map.has(key)) {
+          map.set(key, {
+            key,
+            name: key,
+            cases: [],
+            visit: 0,
+            lastMeeting: null,
+            nextFollowUp: "",
+            overdue: false,
+            sales: new Set(),
+            partners: new Set(),
+            primaryCaseId: c.id,
+          });
+        }
+        const row = map.get(key);
+        row.cases.push(c);
+        row.visit += visitCount(c);
+        const lm = lastMeetingDate(c);
+        if (lm && (!row.lastMeeting || lm > row.lastMeeting)) row.lastMeeting = lm;
+        if (c.ricohSales) row.sales.add(c.ricohSales);
+        if (c.partner) row.partners.add(c.partner);
+        // Prefer soonest upcoming / any follow-up date across cases
+        if (c.nextFollowUpAt) {
+          if (!row.nextFollowUp || c.nextFollowUpAt < row.nextFollowUp) {
+            row.nextFollowUp = c.nextFollowUpAt;
+            row.primaryCaseId = c.id;
+          }
+        }
+        if (isFollowUpOverdue(c)) row.overdue = true;
+      }
+      for (const row of map.values()) {
+        if (!row.nextFollowUp) {
+          const open = row.cases.find((c) => c.stage !== "closed") || row.cases[0];
+          row.primaryCaseId = open.id;
+          row.nextFollowUp = open.nextFollowUpAt || "";
+          row.overdue = row.cases.some(isFollowUpOverdue);
+        }
+      }
+      return [...map.values()].sort((a, b) => {
+        if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+        return a.name.localeCompare(b.name, "zh-HK");
+      });
+    }
+
+    function renderCustomersMgmt() {
+      const q = (document.getElementById("customerSearch")?.value || "").trim().toLowerCase();
+      const onlyOverdue = !!document.getElementById("customerOnlyOverdue")?.checked;
+      let rows = buildCustomerRows();
+      const overdueN = rows.filter((r) => r.overdue).length;
+      const alert = document.getElementById("customerOverdueAlert");
+      alert.innerHTML = overdueN
+        ? `<div class="mgmt-alert">⚠ 有 <strong>${overdueN}</strong> 個客戶已超過下次跟進日期仍未更新 — 請盡快跟進</div>`
+        : `<div class="mgmt-alert ok">✓ 暫時沒有逾期跟進客戶</div>`;
+
+      if (onlyOverdue) rows = rows.filter((r) => r.overdue);
+      if (q) {
+        rows = rows.filter((r) => {
+          const contactHay = r.cases.flatMap((c) => (contactsByCase[c.id] || []).map((p) => p.name || "")).join(" ");
+          return [r.name, [...r.sales].join(" "), [...r.partners].join(" "), contactHay].join(" ").toLowerCase().includes(q);
+        });
+      }
+
+      document.getElementById("customersBody").innerHTML = rows.map((r) => {
+        const lastText = r.lastMeeting ? formatLocalDate(r.lastMeeting) : "—";
+        const status = r.overdue
+          ? `<span class="tag-overdue">逾期未跟進</span>`
+          : (r.nextFollowUp ? `<span class="tag-ok">已排期</span>` : `<span class="muted">未設跟進日</span>`);
+        return `<tr data-customer-key="${escapeAttr(r.key)}">
+          <td><strong>${escapeHtml(r.name)}</strong><div class="muted" style="font-size:.68rem">${r.cases.length} 宗案件</div></td>
+          <td><strong>${r.visit}</strong></td>
+          <td>${lastText}</td>
+          <td>
+            <input type="date" class="cust-follow" data-case-id="${escapeAttr(r.primaryCaseId)}" value="${escapeAttr(r.nextFollowUp || "")}" style="border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:#fff;font-size:.78rem" />
+          </td>
+          <td>${status}</td>
+          <td>
+            <div class="muted" style="font-size:.72rem">${escapeHtml([...r.sales].join("、") || "—")}</div>
+            <div class="muted" style="font-size:.68rem">${escapeHtml([...r.partners].join("、") || "")}</div>
+          </td>
+          <td><button class="btn btn-ghost btn-sm" data-open="${escapeAttr(r.primaryCaseId)}">詳情</button></td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="7" style="text-align:center;padding:28px" class="muted">沒有客戶</td></tr>`;
+
+      document.querySelectorAll("#customersBody [data-open]").forEach((b) => b.onclick = () => openDrawer(b.dataset.open));
+      document.querySelectorAll("#customersBody .cust-follow").forEach((input) => {
+        input.onchange = async () => {
+          const id = input.dataset.caseId;
+          const val = input.value || "";
+          localFollowUpSet(id, val);
+          await updateCase(id, { nextFollowUpAt: val });
+          renderCustomersMgmt();
+        };
+      });
+    }
+
+    function buildPartnerRows() {
+      const map = new Map();
+      for (const c of cases) {
+        const name = (c.partner || "未分類").trim() || "未分類";
+        if (!map.has(name)) {
+          map.set(name, {
+            name,
+            sales: new Set(),
+            leaders: new Set(),
+            cases1m: 0,
+            cases3m: 0,
+            dq: 0,
+            qualified: 0,
+          });
+        }
+        const row = map.get(name);
+        if (c.ricohSales) row.sales.add(c.ricohSales);
+        const leader = c.teamLeader || parseTeamLeader(c.ricohHouse);
+        if (leader) row.leaders.add(leader);
+        else if (c.ricohHouse) row.leaders.add(c.ricohHouse);
+        if (inLastDays(c.createdAt, 30)) row.cases1m += 1;
+        if (inLastDays(c.createdAt, 90)) row.cases3m += 1;
+        if (isDq(c)) row.dq += 1;
+        if (isQualified(c)) row.qualified += 1;
+      }
+      return [...map.values()].sort((a, b) => b.cases3m - a.cases3m || a.name.localeCompare(b.name, "zh-HK"));
+    }
+
+    function renderPartnersMgmt() {
+      const rows = buildPartnerRows();
+      const total1 = rows.reduce((s, r) => s + r.cases1m, 0);
+      const total3 = rows.reduce((s, r) => s + r.cases3m, 0);
+      const totalDq = rows.reduce((s, r) => s + r.dq, 0);
+      const totalQ = rows.reduce((s, r) => s + r.qualified, 0);
+      document.getElementById("partnerStats").innerHTML = [
+        ["Partner 數", rows.length, "有交 case 嘅 Partner"],
+        ["近 1 個月 Case", total1, "按建立日期"],
+        ["近 3 個月 Case", total3, "按建立日期"],
+        ["DQ / Qualified", `${totalDq} / ${totalQ}`, "全部 Partner 合計"],
+      ].map(([l, v, s]) => `<article class="stat"><div class="label">${l}</div><div class="value">${v}</div><div class="muted" style="font-size:.68rem;margin-top:2px">${s}</div></article>`).join("");
+
+      document.getElementById("partnersBody").innerHTML = rows.map((r) => `<tr>
+        <td><strong>${escapeHtml(r.name)}</strong></td>
+        <td><div class="chip-list">${[...r.leaders].map((x) => `<span>${escapeHtml(x)}</span>`).join("") || "<span class='muted'>—</span>"}</div></td>
+        <td><div class="chip-list">${[...r.sales].map((x) => `<span>${escapeHtml(x)}</span>`).join("") || "<span class='muted'>—</span>"}</div></td>
+        <td><strong>${r.cases1m}</strong></td>
+        <td><strong>${r.cases3m}</strong></td>
+        <td style="color:#9f1239;font-weight:700">${r.dq}</td>
+        <td style="color:#15803d;font-weight:700">${r.qualified}</td>
+      </tr>`).join("") || `<tr><td colspan="7" style="text-align:center;padding:28px" class="muted">未有 Partner 資料</td></tr>`;
+    }
+
+    function buildSalesRows() {
+      const map = new Map();
+      for (const c of cases) {
+        const name = (c.ricohSales || "").trim() || "未指派";
+        if (!map.has(name)) {
+          map.set(name, {
+            name,
+            houses: new Set(),
+            leaders: new Set(),
+            meet1m: new Set(),
+            meet3m: new Set(),
+            dq: 0,
+            qualified: 0,
+            wonN: 0,
+            wonAmt: 0,
+          });
+        }
+        const row = map.get(name);
+        if (c.ricohHouse) row.houses.add(c.ricohHouse);
+        const leader = c.teamLeader || parseTeamLeader(c.ricohHouse);
+        if (leader) row.leaders.add(leader);
+        const company = companyKey(c);
+        for (const md of meetingDatesForCase(c)) {
+          if (inLastDays(md, 30)) row.meet1m.add(company);
+          if (inLastDays(md, 90)) row.meet3m.add(company);
+        }
+        if (isDq(c)) row.dq += 1;
+        if (isQualified(c)) row.qualified += 1;
+        if (isWon(c)) {
+          row.wonN += 1;
+          row.wonAmt += Number(c.amount) || 0;
+        }
+      }
+      return [...map.values()].sort((a, b) => b.meet3m.size - a.meet3m.size || a.name.localeCompare(b.name, "zh-HK"));
+    }
+
+    function renderSalesMgmt() {
+      const rows = buildSalesRows();
+      const meet1 = rows.reduce((s, r) => s + r.meet1m.size, 0);
+      const meet3 = rows.reduce((s, r) => s + r.meet3m.size, 0);
+      const wonN = rows.reduce((s, r) => s + r.wonN, 0);
+      const wonAmt = rows.reduce((s, r) => s + r.wonAmt, 0);
+      document.getElementById("salesStats").innerHTML = [
+        ["銷售員數", rows.filter((r) => r.name !== "未指派").length, "有指派 Ricoh Sales"],
+        ["近 1 月會面客人", meet1, "去重公司數合計"],
+        ["近 3 月會面客人", meet3, "去重公司數合計"],
+        ["成功簽單", `${wonN} · ${money(wonAmt)}`, "確認簽單／won"],
+      ].map(([l, v, s]) => `<article class="stat"><div class="label">${l}</div><div class="value" style="font-size:1.15rem">${v}</div><div class="muted" style="font-size:.68rem;margin-top:2px">${s}</div></article>`).join("");
+
+      document.getElementById("salesBody").innerHTML = rows.map((r) => `<tr>
+        <td><strong>${escapeHtml(r.name)}</strong></td>
+        <td>
+          <div class="muted" style="font-size:.72rem">${escapeHtml([...r.houses].slice(0, 2).join("、") || "—")}</div>
+          <div class="chip-list" style="margin-top:4px">${[...r.leaders].map((x) => `<span>${escapeHtml(x)}</span>`).join("")}</div>
+        </td>
+        <td><strong>${r.meet1m.size}</strong></td>
+        <td><strong>${r.meet3m.size}</strong></td>
+        <td style="color:#9f1239;font-weight:700">${r.dq}</td>
+        <td style="color:#15803d;font-weight:700">${r.qualified}</td>
+        <td><strong>${r.wonN}</strong></td>
+        <td>${money(r.wonAmt)}</td>
+      </tr>`).join("") || `<tr><td colspan="8" style="text-align:center;padding:28px" class="muted">未有銷售員資料</td></tr>`;
+    }
+
     function openDrawer(id) {
       const c = cases.find((x) => x.id === id);
       if (!c) return;
@@ -1568,7 +2046,10 @@
           <label class="field"><span>Ricoh House</span><input id="d_house" value="${escapeAttr(c.ricohHouse)}" /></label>
           <label class="field"><span>Ricoh Sales</span><input id="d_sales" value="${escapeAttr(c.ricohSales)}" /></label>
         </div>
-        <label class="field"><span>Ricoh Consultant</span><input id="d_consultant" value="${escapeAttr(c.ricohConsultant)}" /></label>
+        <div class="row2">
+          <label class="field"><span>Team Leader</span><input id="d_leader" value="${escapeAttr(c.teamLeader || parseTeamLeader(c.ricohHouse))}" placeholder="例如 Polly Lee" /></label>
+          <label class="field"><span>Ricoh Consultant</span><input id="d_consultant" value="${escapeAttr(c.ricohConsultant)}" /></label>
+        </div>
 
         <div class="eyebrow" style="margin-top:8px">Multi Contact & Details（${contacts.length}）</div>
         <div style="margin:8px 0 12px">${contacts.map((p) => `
@@ -1599,11 +2080,14 @@
           <label class="field" style="display:flex;align-items:center;gap:8px;margin-top:18px"><input type="checkbox" id="d_meetDone" ${c.meetingDone?"checked":""}/> 會面已完成</label>
         </div>
         <label class="field" style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="d_follow" ${c.followUpOpportunity?"checked":""}/> 有機會跟進</label>
+        <label class="field"><span>下次跟進日期 ${isFollowUpOverdue(c) ? '<span class="tag-overdue">已逾期</span>' : ""}</span>
+          <input id="d_nextFollow" type="date" value="${escapeAttr(c.nextFollowUpAt || "")}" />
+        </label>
         <label class="field"><span>會後 Comment</span><textarea id="d_meetNotes" rows="2">${escapeHtml(c.meetingNotes)}</textarea></label>
         <label class="field"><span>系統（逗號分隔）</span><input id="d_systems" value="${escapeAttr((c.systems || []).join(", "))}" /></label>
         <label class="field"><span>需求／Product</span><textarea id="d_requirements" rows="2">${escapeHtml(c.requirements)}</textarea></label>
         <label class="field"><span>關閉原因</span>
-          <select id="d_close"><option value="">—</option><option value="disqualified" ${c.closeReason === "disqualified" ? "selected" : ""}>Disqualified</option><option value="failed" ${c.closeReason === "failed" ? "selected" : ""}>失敗</option></select>
+          <select id="d_close"><option value="">—</option><option value="disqualified" ${c.closeReason === "disqualified" ? "selected" : ""}>Disqualified</option><option value="failed" ${c.closeReason === "failed" ? "selected" : ""}>失敗</option><option value="won" ${c.closeReason === "won" ? "selected" : ""}>成功簽單</option></select>
         </label>
         <button class="btn btn-teal" style="width:100%;margin-bottom:14px" id="drawerSave">儲存案件</button>
 
@@ -1630,14 +2114,20 @@
         const stage = document.getElementById("d_stage").value;
         const appt = document.getElementById("d_appt").value;
         const lead = document.getElementById("d_lead").value;
+        const closeVal = document.getElementById("d_close").value;
+        const nextFollow = document.getElementById("d_nextFollow").value || "";
+        localFollowUpSet(c.id, nextFollow);
+        const won = closeVal === "won" || stage === "confirmation";
         await updateCase(c.id, {
           ricohHouse: document.getElementById("d_house").value.trim(),
           ricohSales: document.getElementById("d_sales").value.trim(),
           ricohConsultant: document.getElementById("d_consultant").value.trim(),
+          teamLeader: document.getElementById("d_leader").value.trim(),
           systems: document.getElementById("d_systems").value.split(",").map((x) => x.trim()).filter(Boolean),
           requirements: document.getElementById("d_requirements").value,
           stage: lead === "DQ" ? "closed" : stage,
-          closeReason: lead === "DQ" || stage === "closed" ? (document.getElementById("d_close").value || "disqualified") : null,
+          closeReason: lead === "DQ" ? (closeVal || "disqualified")
+            : (stage === "closed" || won ? (closeVal || (won ? "won" : null)) : null),
           leadStatus: lead,
           appointmentFlag: !!appt || c.appointmentFlag,
           appointmentAt: appt ? new Date(appt).toISOString() : null,
@@ -1645,6 +2135,7 @@
           meetingDone: document.getElementById("d_meetDone").checked,
           meetingNotes: document.getElementById("d_meetNotes").value,
           followUpOpportunity: document.getElementById("d_follow").checked,
+          nextFollowUpAt: nextFollow,
         });
         openDrawer(c.id);
       };
@@ -1685,11 +2176,11 @@
       const next = {
         ...prev,
         ...patch,
-        closeReason: patch.stage === "closed" || prev.stage === "closed"
-          ? (patch.closeReason !== undefined ? patch.closeReason : prev.closeReason)
-          : null,
       };
-      if (next.stage !== "closed") next.closeReason = null;
+      if (patch.closeReason !== undefined) next.closeReason = patch.closeReason;
+      if (next.stage === "confirmation" && !next.closeReason) next.closeReason = "won";
+      if (next.stage !== "closed" && next.closeReason !== "won") next.closeReason = null;
+      if (next.stage === "closed" && !next.closeReason) next.closeReason = "disqualified";
       const { error } = await db.from("crm_cases").update(toRow(next)).eq("id", id);
       if (error) return toast("更新失敗：" + error.message);
       toast("已更新");
@@ -1697,6 +2188,7 @@
       renderBoard();
       renderCasesTable();
       renderDashboard();
+      if (!document.getElementById("view-mgmt").classList.contains("hidden")) renderMgmt();
     }
 
     function escapeHtml(s) {
@@ -1910,14 +2402,32 @@
         renderDashboard();
         renderBoard();
         renderCasesTable();
+        renderMgmt();
       } else toast("仍未偵測到 crm_cases，請確認已 Run SQL");
     };
+    document.getElementById("mgmtTabs").onclick = (e) => {
+      const btn = e.target.closest("button[data-mgmt]");
+      if (btn) setMgmtTab(btn.dataset.mgmt);
+    };
+    document.getElementById("btnRefreshMgmt").onclick = async () => {
+      await loadCases();
+      renderMgmt();
+      toast("已重新整理");
+    };
+    document.getElementById("customerSearch").oninput = () => renderCustomersMgmt();
+    document.getElementById("customerOnlyOverdue").onchange = () => renderCustomersMgmt();
+    fetch("./supabase/mgmt_alter.sql").then((r) => r.text()).then((t) => {
+      document.getElementById("btnCopyMgmtSql").onclick = async () => {
+        await navigator.clipboard.writeText(t);
+        toast("已複製 mgmt_alter.sql");
+      };
+    }).catch(() => {});
 
     // boot
     initPortalForm();
     loadCases().then(() => {
       const hash = (location.hash || "").replace("#", "");
-      showView(["portal", "dashboard", "board", "cases"].includes(hash) ? hash : "home");
+      showView(["portal", "dashboard", "board", "cases", "mgmt"].includes(hash) ? hash : "home");
     });
   </script>
 </body>

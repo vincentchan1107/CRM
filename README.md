@@ -16,6 +16,16 @@ Anon key **唔可以**建表。請你做呢一步：
 
 完成後可管理：聯絡 log（含聯絡不到）、約見／確認、會面完成／會後 comment、跟進機會與後續 stage。
 
+### 資料庫管理欄位升級（建議）
+
+若已跑過舊版 `ricoh_import.sql`，請再 Run [`supabase/mgmt_alter.sql`](./supabase/mgmt_alter.sql)（唔會刪資料）：
+
+Raw：https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql
+
+- 新增 `next_follow_up_at`（下次跟進日期）
+- 新增 `team_leader`
+- 允許 `close_reason = won`（成功簽單）
+
 ## 在瀏覽器打開（GitHub）
 
 PR / 分支 Preview（無需自己 host）：
