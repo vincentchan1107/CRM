@@ -261,6 +261,117 @@
       font-weight: 600;
       color: var(--ink-soft);
     }
+    .partner-tree { display: grid; gap: 12px; }
+    .partner-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .partner-card-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, #f8fafc, #fff);
+      border-bottom: 1px solid var(--line);
+    }
+    .partner-card-head h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-family: var(--font-display);
+    }
+    .partner-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .partner-metrics span {
+      background: var(--paper);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: .72rem;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+    .partner-metrics strong {
+      display: block;
+      font-size: .95rem;
+      color: var(--ink);
+      font-family: var(--font-display);
+    }
+    .team-row {
+      border-top: 1px solid var(--line);
+    }
+    .team-row:first-child { border-top: 0; }
+    .team-row-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      padding: 12px 16px;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+    }
+    .team-row-head:hover { background: #f8fafc; }
+    .team-row-head .chev {
+      display: inline-block;
+      width: 1em;
+      color: var(--muted);
+      transition: transform .15s ease;
+    }
+    .team-row.open .team-row-head .chev { transform: rotate(90deg); }
+    .team-row-title {
+      font-weight: 700;
+      font-size: .9rem;
+    }
+    .team-row-sub {
+      margin-top: 2px;
+      font-size: .7rem;
+      color: var(--muted);
+    }
+    .team-row-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      justify-content: flex-end;
+      font-size: .72rem;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+    .team-row-metrics b { color: var(--ink); font-family: var(--font-display); font-size: .88rem; }
+    .team-row-metrics .dq { color: #9f1239; }
+    .team-row-metrics .q { color: #15803d; }
+    .team-sales {
+      display: none;
+      padding: 0 12px 14px;
+    }
+    .team-row.open .team-sales { display: block; }
+    .team-sales table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .8rem;
+    }
+    .team-sales th, .team-sales td {
+      padding: 8px 10px;
+      border-top: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    .team-sales th {
+      font-size: .68rem;
+      color: var(--muted);
+      font-weight: 700;
+      background: #f8fafc;
+    }
+    .team-sales td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+    .team-sales td.dq { color: #9f1239; text-align: right; font-weight: 700; }
+    .team-sales td.q { color: #15803d; text-align: right; font-weight: 700; }
     .board-dash {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -785,13 +896,13 @@
 
       <div class="mgmt-panel" id="mgmt-partners">
         <div class="mgmt-stats" id="partnerStats"></div>
-        <p class="muted" style="margin-bottom:10px;font-size:.78rem">統計依案件建立日期 · Qualified = 非 DQ 且（已會面／有跟進機會／報價或之後階段）</p>
-        <div class="table-wrap"><table>
-          <thead><tr>
-            <th>Partner</th><th>Team Leader</th><th>Sales</th><th>近 1 個月 Case</th><th>近 3 個月 Case</th><th>DQ</th><th>Qualified</th>
-          </tr></thead>
-          <tbody id="partnersBody"></tbody>
-        </table></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 12px;align-items:center">
+          <input id="partnerSearch" placeholder="搜尋 Partner／Team Leader／Sales…" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff" />
+          <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerExpandAll">全部展開</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerCollapseAll">全部收合</button>
+        </div>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Qualified = 非 DQ 且（已會面／有跟進機會／報價或之後階段）</p>
+        <div class="partner-tree" id="partnersTree"></div>
       </div>
 
       <div class="mgmt-panel" id="mgmt-sales">
@@ -1909,56 +2020,164 @@
       });
     }
 
-    function buildPartnerRows() {
-      const map = new Map();
-      for (const c of cases) {
-        const name = (c.partner || "未分類").trim() || "未分類";
-        if (!map.has(name)) {
-          map.set(name, {
-            name,
-            sales: new Set(),
-            leaders: new Set(),
-            cases1m: 0,
-            cases3m: 0,
-            dq: 0,
-            qualified: 0,
-          });
-        }
-        const row = map.get(name);
-        if (c.ricohSales) row.sales.add(c.ricohSales);
-        const leader = c.teamLeader || parseTeamLeader(c.ricohHouse);
-        if (leader) row.leaders.add(leader);
-        else if (c.ricohHouse) row.leaders.add(c.ricohHouse);
-        if (inLastDays(c.createdAt, 30)) row.cases1m += 1;
-        if (inLastDays(c.createdAt, 90)) row.cases3m += 1;
-        if (isDq(c)) row.dq += 1;
-        if (isQualified(c)) row.qualified += 1;
-      }
-      return [...map.values()].sort((a, b) => b.cases3m - a.cases3m || a.name.localeCompare(b.name, "zh-HK"));
+    function emptyCaseBucket() {
+      return { cases1m: 0, cases3m: 0, dq: 0, qualified: 0, total: 0 };
     }
 
-    function renderPartnersMgmt() {
-      const rows = buildPartnerRows();
-      const total1 = rows.reduce((s, r) => s + r.cases1m, 0);
-      const total3 = rows.reduce((s, r) => s + r.cases3m, 0);
-      const totalDq = rows.reduce((s, r) => s + r.dq, 0);
-      const totalQ = rows.reduce((s, r) => s + r.qualified, 0);
+    function bumpCaseBucket(bucket, c) {
+      bucket.total += 1;
+      if (inLastDays(c.createdAt, 30)) bucket.cases1m += 1;
+      if (inLastDays(c.createdAt, 90)) bucket.cases3m += 1;
+      if (isDq(c)) bucket.dq += 1;
+      if (isQualified(c)) bucket.qualified += 1;
+    }
+
+    function teamKeyForCase(c) {
+      return (c.teamLeader || parseTeamLeader(c.ricohHouse) || c.ricohHouse || "未分配團隊").trim() || "未分配團隊";
+    }
+
+    function buildPartnerTree() {
+      const partners = new Map();
+      for (const c of cases) {
+        const partnerName = (c.partner || "未分類").trim() || "未分類";
+        if (!partners.has(partnerName)) {
+          partners.set(partnerName, {
+            name: partnerName,
+            ...emptyCaseBucket(),
+            teams: new Map(),
+          });
+        }
+        const partner = partners.get(partnerName);
+        bumpCaseBucket(partner, c);
+
+        const teamName = teamKeyForCase(c);
+        if (!partner.teams.has(teamName)) {
+          partner.teams.set(teamName, {
+            name: teamName,
+            house: c.ricohHouse || "",
+            ...emptyCaseBucket(),
+            sales: new Map(),
+          });
+        }
+        const team = partner.teams.get(teamName);
+        bumpCaseBucket(team, c);
+        if (c.ricohHouse && !team.house) team.house = c.ricohHouse;
+
+        const salesName = (c.ricohSales || "").trim() || "未指派";
+        if (!team.sales.has(salesName)) {
+          team.sales.set(salesName, { name: salesName, ...emptyCaseBucket() });
+        }
+        bumpCaseBucket(team.sales.get(salesName), c);
+      }
+
+      return [...partners.values()]
+        .map((p) => ({
+          ...p,
+          teams: [...p.teams.values()]
+            .map((t) => ({
+              ...t,
+              sales: [...t.sales.values()].sort((a, b) => b.cases3m - a.cases3m || a.name.localeCompare(b.name, "zh-HK")),
+            }))
+            .sort((a, b) => b.cases3m - a.cases3m || a.name.localeCompare(b.name, "zh-HK")),
+        }))
+        .sort((a, b) => b.cases3m - a.cases3m || a.name.localeCompare(b.name, "zh-HK"));
+    }
+
+    function partnerMetricPills(b) {
+      return `<div class="partner-metrics">
+        <span><strong>${b.cases1m}</strong>近 1 個月</span>
+        <span><strong>${b.cases3m}</strong>近 3 個月</span>
+        <span><strong style="color:#9f1239">${b.dq}</strong>DQ</span>
+        <span><strong style="color:#15803d">${b.qualified}</strong>Qualified</span>
+        <span><strong>${b.total}</strong>總 Case</span>
+      </div>`;
+    }
+
+    function renderPartnersMgmt(forceOpen) {
+      const q = (document.getElementById("partnerSearch")?.value || "").trim().toLowerCase();
+      const tree = buildPartnerTree().map((p) => {
+        if (!q) return p;
+        const partnerHit = p.name.toLowerCase().includes(q);
+        const teams = p.teams
+          .map((t) => {
+            const teamHit = t.name.toLowerCase().includes(q) || (t.house || "").toLowerCase().includes(q);
+            const sales = t.sales.filter((s) => partnerHit || teamHit || s.name.toLowerCase().includes(q));
+            if (partnerHit || teamHit || sales.length) {
+              return { ...t, sales: partnerHit || teamHit ? t.sales : sales };
+            }
+            return null;
+          })
+          .filter(Boolean);
+        return teams.length || partnerHit ? { ...p, teams } : null;
+      }).filter(Boolean);
+
+      const total1 = tree.reduce((s, r) => s + r.cases1m, 0);
+      const total3 = tree.reduce((s, r) => s + r.cases3m, 0);
+      const totalDq = tree.reduce((s, r) => s + r.dq, 0);
+      const totalQ = tree.reduce((s, r) => s + r.qualified, 0);
+      const teamN = tree.reduce((s, r) => s + r.teams.length, 0);
       document.getElementById("partnerStats").innerHTML = [
-        ["Partner 數", rows.length, "有交 case 嘅 Partner"],
+        ["Partner", tree.length, `${teamN} 個 Team`],
         ["近 1 個月 Case", total1, "按建立日期"],
         ["近 3 個月 Case", total3, "按建立日期"],
-        ["DQ / Qualified", `${totalDq} / ${totalQ}`, "全部 Partner 合計"],
+        ["DQ / Qualified", `${totalDq} / ${totalQ}`, "目前篩選合計"],
       ].map(([l, v, s]) => `<article class="stat"><div class="label">${l}</div><div class="value">${v}</div><div class="muted" style="font-size:.68rem;margin-top:2px">${s}</div></article>`).join("");
 
-      document.getElementById("partnersBody").innerHTML = rows.map((r) => `<tr>
-        <td><strong>${escapeHtml(r.name)}</strong></td>
-        <td><div class="chip-list">${[...r.leaders].map((x) => `<span>${escapeHtml(x)}</span>`).join("") || "<span class='muted'>—</span>"}</div></td>
-        <td><div class="chip-list">${[...r.sales].map((x) => `<span>${escapeHtml(x)}</span>`).join("") || "<span class='muted'>—</span>"}</div></td>
-        <td><strong>${r.cases1m}</strong></td>
-        <td><strong>${r.cases3m}</strong></td>
-        <td style="color:#9f1239;font-weight:700">${r.dq}</td>
-        <td style="color:#15803d;font-weight:700">${r.qualified}</td>
-      </tr>`).join("") || `<tr><td colspan="7" style="text-align:center;padding:28px" class="muted">未有 Partner 資料</td></tr>`;
+      const openAll = forceOpen === true || !!q;
+      const closeAll = forceOpen === false;
+
+      document.getElementById("partnersTree").innerHTML = tree.map((p) => `
+        <article class="partner-card" data-partner="${escapeAttr(p.name)}">
+          <div class="partner-card-head">
+            <div>
+              <div class="eyebrow">Partner</div>
+              <h3>${escapeHtml(p.name)}</h3>
+              <div class="muted" style="font-size:.72rem;margin-top:2px">${p.teams.length} 個 Team Leader · 點擊 Team 展開 Sales</div>
+            </div>
+            ${partnerMetricPills(p)}
+          </div>
+          <div>
+            ${p.teams.map((t, idx) => {
+              const open = closeAll ? false : (openAll || (!q && idx === 0));
+              return `<div class="team-row${open ? " open" : ""}" data-team-key="${escapeAttr(p.name + "::" + t.name)}">
+                <button type="button" class="team-row-head">
+                  <div>
+                    <div class="team-row-title"><span class="chev">▸</span> ${escapeHtml(t.name)}</div>
+                    <div class="team-row-sub">${t.house && t.house !== t.name ? escapeHtml(t.house) + " · " : ""}${t.sales.length} 位 Sales</div>
+                  </div>
+                  <div class="team-row-metrics">
+                    <span>1月 <b>${t.cases1m}</b></span>
+                    <span>3月 <b>${t.cases3m}</b></span>
+                    <span class="dq">DQ <b>${t.dq}</b></span>
+                    <span class="q">Q <b>${t.qualified}</b></span>
+                  </div>
+                </button>
+                <div class="team-sales">
+                  <table>
+                    <thead><tr>
+                      <th>Sales</th><th>近 1 個月</th><th>近 3 個月</th><th>DQ</th><th>Qualified</th><th>總 Case</th>
+                    </tr></thead>
+                    <tbody>
+                      ${t.sales.map((s) => `<tr>
+                        <td><strong>${escapeHtml(s.name)}</strong></td>
+                        <td class="num">${s.cases1m}</td>
+                        <td class="num">${s.cases3m}</td>
+                        <td class="dq">${s.dq}</td>
+                        <td class="q">${s.qualified}</td>
+                        <td class="num">${s.total}</td>
+                      </tr>`).join("") || `<tr><td colspan="6" class="muted">未有 Sales</td></tr>`}
+                    </tbody>
+                  </table>
+                </div>
+              </div>`;
+            }).join("") || `<div class="breakdown-empty" style="padding:18px">呢個 Partner 未有 Team</div>`}
+          </div>
+        </article>
+      `).join("") || `<div class="breakdown-empty" style="padding:28px">未有 Partner 資料</div>`;
+
+      document.querySelectorAll("#partnersTree .team-row-head").forEach((btn) => {
+        btn.onclick = () => btn.closest(".team-row")?.classList.toggle("open");
+      });
     }
 
     function buildSalesRows() {
@@ -2416,6 +2635,9 @@
     };
     document.getElementById("customerSearch").oninput = () => renderCustomersMgmt();
     document.getElementById("customerOnlyOverdue").onchange = () => renderCustomersMgmt();
+    document.getElementById("partnerSearch").oninput = () => renderPartnersMgmt();
+    document.getElementById("btnPartnerExpandAll").onclick = () => renderPartnersMgmt(true);
+    document.getElementById("btnPartnerCollapseAll").onclick = () => renderPartnersMgmt(false);
     fetch("./supabase/mgmt_alter.sql").then((r) => r.text()).then((t) => {
       document.getElementById("btnCopyMgmtSql").onclick = async () => {
         await navigator.clipboard.writeText(t);
