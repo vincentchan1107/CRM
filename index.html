@@ -1452,12 +1452,25 @@
     .chart-head {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: baseline;
       gap: 10px;
       flex-wrap: wrap;
       margin-bottom: 2px;
     }
-    .chart-head h2 { margin: 0; }
+    .chart-head-main {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0 0.55em; /* ~兩格空白 */
+      min-width: 0;
+    }
+    .chart-head h2 { margin: 0; flex: 0 0 auto; }
+    .chart-head-sub {
+      margin: 0;
+      font-size: .78rem;
+      font-weight: 650;
+      line-height: 1.35;
+    }
     .vbars {
       display: flex;
       align-items: flex-end;
@@ -3917,10 +3930,10 @@
     }
 
     function chartHeadHtml(title, sub, extraHtml = "") {
+      // 小字同標題同一行：標題在左，小字隔約兩格跟喺右邊
       return `<div class="chart-head">
-        <div>
-          <h2>${escapeHtml(title)}</h2>
-          <p class="muted" style="margin:4px 0 0">${escapeHtml(sub)}</p>
+        <div class="chart-head-main">
+          <h2>${escapeHtml(title)}</h2>${sub ? `<span class="muted chart-head-sub">${escapeHtml(sub)}</span>` : ""}
         </div>
         ${extraHtml || ""}
       </div>`;
