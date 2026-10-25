@@ -38,7 +38,10 @@
       --font-body: "IBM Plex Sans", "Noto Sans TC", sans-serif;
     }
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    html, body { min-height: 100%; }
+    @media (min-width: 901px) {
+      html, body { height: 100%; }
+    }
     body {
       margin: 0;
       min-height: 100%;
@@ -62,8 +65,10 @@
         radial-gradient(circle at 1px 1px, rgba(107, 70, 254, .12) 1px, transparent 0);
       background-size: 22px 22px;
     }
-    body.mode-board {
-      overflow: hidden;
+    @media (min-width: 901px) {
+      body.mode-board {
+        overflow: hidden;
+      }
     }
     a { color: inherit; text-decoration: none; }
     button, input, select, textarea { font: inherit; }
@@ -72,9 +77,11 @@
     .app-shell {
       display: flex;
       min-height: 100%;
-      height: 100%;
       position: relative;
       z-index: 1;
+    }
+    @media (min-width: 901px) {
+      .app-shell { height: 100%; }
     }
     .sidebar {
       width: var(--sidebar-w);
@@ -307,14 +314,36 @@
       min-height: 0;
       overflow: auto;
     }
-    body.mode-board .app-main { overflow: hidden; }
-    body.mode-board .wrap {
-      max-width: none;
-      padding: 14px 16px 12px;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      overflow: hidden;
+    @media (min-width: 901px) {
+      body.mode-board .app-main { overflow: hidden; }
+      body.mode-board .wrap {
+        max-width: none;
+        padding: 14px 16px 12px;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+      }
+    }
+    @media (max-width: 900px) {
+      body.mode-board,
+      body.mode-board .app-main {
+        overflow: visible;
+        height: auto;
+        min-height: 100%;
+      }
+      body.mode-board .app-shell {
+        height: auto;
+        min-height: 100%;
+      }
+      body.mode-board .wrap {
+        max-width: none;
+        padding: 12px 12px calc(28px + env(safe-area-inset-bottom, 0px));
+        display: block;
+        height: auto;
+        min-height: 0;
+        overflow: visible;
+      }
     }
     .sidebar-backdrop {
       display: none;
@@ -857,19 +886,102 @@
       box-shadow: var(--shadow);
     }
     @media (max-width: 900px) {
-      .col {
-        flex-basis: calc((100% - 24px) / 2.2);
-        width: calc((100% - 24px) / 2.2);
-        min-width: calc((100% - 24px) / 2.2);
+      #view-board {
+        flex: none;
+        height: auto;
+        min-height: 0;
+        display: none;
       }
-    }
-    @media (max-width: 640px) {
-      .col {
-        flex-basis: 85vw;
-        width: 85vw;
-        min-width: 85vw;
+      #view-board:not(.hidden) { display: block; }
+      .board-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        margin-bottom: 8px;
       }
+      .board-toolbar h1 { font-size: 1.25rem; }
+      .board-toolbar-actions {
+        justify-content: stretch;
+        min-width: 0;
+        width: 100%;
+      }
+      .board-search-wrap {
+        max-width: none;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .board-filters {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        align-items: end;
+      }
+      .board-filters label { min-width: 0; }
+      .board-filters select { width: 100%; min-width: 0; }
+      .board-filters .btn { grid-column: 1 / -1; width: 100%; }
+      .board-dash {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin: 8px 0;
+      }
+      .stage-filter {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 6px;
+        padding-bottom: 4px;
+        margin-bottom: 8px;
+      }
+      .stage-filter label { flex-shrink: 0; white-space: nowrap; }
+      .kanban-shell {
+        flex: none;
+        min-height: 0;
+        height: auto;
+      }
+      .kanban-nav { display: none; }
+      .kanban {
+        flex: none;
+        flex-direction: column;
+        overflow-x: hidden;
+        overflow-y: visible;
+        height: auto;
+        min-height: 0;
+        gap: 12px;
+        padding: 0 0 8px;
+        scroll-snap-type: none;
+      }
+      .col {
+        flex: none;
+        flex-basis: auto;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        height: auto;
+        min-height: 0;
+        scroll-snap-align: none;
+      }
+      .col-items {
+        flex: none;
+        overflow: visible;
+        max-height: none;
+        min-height: 0;
+        padding-right: 0;
+      }
+      .col-empty {
+        height: auto;
+        min-height: 72px;
+        padding: 18px 12px;
+      }
+      .card-case {
+        cursor: pointer;
+        touch-action: manipulation;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      .board-hint-desktop { display: none !important; }
+      .board-hint-mobile { display: block !important; }
     }
+    .board-hint-mobile { display: none; }
     .col-head { flex-shrink: 0; margin-bottom: 6px; }
     .col-desc {
       color: var(--muted);
@@ -920,16 +1032,32 @@
       position: fixed; inset: 0; background: rgba(31, 36, 48, .28); backdrop-filter: blur(4px);
       display: flex; justify-content: center; align-items: center; z-index: 60;
       padding: 16px;
+      overscroll-behavior: contain;
     }
     .drawer {
       width: min(100%, 960px);
       max-height: min(92vh, 880px);
       background: #fff;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       padding: 20px 22px 18px;
       border-radius: 20px;
       box-shadow: 0 24px 60px rgba(31, 36, 48, .18);
       border: 1px solid var(--line);
+    }
+    @media (max-width: 700px) {
+      .drawer-bg {
+        align-items: flex-end;
+        padding: 0;
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+      .drawer {
+        width: 100%;
+        max-height: min(92dvh, 92vh);
+        border-radius: 18px 18px 0 0;
+        padding: 16px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+      }
+      .modal-actions .btn { min-width: 0; flex: 1 1 calc(50% - 8px); }
     }
     .modal-grid {
       display: grid;
@@ -1815,7 +1943,8 @@
       <div class="board-toolbar">
         <div>
           <h1>Case Management</h1>
-          <p class="muted" style="margin:4px 0 0;font-size:.75rem">可拖曳卡片到其他 Status 欄改階段</p>
+          <p class="muted board-hint-desktop" style="margin:4px 0 0;font-size:.75rem">可拖曳卡片到其他 Status 欄改階段</p>
+          <p class="muted board-hint-mobile" style="margin:4px 0 0;font-size:.75rem">向下捲動睇各階段 · 點卡片開詳情改 Status</p>
         </div>
         <div class="board-toolbar-actions">
           <div class="board-search-wrap">
@@ -3660,21 +3789,25 @@
         </section>`;
       }).join("") || `<div class="breakdown-empty" style="padding:40px">請至少勾選一個 status</div>`;
 
+      const canDragBoard = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
       root.querySelectorAll(".card-case").forEach((el) => {
-        el.draggable = true;
-        el.ondragstart = (e) => {
-          dragId = el.dataset.id;
-          el.classList.add("dragging");
-          e.dataTransfer.setData("text/case-id", el.dataset.id);
-          e.dataTransfer.effectAllowed = "move";
-        };
-        el.ondragend = () => {
-          el.classList.remove("dragging");
-          root.querySelectorAll(".col").forEach((c) => c.classList.remove("drag-over"));
-        };
+        el.draggable = canDragBoard;
+        if (canDragBoard) {
+          el.ondragstart = (e) => {
+            dragId = el.dataset.id;
+            el.classList.add("dragging");
+            e.dataTransfer.setData("text/case-id", el.dataset.id);
+            e.dataTransfer.effectAllowed = "move";
+          };
+          el.ondragend = () => {
+            el.classList.remove("dragging");
+            root.querySelectorAll(".col").forEach((c) => c.classList.remove("drag-over"));
+          };
+        }
         el.onclick = () => openDrawer(el.dataset.id);
       });
       root.querySelectorAll(".col").forEach((col) => {
+        if (!canDragBoard) return;
         col.ondragover = (e) => {
           e.preventDefault();
           col.classList.add("drag-over");
