@@ -786,6 +786,7 @@
       <button data-view="dashboard">Dashboard</button>
       <button data-view="board">Kanban</button>
       <button data-view="cases">列表</button>
+      <button data-view="agenda">會議／跟進</button>
       <button data-view="mgmt">資料庫管理</button>
     </nav>
   </header>
@@ -813,6 +814,7 @@
         <div class="home-actions">
           <button class="btn btn-teal" data-go="portal">開啟手機 Portal</button>
           <button class="btn btn-ghost" data-go="dashboard">進入後台 Dashboard</button>
+          <button class="btn btn-ghost" data-go="agenda">會議／跟進</button>
           <button class="btn btn-ghost" data-go="mgmt">資料庫管理</button>
         </div>
       </div>
@@ -983,6 +985,43 @@
         <div id="salesUnassigned" style="margin-top:12px"></div>
       </div>
     </section>
+
+    <!-- AGENDA: meetings + follow-ups -->
+    <section id="view-agenda" class="hidden">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
+        <div>
+          <h1>銷售員會議及 Case 跟進</h1>
+          <p class="muted">預設顯示所有銷售員當天 · 含約見會議同已設下次跟進日期嘅案件</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnRefreshAgenda">重新整理</button>
+      </div>
+      <div class="dash-period" style="margin-top:12px">
+        <div class="seg" id="agendaPeriodSeg">
+          <button type="button" data-agenda-period="today" class="active">當天</button>
+          <button type="button" data-agenda-period="week">本星期</button>
+          <button type="button" data-agenda-period="custom">由日期至</button>
+        </div>
+        <div class="custom-range hidden" id="agendaCustomRange">
+          <label>由日期<input type="date" id="agendaFrom" /></label>
+          <label>至日期<input type="date" id="agendaTo" /></label>
+          <button type="button" class="btn btn-teal btn-sm" id="agendaApplyCustom">套用</button>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:.68rem;font-weight:700;color:var(--muted)">
+          銷售員
+          <select id="agendaSalesFilter" style="border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:#fff;font-size:.8rem;min-width:140px">
+            <option value="all">全部銷售員</option>
+          </select>
+        </label>
+      </div>
+      <div class="mgmt-stats" id="agendaStats" style="margin-top:4px"></div>
+      <div id="agendaAlert"></div>
+      <div class="table-wrap" style="margin-top:8px"><table>
+        <thead><tr>
+          <th>日期</th><th>類型</th><th>本公司銷售員</th><th>客戶</th><th>階段</th><th>Partner Sales</th><th>備註</th><th>操作</th>
+        </tr></thead>
+        <tbody id="agendaBody"></tbody>
+      </table></div>
+    </section>
   </main>
 
   <div id="drawerRoot"></div>
@@ -1042,6 +1081,10 @@
     let dbReady = false;
     let mgmtColsReady = false;
     let mgmtTab = "customers";
+    let agendaPeriod = localStorage.getItem("crm_agenda_period") || "today";
+    let agendaFrom = localStorage.getItem("crm_agenda_from") || "";
+    let agendaTo = localStorage.getItem("crm_agenda_to") || "";
+    let agendaSalesFilter = localStorage.getItem("crm_agenda_sales") || "all";
     const FOLLOWUP_LS_KEY = "crm_followup_dates";
     const ALL_BOARD_STAGES = () => STAGES.map((s) => s.id);
     let visibleStages = loadVisibleStages();
@@ -1082,7 +1125,7 @@
     };
 
     function showView(name) {
-      ["home", "portal", "dashboard", "board", "cases", "mgmt"].forEach((v) => {
+      ["home", "portal", "dashboard", "board", "cases", "agenda", "mgmt"].forEach((v) => {
         document.getElementById(`view-${v}`).classList.toggle("hidden", v !== name);
       });
       document.body.classList.toggle("mode-board", name === "board");
@@ -1091,6 +1134,7 @@
       if (name === "board") renderBoard();
       if (name === "cases") renderCasesTable();
       if (name === "portal") initPortalForm();
+      if (name === "agenda") renderAgenda();
       if (name === "mgmt") renderMgmt();
       location.hash = name === "home" ? "" : name;
     }
@@ -2296,6 +2340,161 @@
       return COMPANY_SALES.map((name) => map.get(name));
     }
 
+    function startOfWeek(d = new Date()) {
+      const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const day = x.getDay(); // 0 Sun
+      const diff = day === 0 ? -6 : 1 - day; // Monday start
+      x.setDate(x.getDate() + diff);
+      return x;
+    }
+
+    function endOfWeek(d = new Date()) {
+      const s = startOfWeek(d);
+      return endOfDay(new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6));
+    }
+
+    function getAgendaRange() {
+      const now = new Date();
+      if (agendaPeriod === "week") {
+        const from = startOfWeek(now);
+        const to = endOfWeek(now);
+        return { mode: "week", from, to, title: `${formatLocalDate(from)} 至 ${formatLocalDate(to)}（本星期）` };
+      }
+      if (agendaPeriod === "custom") {
+        const from = parseLocalDate(agendaFrom);
+        const to = parseLocalDate(agendaTo);
+        if (from && to && from <= to) {
+          return { mode: "custom", from, to: endOfDay(to), title: `${agendaFrom} 至 ${agendaTo}` };
+        }
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        return { mode: "custom", from: today, to: endOfDay(today), title: "請選擇由日期至日期後按「套用」", incomplete: true };
+      }
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return { mode: "today", from: today, to: endOfDay(today), title: `${formatLocalDate(today)}（當天）` };
+    }
+
+    function dateInAgendaRange(dateLike, range) {
+      if (!dateLike || !range) return false;
+      const d = dateLike instanceof Date ? dateLike : (String(dateLike).length <= 10 ? parseLocalDate(dateLike) : new Date(dateLike));
+      if (!d || Number.isNaN(d.getTime())) return false;
+      return d >= range.from && d <= range.to;
+    }
+
+    function buildAgendaItems(range) {
+      const items = [];
+      for (const c of cases) {
+        if (c.stage === "closed" && isDq(c)) continue;
+        const sales = normalizeCompanySales(c.companySales) || "未指派";
+        if (agendaSalesFilter !== "all" && sales !== agendaSalesFilter) continue;
+
+        if (c.nextFollowUpAt && dateInAgendaRange(c.nextFollowUpAt, range)) {
+          const d = parseLocalDate(c.nextFollowUpAt);
+          items.push({
+            sortKey: formatLocalDate(d) + "T00:00|1|" + sales,
+            date: d,
+            dateText: formatLocalDate(d),
+            timeText: "",
+            kind: "followup",
+            kindLabel: "Case 跟進",
+            overdue: isFollowUpOverdue(c),
+            sales,
+            case: c,
+            note: c.followUpOpportunity ? "有跟進機會" : (c.requirements || "").slice(0, 60),
+          });
+        }
+
+        if (c.appointmentAt && dateInAgendaRange(c.appointmentAt, range)) {
+          const d = new Date(c.appointmentAt);
+          if (!Number.isNaN(d.getTime())) {
+            items.push({
+              sortKey: d.toISOString() + "|0|" + sales,
+              date: d,
+              dateText: formatLocalDate(d),
+              timeText: d.toLocaleTimeString("zh-HK", { hour: "2-digit", minute: "2-digit" }),
+              kind: "meeting",
+              kindLabel: c.meetingDone ? "會議（已完成）" : (c.appointmentConfirmed ? "會議（已確認）" : "會議（待確認）"),
+              overdue: false,
+              sales,
+              case: c,
+              note: c.meetingNotes ? String(c.meetingNotes).slice(0, 60) : (c.appointmentConfirmed ? "已確認會面" : "約見"),
+            });
+          }
+        }
+      }
+      return items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+    }
+
+    function syncAgendaPeriodUi() {
+      document.querySelectorAll("#agendaPeriodSeg button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.agendaPeriod === agendaPeriod);
+      });
+      document.getElementById("agendaCustomRange").classList.toggle("hidden", agendaPeriod !== "custom");
+      if (agendaFrom) document.getElementById("agendaFrom").value = agendaFrom;
+      if (agendaTo) document.getElementById("agendaTo").value = agendaTo;
+      const sel = document.getElementById("agendaSalesFilter");
+      const cur = agendaSalesFilter;
+      sel.innerHTML = `<option value="all">全部銷售員</option>` +
+        COMPANY_SALES.map((n) => `<option value="${n}">${n}</option>`).join("") +
+        `<option value="未指派">未指派</option>`;
+      sel.value = [...sel.options].some((o) => o.value === cur) ? cur : "all";
+      agendaSalesFilter = sel.value;
+    }
+
+    function renderAgenda() {
+      syncAgendaPeriodUi();
+      const range = getAgendaRange();
+      const items = range.incomplete ? [] : buildAgendaItems(range);
+      const followN = items.filter((i) => i.kind === "followup").length;
+      const meetN = items.filter((i) => i.kind === "meeting").length;
+      const overdueN = items.filter((i) => i.overdue).length;
+      const salesHit = new Set(items.map((i) => i.sales));
+
+      document.getElementById("agendaStats").innerHTML = [
+        ["期間", range.title.replace(/（.*）/, "") || "—", range.mode === "today" ? "當天" : (range.mode === "week" ? "本星期" : "自訂")],
+        ["跟進 Case", followN, "已設下次跟進日期"],
+        ["會議", meetN, "約見日期落喺期間內"],
+        ["涉及銷售員", salesHit.size, [...salesHit].slice(0, 5).join(" · ") || "—"],
+      ].map(([l, v, s]) => `<article class="stat"><div class="label">${l}</div><div class="value" style="font-size:1.05rem">${escapeHtml(String(v))}</div><div class="muted" style="font-size:.68rem;margin-top:2px">${escapeHtml(s)}</div></article>`).join("");
+
+      const alert = document.getElementById("agendaAlert");
+      if (range.incomplete) {
+        alert.innerHTML = `<div class="mgmt-alert">請揀「由日期」同「至日期」，再按「套用」</div>`;
+      } else if (overdueN) {
+        alert.innerHTML = `<div class="mgmt-alert">期間內有 <strong>${overdueN}</strong> 宗跟進已過期仍未更新</div>`;
+      } else if (!items.length) {
+        alert.innerHTML = `<div class="mgmt-alert ok">呢段期間暫時未有會議或跟進 Case</div>`;
+      } else {
+        alert.innerHTML = `<div class="mgmt-alert ok">共 <strong>${items.length}</strong> 項 · ${escapeHtml(range.title)}</div>`;
+      }
+
+      document.getElementById("agendaBody").innerHTML = items.map((it) => {
+        const c = it.case;
+        const s = stageMeta(c.stage);
+        const kindClass = it.kind === "meeting" ? "tag-ok" : (it.overdue ? "tag-overdue" : "tag-ok");
+        return `<tr>
+          <td>
+            <strong>${escapeHtml(it.dateText)}</strong>
+            ${it.timeText ? `<div class="muted" style="font-size:.72rem">${escapeHtml(it.timeText)}</div>` : ""}
+            ${it.overdue ? `<div style="margin-top:4px"><span class="tag-overdue">逾期</span></div>` : ""}
+          </td>
+          <td><span class="${kindClass}">${escapeHtml(it.kindLabel)}</span></td>
+          <td><strong>${escapeHtml(it.sales)}</strong></td>
+          <td>
+            <strong>${escapeHtml(companyKey(c))}</strong>
+            <div class="muted" style="font-size:.68rem">${escapeHtml(c.partner || "")}</div>
+          </td>
+          <td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>
+          <td class="muted" style="font-size:.75rem">${escapeHtml(c.ricohSales || "—")}</td>
+          <td class="muted" style="font-size:.75rem">${escapeHtml(it.note || "—")}</td>
+          <td><button class="btn btn-ghost btn-sm" data-open="${escapeAttr(c.id)}">詳情</button></td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="8" style="text-align:center;padding:28px" class="muted">${range.incomplete ? "請先套用日期範圍" : "沒有符合項目"}</td></tr>`;
+
+      document.querySelectorAll("#agendaBody [data-open]").forEach((b) => {
+        b.onclick = () => openDrawer(b.dataset.open);
+      });
+    }
+
     function renderSalesMgmt() {
       const rows = buildSalesRows();
       const assigned = cases.filter((c) => !!normalizeCompanySales(c.companySales)).length;
@@ -2547,6 +2746,7 @@
       renderCasesTable();
       renderDashboard();
       if (!document.getElementById("view-mgmt").classList.contains("hidden")) renderMgmt();
+      if (!document.getElementById("view-agenda").classList.contains("hidden")) renderAgenda();
     }
 
     function escapeHtml(s) {
@@ -2777,6 +2977,55 @@
     document.getElementById("partnerSearch").oninput = () => renderPartnersMgmt();
     document.getElementById("btnPartnerExpandAll").onclick = () => renderPartnersMgmt(true);
     document.getElementById("btnPartnerCollapseAll").onclick = () => renderPartnersMgmt(false);
+
+    document.getElementById("btnRefreshAgenda").onclick = async () => {
+      await loadCases();
+      renderAgenda();
+      toast("已重新整理");
+    };
+    document.getElementById("agendaPeriodSeg").onclick = (e) => {
+      const btn = e.target.closest("button[data-agenda-period]");
+      if (!btn) return;
+      agendaPeriod = btn.dataset.agendaPeriod;
+      localStorage.setItem("crm_agenda_period", agendaPeriod);
+      if (agendaPeriod === "custom" && !(agendaFrom && agendaTo)) {
+        syncAgendaPeriodUi();
+        document.getElementById("agendaBody").innerHTML =
+          `<tr><td colspan="8" style="text-align:center;padding:28px" class="muted">請揀「由日期」同「至日期」，再按「套用」</td></tr>`;
+        document.getElementById("agendaAlert").innerHTML =
+          `<div class="mgmt-alert">請揀「由日期」同「至日期」，再按「套用」</div>`;
+        return;
+      }
+      renderAgenda();
+    };
+    document.getElementById("agendaApplyCustom").onclick = () => {
+      agendaFrom = document.getElementById("agendaFrom").value || "";
+      agendaTo = document.getElementById("agendaTo").value || "";
+      if (!agendaFrom || !agendaTo) return toast("請揀齊由日期同至日期");
+      const from = parseLocalDate(agendaFrom);
+      const to = parseLocalDate(agendaTo);
+      if (!from || !to) return toast("日期格式唔正確");
+      if (from > to) return toast("「由日期」唔可以晚過「至日期」");
+      agendaPeriod = "custom";
+      localStorage.setItem("crm_agenda_period", "custom");
+      localStorage.setItem("crm_agenda_from", agendaFrom);
+      localStorage.setItem("crm_agenda_to", agendaTo);
+      renderAgenda();
+      toast(`已套用 ${agendaFrom} 至 ${agendaTo}`);
+    };
+    document.getElementById("agendaFrom").onchange = () => {
+      agendaFrom = document.getElementById("agendaFrom").value || "";
+      localStorage.setItem("crm_agenda_from", agendaFrom);
+    };
+    document.getElementById("agendaTo").onchange = () => {
+      agendaTo = document.getElementById("agendaTo").value || "";
+      localStorage.setItem("crm_agenda_to", agendaTo);
+    };
+    document.getElementById("agendaSalesFilter").onchange = () => {
+      agendaSalesFilter = document.getElementById("agendaSalesFilter").value || "all";
+      localStorage.setItem("crm_agenda_sales", agendaSalesFilter);
+      renderAgenda();
+    };
     fetch("./supabase/mgmt_alter.sql").then((r) => r.text()).then((t) => {
       document.getElementById("btnCopyMgmtSql").onclick = async () => {
         await navigator.clipboard.writeText(t);
@@ -2788,7 +3037,7 @@
     initPortalForm();
     loadCases().then(() => {
       const hash = (location.hash || "").replace("#", "");
-      showView(["portal", "dashboard", "board", "cases", "mgmt"].includes(hash) ? hash : "home");
+      showView(["portal", "dashboard", "board", "cases", "agenda", "mgmt"].includes(hash) ? hash : "home");
     });
   </script>
 </body>
