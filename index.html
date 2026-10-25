@@ -1001,7 +1001,7 @@
           <button type="button" data-agenda-period="week">本星期</button>
           <button type="button" data-agenda-period="custom">由日期至</button>
         </div>
-        <div class="custom-range hidden" id="agendaCustomRange">
+        <div class="custom-range" id="agendaCustomRange">
           <label>由日期<input type="date" id="agendaFrom" /></label>
           <label>至日期<input type="date" id="agendaTo" /></label>
           <button type="button" class="btn btn-teal btn-sm" id="agendaApplyCustom">套用</button>
@@ -2428,9 +2428,19 @@
       document.querySelectorAll("#agendaPeriodSeg button").forEach((b) => {
         b.classList.toggle("active", b.dataset.agendaPeriod === agendaPeriod);
       });
-      document.getElementById("agendaCustomRange").classList.toggle("hidden", agendaPeriod !== "custom");
-      if (agendaFrom) document.getElementById("agendaFrom").value = agendaFrom;
-      if (agendaTo) document.getElementById("agendaTo").value = agendaTo;
+      // 當天／本星期／自訂 都顯示由－至日期
+      const range = getAgendaRange();
+      const fromStr = formatLocalDate(range.from);
+      const toStr = formatLocalDate(range.to);
+      if (agendaPeriod === "today" || agendaPeriod === "week") {
+        agendaFrom = fromStr;
+        agendaTo = toStr;
+        document.getElementById("agendaFrom").value = fromStr;
+        document.getElementById("agendaTo").value = toStr;
+      } else {
+        document.getElementById("agendaFrom").value = agendaFrom || "";
+        document.getElementById("agendaTo").value = agendaTo || "";
+      }
       const sel = document.getElementById("agendaSalesFilter");
       const cur = agendaSalesFilter;
       sel.innerHTML = `<option value="all">全部銷售員</option>` +
@@ -2988,14 +2998,7 @@
       if (!btn) return;
       agendaPeriod = btn.dataset.agendaPeriod;
       localStorage.setItem("crm_agenda_period", agendaPeriod);
-      if (agendaPeriod === "custom" && !(agendaFrom && agendaTo)) {
-        syncAgendaPeriodUi();
-        document.getElementById("agendaBody").innerHTML =
-          `<tr><td colspan="8" style="text-align:center;padding:28px" class="muted">請揀「由日期」同「至日期」，再按「套用」</td></tr>`;
-        document.getElementById("agendaAlert").innerHTML =
-          `<div class="mgmt-alert">請揀「由日期」同「至日期」，再按「套用」</div>`;
-        return;
-      }
+      // 切去當天／本星期時即時寫入對應日期到輸入框
       renderAgenda();
     };
     document.getElementById("agendaApplyCustom").onclick = () => {
