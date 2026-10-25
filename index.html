@@ -1870,11 +1870,16 @@
       margin-top: 8px;
       width: 100%;
       overflow: hidden;
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
     }
     .sales-line-chart svg {
       width: 100%;
       height: auto;
       display: block;
+      flex: 1;
+      min-width: 0;
     }
     .sales-line-chart .axis-label {
       font-size: 11px;
@@ -1895,10 +1900,12 @@
     }
     .sales-line-legend {
       display: flex;
+      flex-direction: column;
       justify-content: center;
-      gap: 18px;
-      margin-top: 6px;
-      flex-wrap: wrap;
+      gap: 8px;
+      flex: 0 0 auto;
+      min-width: 72px;
+      padding: 4px 0;
     }
     .sales-line-legend span {
       display: inline-flex;
@@ -1907,12 +1914,26 @@
       font-size: .72rem;
       font-weight: 700;
       color: var(--ink-soft);
+      white-space: nowrap;
     }
     .sales-line-legend i {
       width: 9px;
       height: 9px;
       border-radius: 50%;
       display: inline-block;
+      flex-shrink: 0;
+    }
+    @media (max-width: 640px) {
+      .sales-line-chart {
+        flex-direction: column;
+      }
+      .sales-line-legend {
+        flex-direction: row;
+        flex-wrap: wrap;
+        min-width: 0;
+        justify-content: flex-start;
+        gap: 10px 14px;
+      }
     }
     .sales-line-tip {
       pointer-events: none;
@@ -4063,26 +4084,78 @@
       return d;
     }
 
-    function renderSalesLineChart(items, {
-      primaryKey = "closedAmt",
-      secondaryKey = "targetAmt",
-      labelKey = "name",
-      primaryLabel = "已 Closing $",
-      secondaryLabel = "Closing 目標 $",
-      primaryColor = "#1d4ed8",
-      secondaryColor = "#fb7185",
-      tipIndex = -1,
-    } = {}) {
+    const SALES_LINE_COLORS = {
+      Vincent: "#1d4ed8",
+      Tim: "#0f766e",
+      Andrew: "#c2410c",
+      Kelly: "#7c3aed",
+      Sophia: "#db2777",
+    };
+    function salesLineColor(name, idx = 0) {
+      if (SALES_LINE_COLORS[name]) return SALES_LINE_COLORS[name];
+      const fallback = ["#1d4ed8", "#0f766e", "#c2410c", "#7c3aed", "#db2777", "#0284c7", "#ca8a04"];
+      return fallback[idx % fallback.length];
+    }
+
+    function buildWeekBuckets(from, to) {
+      const weeks = [];
+      if (!from || !to || from > to) return weeks;
+      const cursor = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+      // Align to Monday of first week containing `from`
+      const dow = (cursor.getDay() + 6) % 7;
+      cursor.setDate(cursor.getDate() - dow);
+      while (cursor <= to) {
+        const wStart = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
+        const wEnd = endOfDay(new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 6));
+        const clipFrom = wStart < from ? from : wStart;
+        const clipTo = wEnd > to ? to : wEnd;
+        if (clipFrom <= clipTo) {
+          const label = `${clipFrom.getMonth() + 1}/${clipFrom.getDate()}`;
+          weeks.push({
+            key: formatLocalDate(clipFrom),
+            label,
+            from: clipFrom,
+            to: clipTo,
+          });
+        }
+        cursor.setDate(cursor.getDate() + 7);
+      }
+      return weeks;
+    }
+
+    function buildTeamSalesTimeBuckets(range) {
+      const months = range.months || [];
+      if (months.length <= 1) {
+        return buildWeekBuckets(range.from, range.to);
+      }
+      return months.map((m) => ({
+        key: m.key,
+        label: `${m.monthStart.getMonth() + 1}月`,
+        from: m.monthStart,
+        to: m.monthEnd,
+      }));
+    }
+
+    /** Multi-series: left = sales legend, bottom = dates, right = $ */
+    function renderSalesLineChart(series, dateBuckets) {
+      const dates = dateBuckets && dateBuckets.length ? dateBuckets : [{ key: "—", label: "—", from: null, to: null }];
+      const lines = (series || []).map((s, idx) => ({
+        name: s.name,
+        color: s.color || salesLineColor(s.name, idx),
+        values: dates.map((_, i) => Number(s.values?.[i]) || 0),
+        drillType: s.drillType || "sales",
+        drillKey: s.drillKey || s.name,
+      }));
       const W = 560;
       const H = 260;
-      const padL = 18;
+      const padL = 12;
       const padR = 54;
-      const padT = 28;
+      const padT = 24;
       const padB = 36;
       const plotW = W - padL - padR;
       const plotH = H - padT - padB;
-      const n = Math.max(1, items.length);
-      const vals = items.flatMap((it) => [Number(it[primaryKey]) || 0, Number(it[secondaryKey]) || 0]);
+      const n = Math.max(1, dates.length);
+      const vals = lines.flatMap((ln) => ln.values);
       const rawMax = Math.max(1, ...vals);
       const niceMax = (() => {
         const exp = Math.pow(10, Math.floor(Math.log10(rawMax)));
@@ -4094,56 +4167,54 @@
       const ticks = Array.from({ length: tickCount + 1 }, (_, i) => (niceMax * i) / tickCount);
       const xAt = (i) => padL + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
       const yAt = (v) => padT + plotH - (Math.max(0, Number(v) || 0) / niceMax) * plotH;
-      const primaryPts = items.map((it, i) => ({ x: +xAt(i).toFixed(2), y: +yAt(it[primaryKey]).toFixed(2), v: Number(it[primaryKey]) || 0, label: it[labelKey], item: it }));
-      const secondaryPts = items.map((it, i) => ({ x: +xAt(i).toFixed(2), y: +yAt(it[secondaryKey]).toFixed(2), v: Number(it[secondaryKey]) || 0 }));
-      const primaryPath = smoothLinePath(primaryPts);
-      const secondaryPath = smoothLinePath(secondaryPts);
-      const areaPath = primaryPts.length
-        ? `${primaryPath} L ${primaryPts[primaryPts.length - 1].x} ${padT + plotH} L ${primaryPts[0].x} ${padT + plotH} Z`
-        : "";
-      const tipIdx = tipIndex >= 0 ? tipIndex : primaryPts.reduce((best, p, i) => (p.v > (primaryPts[best]?.v || -1) ? i : best), 0);
-      const tip = primaryPts[tipIdx];
-      const tipW = 64;
-      const tipH = 24;
+
+      let tip = null;
+      const lineLayers = lines.map((ln) => {
+        const pts = ln.values.map((v, i) => ({
+          x: +xAt(i).toFixed(2),
+          y: +yAt(v).toFixed(2),
+          v,
+          dateLabel: dates[i]?.label || "",
+        }));
+        pts.forEach((p) => {
+          if (!tip || p.v > tip.v) tip = { ...p, name: ln.name, color: ln.color };
+        });
+        return { ...ln, pts, path: smoothLinePath(pts) };
+      });
+
+      const tipW = 72;
+      const tipH = 36;
       const tipX = tip ? Math.min(W - tipW - 4, Math.max(4, tip.x - tipW / 2)) : 0;
-      const tipY = tip ? Math.max(4, tip.y - tipH - 12) : 0;
-      const gid = "salesAreaGrad_" + Math.random().toString(36).slice(2, 8);
+      const tipY = tip ? Math.max(4, tip.y - tipH - 10) : 0;
+
       return `<div class="sales-line-chart">
+        <div class="sales-line-legend" aria-label="Sales">
+          ${lines.map((ln) => `<span><i style="background:${ln.color}"></i>${escapeHtml(ln.name)}</span>`).join("")}
+        </div>
         <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="團隊 Sales Closing 圖表">
-          <defs>
-            <linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="${primaryColor}" stop-opacity="0.28"/>
-              <stop offset="100%" stop-color="${primaryColor}" stop-opacity="0.02"/>
-            </linearGradient>
-          </defs>
           ${ticks.map((t) => {
             const y = yAt(t);
             return `<line class="grid-line" x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" />
               <text class="axis-label" x="${W - padR + 8}" y="${y + 4}" text-anchor="start">${escapeHtml(moneyAxisLabel(t))}</text>`;
           }).join("")}
-          ${areaPath ? `<path d="${areaPath}" fill="url(#${gid})" stroke="none" />` : ""}
-          ${secondaryPath ? `<path d="${secondaryPath}" fill="none" stroke="${secondaryColor}" stroke-width="2.4" stroke-dasharray="5 5" stroke-linecap="round" stroke-linejoin="round" />` : ""}
-          ${primaryPath ? `<path d="${primaryPath}" fill="none" stroke="${primaryColor}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />` : ""}
-          ${primaryPts.map((p) => {
-            const drill = p.item?.drillKey
-              ? ` class="point-hit" data-drill-type="${escapeAttr(p.item.drillType || "sales")}" data-drill-key="${escapeAttr(p.item.drillKey)}" data-drill-title="${escapeAttr(p.label)}"`
-              : "";
-            return `<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="#fff" stroke="${primaryColor}" stroke-width="2.5"${drill}>
-              <title>${escapeHtml(String(p.label))}: ${money(p.v)}</title>
-            </circle>
-            <circle cx="${p.x}" cy="${p.y}" r="14" fill="transparent"${drill}></circle>`;
-          }).join("")}
-          ${items.map((it, i) => `<text class="x-label" x="${xAt(i)}" y="${H - 10}" text-anchor="middle">${escapeHtml(String(it[labelKey] || ""))}</text>`).join("")}
-          ${tip ? `<g class="sales-line-tip">
-            <rect x="${tipX}" y="${tipY}" width="${tipW}" height="${tipH}" rx="12" fill="${primaryColor}" />
-            <text x="${tipX + tipW / 2}" y="${tipY + 16}" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">${escapeHtml(money(tip.v))}</text>
-            <circle cx="${tip.x}" cy="${tip.y}" r="5.5" fill="${primaryColor}" stroke="#fff" stroke-width="2" />
+          ${lineLayers.map((ln) => `
+            ${ln.path ? `<path d="${ln.path}" fill="none" stroke="${ln.color}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />` : ""}
+            ${ln.pts.map((p) => {
+              const drill = ` class="point-hit" data-drill-type="${escapeAttr(ln.drillType)}" data-drill-key="${escapeAttr(ln.drillKey)}" data-drill-title="${escapeAttr(ln.name)}"`;
+              return `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#fff" stroke="${ln.color}" stroke-width="2.2"${drill}>
+                <title>${escapeHtml(ln.name)} · ${escapeHtml(p.dateLabel)}: ${money(p.v)}</title>
+              </circle>
+              <circle cx="${p.x}" cy="${p.y}" r="12" fill="transparent"${drill}></circle>`;
+            }).join("")}
+          `).join("")}
+          ${dates.map((d, i) => `<text class="x-label" x="${xAt(i)}" y="${H - 10}" text-anchor="middle">${escapeHtml(String(d.label || ""))}</text>`).join("")}
+          ${tip && tip.v > 0 ? `<g class="sales-line-tip">
+            <rect x="${tipX}" y="${tipY}" width="${tipW}" height="${tipH}" rx="10" fill="${tip.color}" />
+            <text x="${tipX + tipW / 2}" y="${tipY + 14}" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${escapeHtml(tip.name)}</text>
+            <text x="${tipX + tipW / 2}" y="${tipY + 28}" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">${escapeHtml(money(tip.v))}</text>
+            <circle cx="${tip.x}" cy="${tip.y}" r="5.5" fill="${tip.color}" stroke="#fff" stroke-width="2" />
           </g>` : ""}
         </svg>
-        <div class="sales-line-legend">
-          <span><i style="background:${primaryColor}"></i>${escapeHtml(primaryLabel)}</span>
-          <span><i style="background:${secondaryColor}"></i>${escapeHtml(secondaryLabel)}</span>
-        </div>
       </div>`;
     }
 
@@ -4262,8 +4333,9 @@
       if (!root) return;
       const salesRange = getTeamSalesRange();
       const monthKeys = (salesRange.months || []).map((m) => m.key);
+      const timeBuckets = buildTeamSalesTimeBuckets(salesRange);
       const pool = filtered || cases;
-      const salesRows = COMPANY_SALES.filter((name) => dashSalesFilter === "all" || name === dashSalesFilter).map((name) => {
+      const salesRows = COMPANY_SALES.filter((name) => dashSalesFilter === "all" || name === dashSalesFilter).map((name, idx) => {
         const list = pool.filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed");
         const closedAmt = salesClosedAmountInRange(name, salesRange.from, salesRange.to);
         const targetAmt = salesClosingTargetSum(name, monthKeys);
@@ -4274,6 +4346,7 @@
             return d && d >= salesRange.from && d <= salesRange.to;
           })
           .reduce((s, c) => s + (Number(c.amount) || 0) * ((Number(c.successRate) || 0) / 100), 0);
+        const values = timeBuckets.map((b) => salesClosedAmountInRange(name, b.from, b.to));
         return {
           name,
           list,
@@ -4281,19 +4354,24 @@
           targetAmt,
           forecastAmt,
           pct: attainPct(closedAmt, targetAmt),
+          color: salesLineColor(name, idx),
+          values,
         };
       });
       const teamT = salesRows.reduce((s, r) => s + r.targetAmt, 0);
       const teamC = salesRows.reduce((s, r) => s + r.closedAmt, 0);
       const teamF = salesRows.reduce((s, r) => s + r.forecastAmt, 0);
       const teamP = attainPct(teamC, teamT);
-      const salesLineItems = salesRows.map((r) => ({
+      const series = salesRows.map((r) => ({
         name: r.name,
-        closedAmt: r.closedAmt,
-        targetAmt: r.targetAmt,
+        color: r.color,
+        values: r.values,
         drillType: "sales",
         drillKey: r.name,
       }));
+      const axisHint = timeBuckets.length <= 1 || (salesRange.months || []).length <= 1
+        ? "左 Sales · 下週日期 · 右 $"
+        : "左 Sales · 下月份 · 右 $";
       let body = `
         <div class="dash-period" style="margin:8px 0 0;padding:10px 12px">
           <div class="seg" id="teamSalesSeg">
@@ -4303,13 +4381,13 @@
             <button type="button" data-team-sales-period="6">過去 6 個月</button>
           </div>
         </div>
-        <p class="muted" style="margin:8px 0 0;font-size:.75rem">${escapeHtml(salesRange.title)} · 下方 Sales · 右邊 $</p>
+        <p class="muted" style="margin:8px 0 0;font-size:.75rem">${escapeHtml(salesRange.title)} · ${escapeHtml(axisHint)}</p>
         <div class="money-compare" style="margin-top:10px">
           <div class="mc"><div class="lbl">Closing 目標 $</div><div class="val">${money(teamT)}</div><div class="muted" style="font-size:.68rem">${escapeHtml(salesRange.title)}</div></div>
           <div class="mc"><div class="lbl">已 Closing $</div><div class="val">${money(teamC)}</div><div class="muted" style="font-size:.68rem">${teamT ? teamP + "% 達成" : "未設目標"}</div></div>
           <div class="mc"><div class="lbl">加權 Forecast $</div><div class="val">${money(teamF)}</div><div class="muted" style="font-size:.68rem">Pipeline × 機率</div></div>
         </div>
-        ${renderSalesLineChart(salesLineItems)}
+        ${renderSalesLineChart(series, timeBuckets)}
       `;
       if (dashDrill && dashDrill.type === "sales") {
         const hit = salesRows.find((r) => r.name === dashDrill.key);
@@ -4317,7 +4395,7 @@
       }
       root.innerHTML = chartHeadHtml(
         "團隊 Sales",
-        `表現回顧 · 點選期間睇各銷售員 Closing $`
+        `表現回顧 · 各銷售員分色 Closing $ 走勢`
       ) + body;
       bindTeamSalesPeriodUi();
     }
