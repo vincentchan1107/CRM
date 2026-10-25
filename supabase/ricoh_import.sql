@@ -27,6 +27,7 @@ create table public.crm_cases (
   ricoh_sales text not null default '',
   ricoh_consultant text not null default '',
   team_leader text not null default '',
+  company_sales text not null default '',
   appointment_flag boolean not null default false,
   appointment_at timestamptz,
   appointment_confirmed boolean not null default false,

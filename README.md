@@ -24,6 +24,7 @@ Raw：https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_a
 
 - 新增 `next_follow_up_at`（下次跟進日期）
 - 新增 `team_leader`
+- 新增 `company_sales`（本公司銷售員：Vincent／Tim／Andrew／Kelly／Sophia；`ricoh_sales` 仍係 Partner Sales）
 - 允許 `close_reason = won`（成功簽單）
 
 ## 在瀏覽器打開（GitHub）
@@ -44,7 +45,7 @@ PR / 分支 Preview（無需自己 host）：
 - **資料庫管理**
   - **客戶管理**：VISIT 次數、上次會議、下次跟進日期；逾期未跟進提示
   - **Partner 管理**：Team Leader／Sales；近 1／3 個月交 case 數、DQ、Qualified
-  - **銷售員管理**：近 1／3 個月會面客人數、DQ、Qualified、成功簽單數與金額
+  - **銷售員管理**：本公司 5 位（Vincent／Tim／Andrew／Kelly／Sophia）近 1／3 個月會面客人數、DQ、Qualified、成功簽單數與金額（唔係 Partner Sales）
 
 ## 設定
 

@@ -936,7 +936,7 @@
       </div>
       <div id="mgmtAlterBanner" class="setup-box hidden" style="margin-top:12px">
         <strong>建議執行欄位升級 SQL</strong>
-        <p class="muted" style="margin:8px 0">為啟用「下次跟進日期」寫入資料庫與 Team Leader 欄位，請在 Supabase SQL Editor Run：<code>supabase/mgmt_alter.sql</code></p>
+        <p class="muted" style="margin:8px 0">為啟用「下次跟進日期」、Team Leader、本公司銷售員（Vincent／Tim／Andrew／Kelly／Sophia）欄位，請在 Supabase SQL Editor Run：<code>supabase/mgmt_alter.sql</code></p>
         <p class="muted" style="margin:0 0 8px">Raw：<a href="https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql" target="_blank" rel="noopener">mgmt_alter.sql</a></p>
         <button class="btn btn-teal btn-sm" id="btnCopyMgmtSql">複製升級 SQL</button>
       </div>
@@ -973,13 +973,14 @@
 
       <div class="mgmt-panel" id="mgmt-sales">
         <div class="mgmt-stats" id="salesStats"></div>
-        <p class="muted" style="margin-bottom:10px;font-size:.78rem">會面數依會面完成日期（activity log／約見日）· 成功簽單 = 確認簽單階段或 close_reason=won</p>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">本公司銷售員：Vincent／Tim／Andrew／Kelly／Sophia（唔係 Partner Sales）· 會面數依會面完成日期 · 成功簽單 = 確認簽單／won · 請喺案件詳情指派「本公司銷售員」</p>
         <div class="table-wrap"><table>
           <thead><tr>
-            <th>銷售員</th><th>Team／House</th><th>近 1 月會面客人</th><th>近 3 月會面客人</th><th>DQ</th><th>Qualified</th><th>成功簽單</th><th>簽單金額</th>
+            <th>本公司銷售員</th><th>負責 Case</th><th>近 1 月會面客人</th><th>近 3 月會面客人</th><th>DQ</th><th>Qualified</th><th>成功簽單</th><th>簽單金額</th>
           </tr></thead>
           <tbody id="salesBody"></tbody>
         </table></div>
+        <div id="salesUnassigned" style="margin-top:12px"></div>
       </div>
     </section>
   </main>
@@ -1005,6 +1006,8 @@
       { id: "closed", label: "已關閉", short: "關閉", color: "#64748b", bg: "#e2e8f0", desc: "DQ／失敗關閉" },
     ];
     const PARTNERS = ["Ricoh Partner", "直銷", "Partner A", "Partner B", "Partner C", "轉介", "活動／展覽", "其他"];
+    // 本公司銷售員（唔係 Partner / Ricoh Sales）
+    const COMPANY_SALES = ["Vincent", "Tim", "Andrew", "Kelly", "Sophia"];
     const LOG_TYPES = [
       { id: "call_attempt", label: "致電／聯絡" },
       { id: "call_no_answer", label: "聯絡不到／無人接" },
@@ -1098,7 +1101,7 @@
       dbReady = !error && !contactsProbe.error;
       document.getElementById("setupBanner").classList.toggle("hidden", dbReady);
       if (dbReady) {
-        const probe = await db.from("crm_cases").select("next_follow_up_at,team_leader").limit(1);
+        const probe = await db.from("crm_cases").select("next_follow_up_at,team_leader,company_sales").limit(1);
         mgmtColsReady = !probe.error;
         document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady);
       }
@@ -1163,6 +1166,7 @@
         ricohHouse: r.ricoh_house || "",
         ricohSales: r.ricoh_sales || "",
         ricohConsultant: r.ricoh_consultant || "",
+        companySales: normalizeCompanySales(r.company_sales),
         appointmentFlag: !!r.appointment_flag,
         appointmentAt: r.appointment_at || "",
         appointmentConfirmed: !!r.appointment_confirmed,
@@ -1209,8 +1213,16 @@
       if (mgmtColsReady) {
         row.next_follow_up_at = c.nextFollowUpAt || null;
         row.team_leader = c.teamLeader || "";
+        row.company_sales = c.companySales || "";
       }
       return row;
+    }
+
+    function normalizeCompanySales(raw) {
+      const s = String(raw || "").trim();
+      if (!s) return "";
+      const hit = COMPANY_SALES.find((n) => n.toLowerCase() === s.toLowerCase());
+      return hit || "";
     }
 
     function parseTeamLeader(house) {
@@ -2246,68 +2258,99 @@
       });
     }
 
-    function buildSalesRows() {
-      const map = new Map();
-      for (const c of cases) {
-        const name = (c.ricohSales || "").trim() || "未指派";
-        if (!map.has(name)) {
-          map.set(name, {
-            name,
-            houses: new Set(),
-            leaders: new Set(),
-            meet1m: new Set(),
-            meet3m: new Set(),
-            dq: 0,
-            qualified: 0,
-            wonN: 0,
-            wonAmt: 0,
-          });
-        }
-        const row = map.get(name);
-        if (c.ricohHouse) row.houses.add(c.ricohHouse);
-        const leader = c.teamLeader || parseTeamLeader(c.ricohHouse);
-        if (leader) row.leaders.add(leader);
-        const company = companyKey(c);
-        for (const md of meetingDatesForCase(c)) {
-          if (inLastDays(md, 30)) row.meet1m.add(company);
-          if (inLastDays(md, 90)) row.meet3m.add(company);
-        }
-        if (isDq(c)) row.dq += 1;
-        if (isQualified(c)) row.qualified += 1;
-        if (isWon(c)) {
-          row.wonN += 1;
-          row.wonAmt += Number(c.amount) || 0;
-        }
+    function emptySalesBucket(name) {
+      return {
+        name,
+        caseIds: new Set(),
+        meet1m: new Set(),
+        meet3m: new Set(),
+        dq: 0,
+        qualified: 0,
+        wonN: 0,
+        wonAmt: 0,
+      };
+    }
+
+    function accumulateSalesStats(row, c) {
+      row.caseIds.add(c.id);
+      const company = companyKey(c);
+      for (const md of meetingDatesForCase(c)) {
+        if (inLastDays(md, 30)) row.meet1m.add(company);
+        if (inLastDays(md, 90)) row.meet3m.add(company);
       }
-      return [...map.values()].sort((a, b) => b.meet3m.size - a.meet3m.size || a.name.localeCompare(b.name, "zh-HK"));
+      if (isDq(c)) row.dq += 1;
+      if (isQualified(c)) row.qualified += 1;
+      if (isWon(c)) {
+        row.wonN += 1;
+        row.wonAmt += Number(c.amount) || 0;
+      }
+    }
+
+    function buildSalesRows() {
+      const map = new Map(COMPANY_SALES.map((name) => [name, emptySalesBucket(name)]));
+      for (const c of cases) {
+        const name = normalizeCompanySales(c.companySales);
+        if (!name || !map.has(name)) continue;
+        accumulateSalesStats(map.get(name), c);
+      }
+      return COMPANY_SALES.map((name) => map.get(name));
     }
 
     function renderSalesMgmt() {
       const rows = buildSalesRows();
+      const assigned = cases.filter((c) => !!normalizeCompanySales(c.companySales)).length;
+      const unassigned = cases.length - assigned;
       const meet1 = rows.reduce((s, r) => s + r.meet1m.size, 0);
       const meet3 = rows.reduce((s, r) => s + r.meet3m.size, 0);
       const wonN = rows.reduce((s, r) => s + r.wonN, 0);
       const wonAmt = rows.reduce((s, r) => s + r.wonAmt, 0);
       document.getElementById("salesStats").innerHTML = [
-        ["銷售員數", rows.filter((r) => r.name !== "未指派").length, "有指派 Ricoh Sales"],
-        ["近 1 月會面客人", meet1, "去重公司數合計"],
-        ["近 3 月會面客人", meet3, "去重公司數合計"],
+        ["本公司銷售員", COMPANY_SALES.length, COMPANY_SALES.join(" · ")],
+        ["已指派 Case", `${assigned} / ${cases.length}`, unassigned ? `${unassigned} 宗未指派` : "全部已指派"],
+        ["近 1／3 月會面", `${meet1} / ${meet3}`, "去重公司數合計"],
         ["成功簽單", `${wonN} · ${money(wonAmt)}`, "確認簽單／won"],
       ].map(([l, v, s]) => `<article class="stat"><div class="label">${l}</div><div class="value" style="font-size:1.15rem">${v}</div><div class="muted" style="font-size:.68rem;margin-top:2px">${s}</div></article>`).join("");
 
       document.getElementById("salesBody").innerHTML = rows.map((r) => `<tr>
         <td><strong>${escapeHtml(r.name)}</strong></td>
-        <td>
-          <div class="muted" style="font-size:.72rem">${escapeHtml([...r.houses].slice(0, 2).join("、") || "—")}</div>
-          <div class="chip-list" style="margin-top:4px">${[...r.leaders].map((x) => `<span>${escapeHtml(x)}</span>`).join("")}</div>
-        </td>
+        <td><strong>${r.caseIds.size}</strong></td>
         <td><strong>${r.meet1m.size}</strong></td>
         <td><strong>${r.meet3m.size}</strong></td>
         <td style="color:#9f1239;font-weight:700">${r.dq}</td>
         <td style="color:#15803d;font-weight:700">${r.qualified}</td>
         <td><strong>${r.wonN}</strong></td>
         <td>${money(r.wonAmt)}</td>
-      </tr>`).join("") || `<tr><td colspan="8" style="text-align:center;padding:28px" class="muted">未有銷售員資料</td></tr>`;
+      </tr>`).join("");
+
+      const unset = cases.filter((c) => !normalizeCompanySales(c.companySales));
+      const box = document.getElementById("salesUnassigned");
+      if (!unset.length) {
+        box.innerHTML = `<div class="mgmt-alert ok">✓ 所有案件都已指派本公司銷售員</div>`;
+        return;
+      }
+      box.innerHTML = `<div class="mgmt-alert">尚有 <strong>${unset.length}</strong> 宗未指派本公司銷售員（Partner Sales 唔算）— 可喺下方快速指派</div>
+        <div class="table-wrap" style="margin-top:8px"><table>
+          <thead><tr><th>客戶公司</th><th>Partner Sales</th><th>指派本公司銷售員</th></tr></thead>
+          <tbody>
+            ${unset.slice(0, 40).map((c) => `<tr>
+              <td><strong>${escapeHtml(companyKey(c))}</strong></td>
+              <td class="muted" style="font-size:.75rem">${escapeHtml(c.ricohSales || "—")}</td>
+              <td>
+                <select class="assign-company-sales" data-case-id="${escapeAttr(c.id)}" style="border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:#fff;font-size:.78rem">
+                  <option value="">未指派</option>
+                  ${COMPANY_SALES.map((n) => `<option value="${n}">${n}</option>`).join("")}
+                </select>
+              </td>
+            </tr>`).join("")}
+          </tbody>
+        </table></div>
+        ${unset.length > 40 ? `<p class="muted" style="margin-top:8px;font-size:.75rem">只顯示前 40 宗，其餘請開案件詳情指派</p>` : ""}`;
+      box.querySelectorAll(".assign-company-sales").forEach((sel) => {
+        sel.onchange = async () => {
+          await updateCase(sel.dataset.caseId, { companySales: sel.value || "" });
+          renderSalesMgmt();
+        };
+      });
     }
 
     function openDrawer(id) {
@@ -2332,10 +2375,18 @@
 
         <div class="modal-grid">
           <div class="modal-col">
-            <div class="eyebrow">Ricoh 跟進</div>
+            <div class="eyebrow">本公司銷售員</div>
+            <label class="field"><span>負責銷售員（Vincent／Tim／Andrew／Kelly／Sophia）</span>
+              <select id="d_companySales">
+                <option value="">未指派</option>
+                ${COMPANY_SALES.map((n) => `<option value="${n}" ${c.companySales === n ? "selected" : ""}>${n}</option>`).join("")}
+              </select>
+            </label>
+
+            <div class="eyebrow">Partner／Ricoh 跟進</div>
             <div class="row2">
               <label class="field"><span>Ricoh House</span><input id="d_house" value="${escapeAttr(c.ricohHouse)}" /></label>
-              <label class="field"><span>Ricoh Sales</span><input id="d_sales" value="${escapeAttr(c.ricohSales)}" /></label>
+              <label class="field"><span>Partner Sales（Ricoh）</span><input id="d_sales" value="${escapeAttr(c.ricohSales)}" /></label>
             </div>
             <div class="row2">
               <label class="field"><span>Team Leader</span><input id="d_leader" value="${escapeAttr(c.teamLeader || parseTeamLeader(c.ricohHouse))}" placeholder="例如 Polly Lee" /></label>
@@ -2425,6 +2476,7 @@
         localFollowUpSet(c.id, nextFollow);
         const won = closeVal === "won" || stage === "confirmation";
         await updateCase(c.id, {
+          companySales: document.getElementById("d_companySales").value || "",
           ricohHouse: document.getElementById("d_house").value.trim(),
           ricohSales: document.getElementById("d_sales").value.trim(),
           ricohConsultant: document.getElementById("d_consultant").value.trim(),
