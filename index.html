@@ -1170,6 +1170,65 @@
       font-weight: 800;
       color: var(--ink);
     }
+    .grouped-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      height: 200px;
+      margin-top: 14px;
+      padding: 0 4px;
+      overflow-x: auto;
+    }
+    .grouped-col {
+      flex: 1 0 56px;
+      min-width: 56px;
+      max-width: 88px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+    .grouped-pair {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 140px;
+      width: 100%;
+      justify-content: center;
+    }
+    .grouped-pair .gbar {
+      width: 16px;
+      height: 100%;
+      background: #f0ecf8;
+      border-radius: 999px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .grouped-pair .gbar > i {
+      display: block;
+      width: 100%;
+      min-height: 3px;
+      border-radius: 999px;
+    }
+    .grouped-pair .gbar.target > i { background: linear-gradient(180deg, #8b6fff, #6b46fe); }
+    .grouped-pair .gbar.closed > i { background: linear-gradient(180deg, #5ee4b0, #27c281); }
+    .grouped-col .glbl {
+      font-size: .62rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.2;
+    }
+    .grouped-col .gnums {
+      font-size: .66rem;
+      font-weight: 800;
+      color: var(--ink-soft);
+      text-align: center;
+      line-height: 1.25;
+    }
     .dots-wrap {
       margin-top: 10px;
       width: 100%;
@@ -1503,8 +1562,8 @@
       <div class="dash-period" id="dashPeriodBar">
         <div class="seg" id="dashPeriodSeg">
           <button type="button" data-period="month">當月</button>
-          <button type="button" data-period="3" class="active">未來 3 個月</button>
-          <button type="button" data-period="6">未來 6 個月</button>
+          <button type="button" data-period="3">未來 3 個月</button>
+          <button type="button" data-period="6" class="active">未來 6 個月</button>
           <button type="button" data-period="12">未來 12 個月</button>
           <button type="button" data-period="custom">自訂日期</button>
         </div>
@@ -2227,7 +2286,7 @@
     }
 
     /* -------- dashboard / board / list -------- */
-    let dashPeriod = localStorage.getItem("crm_dash_period") || "3";
+    let dashPeriod = localStorage.getItem("crm_dash_period") || "6";
     let dashFrom = localStorage.getItem("crm_dash_from") || "";
     let dashTo = localStorage.getItem("crm_dash_to") || "";
 
@@ -2255,6 +2314,18 @@
     function caseForecastDate(c) {
       // Prefer target closing; fallback to appointment for Ricoh leads
       return parseLocalDate(c.targetClosingDate || (c.appointmentAt ? String(c.appointmentAt).slice(0, 10) : ""));
+    }
+
+    function caseClosingDate(c) {
+      // Actual closed / won cases — use updated day when possible, else target closing
+      if (!(c.stage === "confirmation" || c.closeReason === "won" || isWon(c))) return null;
+      if (c.updatedAt) {
+        const d = parseLocalDate(String(c.updatedAt).slice(0, 10));
+        if (d) return d;
+        const t = new Date(c.updatedAt);
+        if (!Number.isNaN(t.getTime())) return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+      }
+      return caseForecastDate(c);
     }
 
     function getDashRange() {
@@ -2373,23 +2444,57 @@
 
       let maxAmt = 1;
       const months = range.months.map((m) => {
-        const list = open.filter((c) => {
+        // Target closing: pipeline cases aiming to close in this month
+        const list = cases.filter((c) => {
+          if (c.stage === "closed" && c.closeReason !== "won") return false;
           const d = caseForecastDate(c);
           if (!d) return false;
           return d >= m.monthStart && d <= m.monthEnd;
         });
+        // Closing case: actually won / confirmation in this month
+        const closedList = cases.filter((c) => {
+          const d = caseClosingDate(c);
+          if (!d) return false;
+          return d >= m.monthStart && d <= m.monthEnd;
+        });
         const total = list.reduce((s, c) => s + (c.amount || 0), 0);
-        maxAmt = Math.max(maxAmt, total);
+        const closedAmt = closedList.reduce((s, c) => s + (c.amount || 0), 0);
+        maxAmt = Math.max(maxAmt, total, closedAmt);
         return {
           ...m,
           list,
+          closedList,
+          targetCount: list.length,
+          closedCount: closedList.length,
           total,
+          closedAmt,
           weighted: list.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0),
           avg: list.length ? Math.round(list.reduce((s, c) => s + (c.successRate || 0), 0) / list.length) : 0,
         };
       });
 
       renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt });
+    }
+
+    function renderGroupedMonthBars(months) {
+      const maxN = Math.max(1, ...months.map((m) => Math.max(m.targetCount || 0, m.closedCount || 0)));
+      return `<div class="chart-legend">
+          <span><i style="background:#6b46fe"></i>Target Closing</span>
+          <span><i style="background:#27c281"></i>Closing Case</span>
+        </div>
+        <div class="grouped-bars">${months.map((m) => {
+          const tH = Math.max((m.targetCount || 0) ? 4 : 0, ((m.targetCount || 0) / maxN) * 100);
+          const cH = Math.max((m.closedCount || 0) ? 4 : 0, ((m.closedCount || 0) / maxN) * 100);
+          const short = m.label.replace(/^\d{4}年/, "");
+          return `<div class="grouped-col" title="${escapeHtml(m.label)} · Target ${m.targetCount || 0} · Closed ${m.closedCount || 0}">
+            <div class="gnums">${m.targetCount || 0} / ${m.closedCount || 0}</div>
+            <div class="grouped-pair">
+              <div class="gbar target"><i style="height:${tH}%"></i></div>
+              <div class="gbar closed"><i style="height:${cH}%"></i></div>
+            </div>
+            <div class="glbl">${escapeHtml(short)}</div>
+          </div>`;
+        }).join("")}</div>`;
     }
 
     const DASH_CHART_TYPES = [
@@ -2578,13 +2683,13 @@
       const monthsRoot = document.getElementById("dashMonths");
       const monthsType = dashChartTypes.months || "bar";
       const monthItems = months.map((m) => ({
-        label: m.label.replace(/^\d{4}年/, "").replace("月", "月"),
+        label: m.label.replace(/^\d{4}年/, ""),
         fullLabel: m.label,
-        value: m.list.length,
-        a: m.list.length,
-        b: Math.round(m.weighted),
-        aLabel: "宗數",
-        bLabel: "加權金額",
+        value: m.targetCount || m.list.length,
+        a: m.targetCount || m.list.length,
+        b: m.closedCount || 0,
+        aLabel: "Target Closing",
+        bLabel: "Closing Case",
         total: m.total,
         weighted: m.weighted,
         avg: m.avg,
@@ -2598,54 +2703,66 @@
           label: it.fullLabel,
           a: it.a,
           b: it.b,
-          aLabel: "宗數",
-          bLabel: "加權 ($)",
+          aLabel: "Target Closing",
+          bLabel: "Closing Case",
         })));
-      } else if (monthsType === "bar" && months.length <= 8) {
-        // Keep expandable list for bar (most useful) when few months
-        monthsBody = months.map((m) => {
-          const width = Math.max(4, (m.total / Math.max(maxAmt, 1)) * 100);
-          const breakdown = m.list.length
+      } else {
+        // 棒圖：Target Closing vs Closing Case（預設六個月）
+        monthsBody = renderGroupedMonthBars(months);
+        // Optional expandable month details under the bars
+        monthsBody += months.map((m) => {
+          const width = Math.max(4, ((m.targetCount || 0) / Math.max(...months.map((x) => x.targetCount || 0), 1)) * 100);
+          const breakdownTarget = m.list.length
             ? m.list.map((c) => {
                 const s = stageMeta(c.stage);
-                const w = (c.amount || 0) * ((c.successRate || 0) / 100);
                 const fd = caseForecastDate(c);
                 return `<div class="breakdown-item" data-case-id="${c.id}">
                   <div><strong>${escapeHtml((c.customerName || "").split("\n")[0])}</strong></div>
                   <div><strong>${money(c.amount)}</strong></div>
                   <div class="breakdown-meta">
                     <span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span>
-                    <span>${escapeHtml(c.ricohSales || c.partner || "")}</span>
-                    <span>機率 ${pct(c.successRate)}</span>
-                    <span>加權 ${money(w)}</span>
-                    <span>日期 ${formatLocalDate(fd)}</span>
+                    <span>Target ${formatLocalDate(fd)}</span>
                   </div>
                 </div>`;
               }).join("")
-            : `<div class="breakdown-empty">呢段期間未有案件</div>`;
+            : `<div class="breakdown-empty">呢個月未有 Target Closing</div>`;
+          const breakdownClosed = (m.closedList || []).length
+            ? m.closedList.map((c) => {
+                const s = stageMeta(c.stage);
+                const cd = caseClosingDate(c);
+                return `<div class="breakdown-item" data-case-id="${c.id}">
+                  <div><strong>${escapeHtml((c.customerName || "").split("\n")[0])}</strong></div>
+                  <div><strong>${money(c.amount)}</strong></div>
+                  <div class="breakdown-meta">
+                    <span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span>
+                    <span>Closed ${formatLocalDate(cd)}</span>
+                  </div>
+                </div>`;
+              }).join("")
+            : `<div class="breakdown-empty">呢個月未有 Closing Case</div>`;
           return `<div class="month-row" data-month="${m.key}" role="button" tabindex="0" aria-expanded="false">
             <div class="month-row-top">
               <strong>${m.label}<span class="chev">▸</span></strong>
-              <span class="muted">${m.list.length} 宗 · ${money(m.total)} · 機率 ${pct(m.avg)}</span>
+              <span class="muted">Target ${m.targetCount || 0} · Closed ${m.closedCount || 0} · ${money(m.total)}</span>
             </div>
             <div class="bar"><i style="width:${width}%"></i></div>
-            <div class="muted" style="font-size:.7rem">加權預測 ${money(m.weighted)}</div>
+            <div class="muted" style="font-size:.7rem">加權預測 ${money(m.weighted)} · 機率 ${pct(m.avg)}</div>
             <div class="month-breakdown">
-              <div class="eyebrow" style="margin-bottom:4px">Breakdown</div>
-              ${breakdown}
+              <div class="eyebrow" style="margin-bottom:4px">Target Closing</div>
+              ${breakdownTarget}
+              <div class="eyebrow" style="margin:10px 0 4px">Closing Case</div>
+              ${breakdownClosed}
             </div>
           </div>`;
         }).join("");
-      } else {
-        monthsBody = renderVBars(monthItems.map((it) => ({
-          label: it.label,
-          fullLabel: it.fullLabel,
-          value: it.value,
-          color: "#6b46fe",
-          bg: "#c4b5fd",
-        })));
       }
-      monthsRoot.innerHTML = chartHeadHtml(range.title, `依 target closing date（無則用約見日）· 跟進機會 ${followN}`, "months") + monthsBody;
+      const targetSum = months.reduce((s, m) => s + (m.targetCount || 0), 0);
+      const closedSum = months.reduce((s, m) => s + (m.closedCount || 0), 0);
+      monthsRoot.innerHTML = chartHeadHtml(
+        range.title,
+        `Target Closing vs Closing Case · Target ${targetSum} · Closed ${closedSum} · 跟進機會 ${followN}`,
+        "months"
+      ) + monthsBody;
       if (monthsType === "bar") bindMonthRows(monthsRoot);
 
       // ---- Stage ----
