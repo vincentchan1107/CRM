@@ -1001,9 +1001,11 @@
       grid-template-columns: 1fr;
     }
     @media (min-width: 960px) {
-      .dash-charts { grid-template-columns: repeat(3, 1fr); }
+      .dash-charts { grid-template-columns: repeat(2, 1fr); }
+      #dashChartStage { grid-column: 1 / -1; }
     }
     .chart-panel { min-height: 280px; }
+    #dashChartStage { min-height: 320px; }
     .chart-panel h2 { font-size: 1.05rem; }
     .chart-row {
       display: grid;
