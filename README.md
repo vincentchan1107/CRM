@@ -29,10 +29,14 @@ Raw：https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_a
 
 ## 在瀏覽器打開（GitHub）
 
-PR / 分支 Preview（無需自己 host）：
+正式站（只跟 `main`，merge 後先會更新）：
 
-- https://htmlpreview.github.io/?https://github.com/vincentchan1107/CRM/blob/cursor/crm-mobile-portal-backend-f9da/index.html
-- 或 raw：https://cdn.jsdelivr.net/gh/vincentchan1107/CRM@cursor/crm-mobile-portal-backend-f9da/index.html
+- https://vincentchan1107.github.io/CRM/
+
+最新分支 Preview（含 Log History／Dashboard 優化；無需自己 host）：
+
+- https://cdn.jsdelivr.net/gh/vincentchan1107/CRM@cursor/crm-dashboard-board-mgmt-optimize-f9da/index.html
+- 或 https://htmlpreview.github.io/?https://github.com/vincentchan1107/CRM/blob/cursor/crm-dashboard-board-mgmt-optimize-f9da/index.html
 
 本地：用瀏覽器直接開 `index.html`，或任意靜態 server。
 
