@@ -1867,27 +1867,33 @@
       padding: 2px 7px;
     }
     .sales-line-chart {
-      margin-top: 8px;
+      margin-top: 6px;
       width: 100%;
-      overflow: hidden;
+      max-width: 640px;
+      overflow: visible;
       display: flex;
-      gap: 10px;
+      gap: 12px;
       align-items: stretch;
+      position: relative;
     }
-    .sales-line-chart svg {
-      width: 100%;
-      height: auto;
-      display: block;
+    .sales-line-chart-plot {
+      position: relative;
       flex: 1;
       min-width: 0;
     }
+    .sales-line-chart svg {
+      width: 100%;
+      max-height: 176px;
+      height: auto;
+      display: block;
+    }
     .sales-line-chart .axis-label {
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 700;
       fill: #94a3b8;
     }
     .sales-line-chart .x-label {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       fill: #64748b;
     }
@@ -1902,41 +1908,68 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
       flex: 0 0 auto;
-      min-width: 72px;
+      min-width: 88px;
       padding: 4px 0;
     }
     .sales-line-legend span {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      font-size: .72rem;
-      font-weight: 700;
-      color: var(--ink-soft);
+      gap: 8px;
+      font-size: .95rem;
+      font-weight: 800;
+      color: var(--ink);
       white-space: nowrap;
+      letter-spacing: .01em;
     }
     .sales-line-legend i {
-      width: 9px;
-      height: 9px;
+      width: 11px;
+      height: 11px;
       border-radius: 50%;
       display: inline-block;
       flex-shrink: 0;
     }
+    .sales-line-tip-html {
+      position: absolute;
+      z-index: 3;
+      transform: translate(-50%, calc(-100% - 8px));
+      background: #1d4ed8;
+      color: #fff;
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.25;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, .18);
+      text-align: center;
+    }
+    .sales-line-tip-html .tip-name {
+      font-size: 10px;
+      font-weight: 700;
+      opacity: .92;
+    }
+    .sales-line-tip-html .tip-amt {
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .sales-line-tip-html.hidden { display: none; }
     @media (max-width: 640px) {
       .sales-line-chart {
         flex-direction: column;
+        max-width: none;
       }
       .sales-line-legend {
         flex-direction: row;
         flex-wrap: wrap;
         min-width: 0;
         justify-content: flex-start;
-        gap: 10px 14px;
+        gap: 10px 16px;
       }
-    }
-    .sales-line-tip {
-      pointer-events: none;
+      .sales-line-legend span { font-size: .88rem; }
+      .sales-line-chart svg { max-height: 168px; }
     }
     .year-plan-toolbar {
       display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
@@ -4072,11 +4105,14 @@
       const v = Math.max(0, Number(n) || 0);
       if (v >= 1000000) {
         const m = v / 1000000;
-        return "$" + (Number.isInteger(m) ? m : m.toFixed(1)) + "M";
+        if (Number.isInteger(m)) return "$" + m + "M";
+        // Keep 2dp so $1.25M (250k steps) does not round to $1.3M
+        return "$" + (Math.round(m * 100) / 100).toFixed(2).replace(/\.?0+$/, "") + "M";
       }
       if (v >= 1000) {
         const k = v / 1000;
-        return "$" + (Number.isInteger(k) ? k : k.toFixed(1)) + "k";
+        if (Number.isInteger(k)) return "$" + k + "k";
+        return "$" + (Math.round(k * 10) / 10).toFixed(1).replace(/\.0$/, "") + "k";
       }
       return "$" + Math.round(v);
     }
@@ -4163,28 +4199,24 @@
         drillKey: s.drillKey || s.name,
       }));
       const W = 560;
-      const H = 260;
-      const padL = 12;
-      const padR = 54;
-      const padT = 24;
-      const padB = 36;
+      const H = 168;
+      const padL = 10;
+      const padR = 48;
+      const padT = 14;
+      const padB = 28;
       const plotW = W - padL - padR;
       const plotH = H - padT - padB;
       const n = Math.max(1, dates.length);
       const vals = lines.flatMap((ln) => ln.values);
       const rawMax = Math.max(1, ...vals);
-      const niceMax = (() => {
-        const exp = Math.pow(10, Math.floor(Math.log10(rawMax)));
-        const norm = rawMax / exp;
-        const nice = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
-        return nice * exp;
-      })();
-      const tickCount = 4;
-      const ticks = Array.from({ length: tickCount + 1 }, (_, i) => (niceMax * i) / tickCount);
+      const STEP = 250000; // $250k per grid line
+      const niceMax = Math.max(STEP, Math.ceil(rawMax / STEP) * STEP);
+      const ticks = [];
+      for (let t = 0; t <= niceMax + 0.5; t += STEP) ticks.push(t);
+      const labelEvery = ticks.length > 10 ? 2 : 1;
       const xAt = (i) => padL + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
       const yAt = (v) => padT + plotH - (Math.max(0, Number(v) || 0) / niceMax) * plotH;
 
-      let tip = null;
       const lineLayers = lines.map((ln) => {
         const pts = ln.values.map((v, i) => ({
           x: +xAt(i).toFixed(2),
@@ -4192,46 +4224,74 @@
           v,
           dateLabel: dates[i]?.label || "",
         }));
-        pts.forEach((p) => {
-          if (!tip || p.v > tip.v) tip = { ...p, name: ln.name, color: ln.color };
-        });
         return { ...ln, pts, path: smoothLinePath(pts) };
       });
-
-      const tipW = 72;
-      const tipH = 36;
-      const tipX = tip ? Math.min(W - tipW - 4, Math.max(4, tip.x - tipW / 2)) : 0;
-      const tipY = tip ? Math.max(4, tip.y - tipH - 10) : 0;
 
       return `<div class="sales-line-chart">
         <div class="sales-line-legend" aria-label="Sales">
           ${lines.map((ln) => `<span><i style="background:${ln.color}"></i>${escapeHtml(ln.name)}</span>`).join("")}
         </div>
-        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="團隊 Sales Closing 圖表">
-          ${ticks.map((t) => {
-            const y = yAt(t);
-            return `<line class="grid-line" x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" />
-              <text class="axis-label" x="${W - padR + 8}" y="${y + 4}" text-anchor="start">${escapeHtml(moneyAxisLabel(t))}</text>`;
-          }).join("")}
-          ${lineLayers.map((ln) => `
-            ${ln.path ? `<path d="${ln.path}" fill="none" stroke="${ln.color}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />` : ""}
-            ${ln.pts.map((p) => {
-              const drill = ` class="point-hit" data-drill-type="${escapeAttr(ln.drillType)}" data-drill-key="${escapeAttr(ln.drillKey)}" data-drill-title="${escapeAttr(ln.name)}"`;
-              return `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#fff" stroke="${ln.color}" stroke-width="2.2"${drill}>
-                <title>${escapeHtml(ln.name)} · ${escapeHtml(p.dateLabel)}: ${money(p.v)}</title>
-              </circle>
-              <circle cx="${p.x}" cy="${p.y}" r="12" fill="transparent"${drill}></circle>`;
+        <div class="sales-line-chart-plot">
+          <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="團隊 Sales Closing 圖表">
+            ${ticks.map((t, ti) => {
+              const y = yAt(t);
+              const showLbl = ti % labelEvery === 0;
+              return `<line class="grid-line" x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" />
+                ${showLbl ? `<text class="axis-label" x="${W - padR + 6}" y="${y + 3}" text-anchor="start">${escapeHtml(moneyAxisLabel(t))}</text>` : ""}`;
             }).join("")}
-          `).join("")}
-          ${dates.map((d, i) => `<text class="x-label" x="${xAt(i)}" y="${H - 10}" text-anchor="middle">${escapeHtml(String(d.label || ""))}</text>`).join("")}
-          ${tip && tip.v > 0 ? `<g class="sales-line-tip">
-            <rect x="${tipX}" y="${tipY}" width="${tipW}" height="${tipH}" rx="10" fill="${tip.color}" />
-            <text x="${tipX + tipW / 2}" y="${tipY + 14}" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">${escapeHtml(tip.name)}</text>
-            <text x="${tipX + tipW / 2}" y="${tipY + 28}" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">${escapeHtml(money(tip.v))}</text>
-            <circle cx="${tip.x}" cy="${tip.y}" r="5.5" fill="${tip.color}" stroke="#fff" stroke-width="2" />
-          </g>` : ""}
-        </svg>
+            ${lineLayers.map((ln) => `
+              ${ln.path ? `<path d="${ln.path}" fill="none" stroke="${ln.color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />` : ""}
+              ${ln.pts.map((p) => {
+                const tipAttrs = ` class="point-hit" data-point-tip="1" data-tip-name="${escapeAttr(ln.name)}" data-tip-amount="${escapeAttr(money(p.v))}" data-tip-date="${escapeAttr(p.dateLabel)}" data-tip-color="${escapeAttr(ln.color)}" data-tip-x="${p.x}" data-tip-y="${p.y}" data-tip-vb-w="${W}" data-tip-vb-h="${H}"`;
+                return `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="#fff" stroke="${ln.color}" stroke-width="2"${tipAttrs}>
+                  <title>${escapeHtml(ln.name)} · ${escapeHtml(p.dateLabel)}: ${money(p.v)}</title>
+                </circle>
+                <circle cx="${p.x}" cy="${p.y}" r="11" fill="transparent"${tipAttrs}></circle>`;
+              }).join("")}
+            `).join("")}
+            ${dates.map((d, i) => `<text class="x-label" x="${xAt(i)}" y="${H - 8}" text-anchor="middle">${escapeHtml(String(d.label || ""))}</text>`).join("")}
+          </svg>
+          <div class="sales-line-tip-html hidden" id="salesLineTipHtml" role="status" aria-live="polite"></div>
+        </div>
       </div>`;
+    }
+
+    function bindSalesLinePointTips(root) {
+      const host = (root || document).querySelector(".sales-line-chart-plot");
+      const tipEl = (root || document).querySelector("#salesLineTipHtml");
+      if (!host || !tipEl) return;
+      const svg = host.querySelector("svg");
+      const showTip = (el) => {
+        const name = el.dataset.tipName || "";
+        const amount = el.dataset.tipAmount || "";
+        const date = el.dataset.tipDate || "";
+        const color = el.dataset.tipColor || "#1d4ed8";
+        const vbW = Number(el.dataset.tipVbW) || 560;
+        const x = Number(el.dataset.tipX) || 0;
+        const y = Number(el.dataset.tipY) || 0;
+        const rect = svg.getBoundingClientRect();
+        const hostRect = host.getBoundingClientRect();
+        const scaleX = rect.width / vbW;
+        const left = (rect.left - hostRect.left) + x * scaleX;
+        const top = (rect.top - hostRect.top) + y * (rect.height / (Number(el.dataset.tipVbH) || 168));
+        tipEl.style.background = color;
+        tipEl.style.left = `${left}px`;
+        tipEl.style.top = `${top}px`;
+        tipEl.innerHTML = `<div class="tip-name">${escapeHtml(name)}${date ? " · " + escapeHtml(date) : ""}</div><div class="tip-amt">${escapeHtml(amount)}</div>`;
+        tipEl.classList.remove("hidden");
+      };
+      host.querySelectorAll("[data-point-tip]").forEach((el) => {
+        el.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          showTip(el);
+        };
+      });
+      const panel = root || host.closest("#dashTeamSales") || document;
+      panel.onclick = (e) => {
+        if (e.target.closest?.("[data-point-tip]")) return;
+        tipEl.classList.add("hidden");
+      };
     }
 
     function renderHBars(items) {
@@ -4419,6 +4479,7 @@
         `表現回顧 · 各銷售員分色 Closing $ 走勢`
       ) + body;
       bindTeamSalesPeriodUi();
+      bindSalesLinePointTips(root);
     }
 
     function renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt, filtered }) {
