@@ -1876,6 +1876,33 @@
     }
     #dashChartSalesTarget .table-wrap { width: 100%; overflow-x: auto; }
     #dashChartSalesTarget .table-wrap table { width: 100%; min-width: 560px; }
+    #dashPartnerPerf { width: 100%; box-sizing: border-box; }
+    .partner-perf-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 10px 0 12px;
+      width: 100%;
+    }
+    @media (max-width: 700px) {
+      .partner-perf-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .partner-perf-summary .pps {
+      background: #f7f4fc;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      min-width: 0;
+    }
+    .partner-perf-summary .pps .lbl { font-size: .68rem; font-weight: 700; color: var(--muted); }
+    .partner-perf-summary .pps .val { font-size: 1.15rem; font-weight: 800; margin-top: 2px; }
+    .partner-perf-summary .pps.dq .val { color: #9f1239; }
+    .partner-perf-summary .pps.potential .val { color: #0369a1; }
+    .partner-perf-summary .pps.closing .val { color: #15803d; }
+    .partner-perf-table { width: 100%; min-width: 520px; }
+    .partner-perf-table th, .partner-perf-table td { white-space: nowrap; }
+    .partner-perf-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+    .partner-perf-table tfoot td { font-weight: 800; background: #f7f4fc; }
 
     .toast {
       position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
@@ -2095,6 +2122,7 @@
         <button type="button" class="btn btn-ghost btn-sm" id="dashFilterReset">重設篩選</button>
       </div>
       <div style="display:grid;gap:12px;grid-template-columns:1fr;margin-top:8px">
+        <div class="panel" id="dashPartnerPerf"></div>
         <div class="panel" id="dashChartSalesTarget"></div>
         <div class="panel" id="dashMonths"></div>
         <div class="dash-charts" id="dashCharts">
@@ -3180,6 +3208,9 @@
     let dashPeriod = localStorage.getItem("crm_dash_period") || "6";
     let dashFrom = localStorage.getItem("crm_dash_from") || "";
     let dashTo = localStorage.getItem("crm_dash_to") || "";
+    let partnerPerfPeriod = localStorage.getItem("crm_partner_perf_period") || "month";
+    let partnerPerfFrom = localStorage.getItem("crm_partner_perf_from") || "";
+    let partnerPerfTo = localStorage.getItem("crm_partner_perf_to") || "";
 
     function parseLocalDate(raw) {
       if (!raw) return null;
@@ -3364,7 +3395,226 @@
         };
       });
 
+      renderDashPartnerPerf(filtered);
       renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt, filtered });
+    }
+
+    function caseCreatedDate(c) {
+      if (!c?.createdAt) return null;
+      const d = parseLocalDate(String(c.createdAt).slice(0, 10));
+      if (d) return d;
+      const t = new Date(c.createdAt);
+      if (Number.isNaN(t.getTime())) return null;
+      return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    }
+
+    function caseEventDate(c) {
+      if (c?.updatedAt) {
+        const d = parseLocalDate(String(c.updatedAt).slice(0, 10));
+        if (d) return d;
+        const t = new Date(c.updatedAt);
+        if (!Number.isNaN(t.getTime())) return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+      }
+      return caseCreatedDate(c);
+    }
+
+    function getPartnerPerfRange() {
+      const now = new Date();
+      const thisStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const thisEnd = endOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+      if (partnerPerfPeriod === "custom") {
+        const from = parseLocalDate(partnerPerfFrom);
+        const to = parseLocalDate(partnerPerfTo);
+        if (from && to && from <= to) {
+          return { mode: "custom", from, to: endOfDay(to), title: `${partnerPerfFrom} 至 ${partnerPerfTo}` };
+        }
+        return { mode: "custom", from: thisStart, to: thisEnd, title: "請選擇由日期至日期後按「套用」", incomplete: true };
+      }
+      if (partnerPerfPeriod === "last") {
+        const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const to = endOfDay(new Date(now.getFullYear(), now.getMonth(), 0));
+        return { mode: "last", from, to, title: `${from.getFullYear()}年${from.getMonth() + 1}月（上月）` };
+      }
+      if (partnerPerfPeriod === "3") {
+        const from = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        return { mode: "3", from, to: thisEnd, title: "過去 3 個月（含本月）" };
+      }
+      return {
+        mode: "month",
+        from: thisStart,
+        to: thisEnd,
+        title: `${thisStart.getFullYear()}年${thisStart.getMonth() + 1}月（本月）`,
+      };
+    }
+
+    function isPotential(c) {
+      if (isDq(c) || isWon(c)) return false;
+      return !!c.followUpOpportunity || ["quotation", "follow_up", "final_stage"].includes(c.stage);
+    }
+
+    function buildPartnerPerfRows(pool, range) {
+      const map = new Map();
+      const ensure = (name) => {
+        if (!map.has(name)) map.set(name, { name, lead: 0, dq: 0, potential: 0, closing: 0, closingAmt: 0 });
+        return map.get(name);
+      };
+      for (const c of pool) {
+        const partner = (c.partner || "未分類").trim() || "未分類";
+        const row = ensure(partner);
+        const created = caseCreatedDate(c);
+        if (created && created >= range.from && created <= range.to) {
+          row.lead += 1;
+          if (isDq(c)) row.dq += 1;
+          if (isPotential(c)) row.potential += 1;
+        }
+        // DQ that happened in period even if created earlier
+        if (isDq(c)) {
+          const ev = caseEventDate(c);
+          if (ev && ev >= range.from && ev <= range.to && !(created && created >= range.from && created <= range.to)) {
+            row.dq += 1;
+          }
+        }
+        const closedOn = caseClosingDate(c);
+        if (closedOn && closedOn >= range.from && closedOn <= range.to) {
+          row.closing += 1;
+          row.closingAmt += Number(c.amount) || 0;
+        }
+      }
+      return [...map.values()]
+        .filter((r) => r.lead || r.dq || r.potential || r.closing)
+        .sort((a, b) => b.lead - a.lead || b.closing - a.closing || a.name.localeCompare(b.name, "zh-HK"));
+    }
+
+    function syncPartnerPerfUi() {
+      document.querySelectorAll("#partnerPerfSeg button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.partnerPeriod === partnerPerfPeriod);
+      });
+      const custom = document.getElementById("partnerPerfCustom");
+      if (custom) custom.classList.toggle("hidden", partnerPerfPeriod !== "custom");
+      if (partnerPerfFrom) {
+        const el = document.getElementById("partnerPerfFrom");
+        if (el) el.value = partnerPerfFrom;
+      }
+      if (partnerPerfTo) {
+        const el = document.getElementById("partnerPerfTo");
+        if (el) el.value = partnerPerfTo;
+      }
+    }
+
+    function renderDashPartnerPerf(pool) {
+      const root = document.getElementById("dashPartnerPerf");
+      if (!root) return;
+      const range = getPartnerPerfRange();
+      const rows = range.incomplete ? [] : buildPartnerPerfRows(pool || cases, range);
+      const totals = rows.reduce((acc, r) => {
+        acc.lead += r.lead;
+        acc.dq += r.dq;
+        acc.potential += r.potential;
+        acc.closing += r.closing;
+        acc.closingAmt += r.closingAmt;
+        return acc;
+      }, { lead: 0, dq: 0, potential: 0, closing: 0, closingAmt: 0 });
+      const dqRate = totals.lead ? Math.round((totals.dq / totals.lead) * 100) : 0;
+
+      root.innerHTML = `
+        ${chartHeadHtml("Partner 交 Lead 表現", "按 Partner 統計期間內交了多少 Lead、DQ、Potential 同 Closing")}
+        <div class="dash-period" style="margin:8px 0 0;padding:10px 12px">
+          <div class="seg" id="partnerPerfSeg">
+            <button type="button" data-partner-period="month">本月</button>
+            <button type="button" data-partner-period="last">上月</button>
+            <button type="button" data-partner-period="3">過去 3 個月</button>
+            <button type="button" data-partner-period="custom">日期由至</button>
+          </div>
+          <div class="custom-range${partnerPerfPeriod === "custom" ? "" : " hidden"}" id="partnerPerfCustom">
+            <label>由日期<input type="date" id="partnerPerfFrom" /></label>
+            <label>至日期<input type="date" id="partnerPerfTo" /></label>
+            <button type="button" class="btn btn-teal btn-sm" id="partnerPerfApply">套用</button>
+          </div>
+        </div>
+        <p class="muted" style="margin:8px 0 0;font-size:.75rem">${escapeHtml(range.title)}</p>
+        <div class="partner-perf-summary">
+          <div class="pps"><div class="lbl">LEAD</div><div class="val">${totals.lead}</div><div class="muted" style="font-size:.68rem">期間交入</div></div>
+          <div class="pps dq"><div class="lbl">DQ</div><div class="val">${totals.dq}</div><div class="muted" style="font-size:.68rem">${totals.lead ? `佔 Lead ${dqRate}%` : "—"}</div></div>
+          <div class="pps potential"><div class="lbl">POTENTIAL</div><div class="val">${totals.potential}</div><div class="muted" style="font-size:.68rem">跟進機會／報價+</div></div>
+          <div class="pps closing"><div class="lbl">CLOSING</div><div class="val">${totals.closing}</div><div class="muted" style="font-size:.68rem">${money(totals.closingAmt)}</div></div>
+        </div>
+        <div class="table-wrap"><table class="partner-perf-table">
+          <thead>
+            <tr>
+              <th>Partner</th>
+              <th class="num">LEAD</th>
+              <th class="num">DQ</th>
+              <th class="num">DQ 率</th>
+              <th class="num">POTENTIAL</th>
+              <th class="num">CLOSING</th>
+              <th class="num">Closing $</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((r) => {
+              const rate = r.lead ? Math.round((r.dq / r.lead) * 100) : 0;
+              return `<tr>
+                <td><strong>${escapeHtml(r.name)}</strong></td>
+                <td class="num">${r.lead}</td>
+                <td class="num" style="color:#9f1239">${r.dq}</td>
+                <td class="num" style="color:${!r.lead ? "var(--muted)" : (rate >= 40 ? "#9f1239" : "var(--ink)")}">${r.lead ? rate + "%" : "—"}</td>
+                <td class="num" style="color:#0369a1">${r.potential}</td>
+                <td class="num" style="color:#15803d">${r.closing}</td>
+                <td class="num">${money(r.closingAmt)}</td>
+              </tr>`;
+            }).join("") || `<tr><td colspan="7"><div class="empty-state">${range.incomplete ? "請先套用日期範圍" : "呢段期間未有 Partner Lead 數據"}</div></td></tr>`}
+          </tbody>
+          ${rows.length ? `<tfoot><tr>
+            <td>合計（${rows.length} 個 Partner）</td>
+            <td class="num">${totals.lead}</td>
+            <td class="num" style="color:#9f1239">${totals.dq}</td>
+            <td class="num">${totals.lead ? dqRate + "%" : "—"}</td>
+            <td class="num" style="color:#0369a1">${totals.potential}</td>
+            <td class="num" style="color:#15803d">${totals.closing}</td>
+            <td class="num">${money(totals.closingAmt)}</td>
+          </tr></tfoot>` : ""}
+        </table></div>
+        <p class="muted" style="margin-top:8px;font-size:.72rem">LEAD＝期間新建案件 · DQ＝Disqualified · POTENTIAL＝有跟進機會／報價或之後階段 · CLOSING＝期間確認簽單</p>
+      `;
+      syncPartnerPerfUi();
+      bindPartnerPerfControls();
+    }
+
+    function bindPartnerPerfControls() {
+      const seg = document.getElementById("partnerPerfSeg");
+      if (!seg || seg.dataset.bound === "1") {
+        // rebind each render because innerHTML replaces nodes
+      }
+      document.querySelectorAll("#partnerPerfSeg button").forEach((btn) => {
+        btn.onclick = () => {
+          partnerPerfPeriod = btn.dataset.partnerPeriod || "month";
+          localStorage.setItem("crm_partner_perf_period", partnerPerfPeriod);
+          if (partnerPerfPeriod !== "custom") renderDashboard();
+          else {
+            syncPartnerPerfUi();
+          }
+        };
+      });
+      const apply = document.getElementById("partnerPerfApply");
+      if (apply) {
+        apply.onclick = () => {
+          partnerPerfFrom = document.getElementById("partnerPerfFrom").value || "";
+          partnerPerfTo = document.getElementById("partnerPerfTo").value || "";
+          localStorage.setItem("crm_partner_perf_from", partnerPerfFrom);
+          localStorage.setItem("crm_partner_perf_to", partnerPerfTo);
+          partnerPerfPeriod = "custom";
+          localStorage.setItem("crm_partner_perf_period", "custom");
+          if (!partnerPerfFrom || !partnerPerfTo) {
+            toast("請選擇由日期同至日期");
+            return;
+          }
+          if (partnerPerfFrom > partnerPerfTo) {
+            toast("由日期唔可以晚過至日期");
+            return;
+          }
+          renderDashboard();
+        };
+      }
     }
 
     function renderGroupedMonthBars(months) {
