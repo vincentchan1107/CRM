@@ -1170,12 +1170,56 @@
       font-weight: 800;
       color: var(--ink);
     }
-    .radar-wrap {
-      display: flex;
-      justify-content: center;
-      margin-top: 8px;
+    .dots-wrap {
+      margin-top: 10px;
+      width: 100%;
     }
-    .radar-svg { width: min(100%, 260px); height: auto; display: block; }
+    .dots-svg { width: 100%; height: auto; display: block; }
+    .dot-matrix {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .dot-matrix-row {
+      display: grid;
+      grid-template-columns: minmax(64px, 88px) 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .dot-matrix-row .name {
+      font-size: .76rem;
+      font-weight: 700;
+      color: var(--ink-soft);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dot-matrix-row .count {
+      font-size: .78rem;
+      font-weight: 800;
+      color: var(--ink);
+      min-width: 2ch;
+      text-align: right;
+    }
+    .dot-cells {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+      min-height: 14px;
+    }
+    .dot-cells i {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      background: linear-gradient(135deg, #8b6fff, #6b46fe);
+      box-shadow: 0 2px 6px rgba(107, 70, 254, .22);
+    }
+    .dot-cells i.empty {
+      background: #ebe6f4;
+      box-shadow: none;
+    }
     .compare-list { margin-top: 8px; display: grid; gap: 10px; }
     .compare-item { }
     .compare-item .cname {
@@ -2350,14 +2394,19 @@
 
     const DASH_CHART_TYPES = [
       { id: "bar", label: "棒圖" },
-      { id: "radar", label: "雷達圖" },
+      { id: "dots", label: "點陣圖" },
       { id: "compare", label: "對比圖" },
     ];
     const DASH_CHART_DEFAULTS = { months: "bar", stage: "bar", sales: "bar", funnel: "bar" };
     function loadDashChartTypes() {
       try {
         const raw = JSON.parse(localStorage.getItem("crm_dash_chart_types") || "{}");
-        return { ...DASH_CHART_DEFAULTS, ...raw };
+        const merged = { ...DASH_CHART_DEFAULTS, ...raw };
+        // migrate old radar preference → dots
+        Object.keys(merged).forEach((k) => {
+          if (merged[k] === "radar") merged[k] = "dots";
+        });
+        return merged;
       } catch {
         return { ...DASH_CHART_DEFAULTS };
       }
@@ -2401,41 +2450,54 @@
       });
     }
 
-    function renderRadarSvg(items, { size = 240, valueKey = "value", labelKey = "label", color = "#6b46fe" } = {}) {
-      const n = Math.max(items.length, 3);
-      const cx = size / 2, cy = size / 2, R = size * 0.34;
+    function renderDotPlot(items, { valueKey = "value", labelKey = "label", color = "#6b46fe", height = 180 } = {}) {
+      const n = Math.max(items.length, 1);
+      const W = Math.max(280, n * 48);
+      const H = height;
+      const padL = 36, padR = 12, padT = 16, padB = 36;
       const maxV = Math.max(1, ...items.map((it) => Number(it[valueKey]) || 0));
-      const angleAt = (i) => (-Math.PI / 2) + (i * 2 * Math.PI) / n;
-      const pt = (i, r) => {
-        const a = angleAt(i);
-        return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
-      };
-      const rings = [0.33, 0.66, 1].map((t) => {
-        const pts = Array.from({ length: n }, (_, i) => pt(i, R * t).join(",")).join(" ");
-        return `<polygon points="${pts}" fill="none" stroke="#e8e2f5" stroke-width="1"/>`;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+      const xAt = (i) => padL + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+      const yAt = (v) => padT + plotH - ((Number(v) || 0) / maxV) * plotH;
+      const grid = [0, 0.25, 0.5, 0.75, 1].map((t) => {
+        const y = padT + plotH * (1 - t);
+        const val = Math.round(maxV * t);
+        return `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#ebe6f4" stroke-width="1"/>
+          <text x="${padL - 6}" y="${y}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="#9a93ad" font-weight="700">${val}</text>`;
       }).join("");
-      const spokes = Array.from({ length: n }, (_, i) => {
-        const [x, y] = pt(i, R);
-        return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#ebe6f4" stroke-width="1"/>`;
-      }).join("");
-      const dataPts = items.map((it, i) => {
-        const r = ((Number(it[valueKey]) || 0) / maxV) * R;
-        return pt(i, r).join(",");
-      }).join(" ");
       const labels = items.map((it, i) => {
-        const [x, y] = pt(i, R + 18);
-        return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-size="10" font-weight="700" fill="#5a5470">${escapeHtml(String(it[labelKey] || ""))}</text>`;
+        const x = xAt(i);
+        return `<text x="${x}" y="${H - 10}" text-anchor="middle" font-size="10" font-weight="700" fill="#5a5470">${escapeHtml(String(it[labelKey] || ""))}</text>`;
       }).join("");
-      return `<div class="radar-wrap"><svg class="radar-svg" viewBox="0 0 ${size} ${size}" aria-hidden="true">
-        ${rings}${spokes}
-        <polygon points="${dataPts}" fill="${color}" fill-opacity=".22" stroke="${color}" stroke-width="2.2"/>
-        ${items.map((it, i) => {
-          const r = ((Number(it[valueKey]) || 0) / maxV) * R;
-          const [x, y] = pt(i, r);
-          return `<circle cx="${x}" cy="${y}" r="3" fill="${color}"/>`;
-        }).join("")}
-        ${labels}
+      const stems = items.map((it, i) => {
+        const x = xAt(i);
+        const y = yAt(it[valueKey]);
+        return `<line x1="${x}" y1="${padT + plotH}" x2="${x}" y2="${y}" stroke="${color}" stroke-opacity=".28" stroke-width="2"/>
+          <circle cx="${x}" cy="${y}" r="6" fill="${color}" stroke="#fff" stroke-width="2"/>
+          <text x="${x}" y="${y - 10}" text-anchor="middle" font-size="10" font-weight="800" fill="${color}">${Number(it[valueKey]) || 0}</text>`;
+      }).join("");
+      return `<div class="dots-wrap"><svg class="dots-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        ${grid}${stems}${labels}
       </svg></div>`;
+    }
+
+    function renderDotMatrix(items, { valueKey = "value", labelKey = "label", color = "#6b46fe", unit = 1 } = {}) {
+      const maxV = Math.max(1, ...items.map((it) => Number(it[valueKey]) || 0));
+      const step = unit || Math.max(1, Math.ceil(maxV / 24));
+      const slots = Math.max(1, Math.ceil(maxV / step));
+      return `<div class="dot-matrix">${items.map((it) => {
+        const v = Number(it[valueKey]) || 0;
+        const filled = Math.round(v / step);
+        const cells = Array.from({ length: slots }, (_, i) =>
+          `<i class="${i < filled ? "" : "empty"}" style="${i < filled ? `background:linear-gradient(135deg, ${it.bg || color}, ${it.color || color})` : ""}"></i>`
+        ).join("");
+        return `<div class="dot-matrix-row" title="${escapeHtml(String(it.fullLabel || it[labelKey]))}: ${v}">
+          <div class="name">${escapeHtml(String(it[labelKey]))}</div>
+          <div class="dot-cells">${cells || '<i class="empty"></i>'}</div>
+          <div class="count">${v}</div>
+        </div>`;
+      }).join("")}</div>`;
     }
 
     function renderVBars(items, { labelKey = "label", valueKey = "value", tone = "" } = {}) {
@@ -2529,8 +2591,8 @@
         month: m,
       }));
       let monthsBody = "";
-      if (monthsType === "radar") {
-        monthsBody = renderRadarSvg(monthItems, { labelKey: "label", valueKey: "value", color: "#6b46fe" });
+      if (monthsType === "dots") {
+        monthsBody = renderDotPlot(monthItems, { labelKey: "label", valueKey: "value", color: "#6b46fe" });
       } else if (monthsType === "compare") {
         monthsBody = renderCompareList(monthItems.map((it) => ({
           label: it.fullLabel,
@@ -2540,7 +2602,7 @@
           bLabel: "加權 ($)",
         })));
       } else if (monthsType === "bar" && months.length <= 8) {
-        // Keep expandable list for bar (most useful) when few months; also offer vertical bars via compare/radar
+        // Keep expandable list for bar (most useful) when few months
         monthsBody = months.map((m) => {
           const width = Math.max(4, (m.total / Math.max(maxAmt, 1)) * 100);
           const breakdown = m.list.length
@@ -2605,10 +2667,8 @@
         bLabel: "佔比%",
       }));
       let stageBody = "";
-      if (stageType === "radar") {
-        stageBody = renderRadarSvg(stageItems.filter((s) => s.value > 0).concat(stageItems.filter((s) => s.value === 0)).slice(0, 8), {
-          labelKey: "label", valueKey: "value", color: "#6b46fe",
-        });
+      if (stageType === "dots") {
+        stageBody = renderDotPlot(stageItems, { labelKey: "label", valueKey: "value", color: "#6b46fe", height: 200 });
       } else if (stageType === "compare") {
         stageBody = renderCompareList(stageItems.map((it) => ({
           label: it.fullLabel, a: it.a, b: it.b, aLabel: "宗數", bLabel: "佔比%",
@@ -2640,8 +2700,8 @@
         bg: "#c4b5fd",
       }));
       let salesBody = "";
-      if (salesType === "radar") {
-        salesBody = renderRadarSvg(salesItems, { labelKey: "label", valueKey: "value", color: "#ff8a4c" });
+      if (salesType === "dots") {
+        salesBody = renderDotPlot(salesItems, { labelKey: "label", valueKey: "value", color: "#ff8a4c", height: 190 });
       } else if (salesType === "compare") {
         salesBody = renderCompareList(salesItems.map((it) => ({
           label: it.label, a: it.a, b: it.b, aLabel: "Open cases", bLabel: "已會面",
@@ -2664,8 +2724,8 @@
       const top = Math.max(1, funnel[0].n);
       const funnelType = dashChartTypes.funnel || "bar";
       let funnelBody = "";
-      if (funnelType === "radar") {
-        funnelBody = renderRadarSvg(funnel.map((f) => ({ label: f.short, value: f.n })), { color: "#27c281" });
+      if (funnelType === "dots") {
+        funnelBody = renderDotPlot(funnel.map((f) => ({ label: f.short, value: f.n })), { color: "#27c281", height: 190 });
       } else if (funnelType === "compare") {
         funnelBody = renderCompareList(funnel.map((f) => ({
           label: f.label,
