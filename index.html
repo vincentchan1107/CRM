@@ -1097,30 +1097,6 @@
       margin-bottom: 2px;
     }
     .chart-head h2 { margin: 0; }
-    .chart-type-seg {
-      display: inline-flex;
-      flex-wrap: wrap;
-      gap: 3px;
-      padding: 3px;
-      background: #f0ecf8;
-      border-radius: 999px;
-      flex-shrink: 0;
-    }
-    .chart-type-seg button {
-      border: 0;
-      background: transparent;
-      color: var(--muted);
-      border-radius: 999px;
-      padding: 5px 10px;
-      font-size: .68rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .chart-type-seg button.active {
-      background: var(--accent);
-      color: #fff;
-      box-shadow: 0 6px 12px rgba(107, 70, 254, .25);
-    }
     .vbars {
       display: flex;
       align-items: flex-end;
@@ -1230,81 +1206,6 @@
       color: var(--ink-soft);
       text-align: center;
       line-height: 1.25;
-    }
-    .dots-wrap {
-      margin-top: 10px;
-      width: 100%;
-    }
-    .dots-svg { width: 100%; height: auto; display: block; }
-    .dot-matrix {
-      display: grid;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .dot-matrix-row {
-      display: grid;
-      grid-template-columns: minmax(64px, 88px) 1fr auto;
-      gap: 8px;
-      align-items: center;
-    }
-    .dot-matrix-row .name {
-      font-size: .76rem;
-      font-weight: 700;
-      color: var(--ink-soft);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .dot-matrix-row .count {
-      font-size: .78rem;
-      font-weight: 800;
-      color: var(--ink);
-      min-width: 2ch;
-      text-align: right;
-    }
-    .dot-cells {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      align-items: center;
-      min-height: 14px;
-    }
-    .dot-cells i {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      display: inline-block;
-      background: linear-gradient(135deg, #8b6fff, #6b46fe);
-      box-shadow: 0 2px 6px rgba(107, 70, 254, .22);
-    }
-    .dot-cells i.empty {
-      background: #ebe6f4;
-      box-shadow: none;
-    }
-    .compare-list { margin-top: 8px; display: grid; gap: 10px; }
-    .compare-item { }
-    .compare-item .cname {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      font-size: .76rem;
-      font-weight: 700;
-      color: var(--ink-soft);
-      margin-bottom: 4px;
-    }
-    .compare-bars {
-      display: grid;
-      gap: 4px;
-    }
-    .compare-bars .chart-bar { height: 9px; }
-    .compare-meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      font-size: .66rem;
-      font-weight: 700;
-      color: var(--muted);
-      margin-top: 3px;
     }
     .month-row {
       margin-top: 12px;
@@ -2499,112 +2400,13 @@
         }).join("")}</div>`;
     }
 
-    const DASH_CHART_TYPES = [
-      { id: "bar", label: "棒圖" },
-      { id: "dots", label: "點陣圖" },
-      { id: "compare", label: "對比圖" },
-    ];
-    const DASH_CHART_DEFAULTS = { months: "bar", stage: "bar", sales: "bar", funnel: "bar" };
-    function loadDashChartTypes() {
-      try {
-        const raw = JSON.parse(localStorage.getItem("crm_dash_chart_types") || "{}");
-        const merged = { ...DASH_CHART_DEFAULTS, ...raw };
-        // migrate old radar preference → dots
-        Object.keys(merged).forEach((k) => {
-          if (merged[k] === "radar") merged[k] = "dots";
-        });
-        return merged;
-      } catch {
-        return { ...DASH_CHART_DEFAULTS };
-      }
-    }
-    let dashChartTypes = loadDashChartTypes();
-    function saveDashChartType(key, type) {
-      dashChartTypes[key] = type;
-      localStorage.setItem("crm_dash_chart_types", JSON.stringify(dashChartTypes));
-    }
-
-    function chartTypeSegHtml(chartKey) {
-      const cur = dashChartTypes[chartKey] || "bar";
-      return `<div class="chart-type-seg" data-chart-key="${chartKey}">
-        ${DASH_CHART_TYPES.map((t) =>
-          `<button type="button" data-chart-type="${t.id}" class="${t.id === cur ? "active" : ""}">${t.label}</button>`
-        ).join("")}
-      </div>`;
-    }
-
-    function chartHeadHtml(title, sub, chartKey) {
+    function chartHeadHtml(title, sub) {
       return `<div class="chart-head">
         <div>
           <h2>${escapeHtml(title)}</h2>
           <p class="muted" style="margin:4px 0 0">${escapeHtml(sub)}</p>
         </div>
-        ${chartTypeSegHtml(chartKey)}
       </div>`;
-    }
-
-    function bindChartTypeSegs(root) {
-      (root || document).querySelectorAll(".chart-type-seg").forEach((seg) => {
-        seg.onclick = (e) => {
-          const btn = e.target.closest("button[data-chart-type]");
-          if (!btn) return;
-          const key = seg.dataset.chartKey;
-          const type = btn.dataset.chartType;
-          if (!key || !type || dashChartTypes[key] === type) return;
-          saveDashChartType(key, type);
-          renderDashboard();
-        };
-      });
-    }
-
-    function renderDotPlot(items, { valueKey = "value", labelKey = "label", color = "#6b46fe", height = 180 } = {}) {
-      const n = Math.max(items.length, 1);
-      const W = Math.max(280, n * 48);
-      const H = height;
-      const padL = 36, padR = 12, padT = 16, padB = 36;
-      const maxV = Math.max(1, ...items.map((it) => Number(it[valueKey]) || 0));
-      const plotW = W - padL - padR;
-      const plotH = H - padT - padB;
-      const xAt = (i) => padL + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
-      const yAt = (v) => padT + plotH - ((Number(v) || 0) / maxV) * plotH;
-      const grid = [0, 0.25, 0.5, 0.75, 1].map((t) => {
-        const y = padT + plotH * (1 - t);
-        const val = Math.round(maxV * t);
-        return `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#ebe6f4" stroke-width="1"/>
-          <text x="${padL - 6}" y="${y}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="#9a93ad" font-weight="700">${val}</text>`;
-      }).join("");
-      const labels = items.map((it, i) => {
-        const x = xAt(i);
-        return `<text x="${x}" y="${H - 10}" text-anchor="middle" font-size="10" font-weight="700" fill="#5a5470">${escapeHtml(String(it[labelKey] || ""))}</text>`;
-      }).join("");
-      const stems = items.map((it, i) => {
-        const x = xAt(i);
-        const y = yAt(it[valueKey]);
-        return `<line x1="${x}" y1="${padT + plotH}" x2="${x}" y2="${y}" stroke="${color}" stroke-opacity=".28" stroke-width="2"/>
-          <circle cx="${x}" cy="${y}" r="6" fill="${color}" stroke="#fff" stroke-width="2"/>
-          <text x="${x}" y="${y - 10}" text-anchor="middle" font-size="10" font-weight="800" fill="${color}">${Number(it[valueKey]) || 0}</text>`;
-      }).join("");
-      return `<div class="dots-wrap"><svg class="dots-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-        ${grid}${stems}${labels}
-      </svg></div>`;
-    }
-
-    function renderDotMatrix(items, { valueKey = "value", labelKey = "label", color = "#6b46fe", unit = 1 } = {}) {
-      const maxV = Math.max(1, ...items.map((it) => Number(it[valueKey]) || 0));
-      const step = unit || Math.max(1, Math.ceil(maxV / 24));
-      const slots = Math.max(1, Math.ceil(maxV / step));
-      return `<div class="dot-matrix">${items.map((it) => {
-        const v = Number(it[valueKey]) || 0;
-        const filled = Math.round(v / step);
-        const cells = Array.from({ length: slots }, (_, i) =>
-          `<i class="${i < filled ? "" : "empty"}" style="${i < filled ? `background:linear-gradient(135deg, ${it.bg || color}, ${it.color || color})` : ""}"></i>`
-        ).join("");
-        return `<div class="dot-matrix-row" title="${escapeHtml(String(it.fullLabel || it[labelKey]))}: ${v}">
-          <div class="name">${escapeHtml(String(it[labelKey]))}</div>
-          <div class="dot-cells">${cells || '<i class="empty"></i>'}</div>
-          <div class="count">${v}</div>
-        </div>`;
-      }).join("")}</div>`;
     }
 
     function renderVBars(items, { labelKey = "label", valueKey = "value", tone = "" } = {}) {
@@ -2619,29 +2421,6 @@
           <div class="vlbl">${escapeHtml(String(it[labelKey]))}</div>
         </div>`;
       }).join("")}</div>`;
-    }
-
-    function renderCompareList(items) {
-      const maxA = Math.max(1, ...items.map((it) => Number(it.a) || 0));
-      const maxB = Math.max(1, ...items.map((it) => Number(it.b) || 0));
-      return `<div class="compare-list">
-        <div class="chart-legend">
-          <span><i style="background:#6b46fe"></i>${escapeHtml(items[0]?.aLabel || "指標 A")}</span>
-          <span><i style="background:#27c281"></i>${escapeHtml(items[0]?.bLabel || "指標 B")}</span>
-        </div>
-        ${items.map((it) => {
-          const wa = Math.max((Number(it.a) || 0) ? 4 : 0, ((Number(it.a) || 0) / maxA) * 100);
-          const wb = Math.max((Number(it.b) || 0) ? 4 : 0, ((Number(it.b) || 0) / maxB) * 100);
-          return `<div class="compare-item">
-            <div class="cname"><span>${escapeHtml(it.label)}</span><span>${it.a} / ${it.b}</span></div>
-            <div class="compare-bars">
-              <div class="chart-bar tone-purple"><i style="width:${wa}%"></i></div>
-              <div class="chart-bar tone-mint"><i style="width:${wb}%"></i></div>
-            </div>
-            <div class="compare-meta"><span>${escapeHtml(it.aLabel || "A")}: ${it.a}</span><span>${escapeHtml(it.bLabel || "B")}: ${it.b}</span></div>
-          </div>`;
-        }).join("")}
-      </div>`;
     }
 
     function renderHBars(items) {
@@ -2668,7 +2447,6 @@
             openDrawer(e.target.closest("[data-case-id]").dataset.caseId);
             return;
           }
-          if (e.target.closest(".chart-type-seg")) return;
           toggle();
         });
         row.addEventListener("keydown", (e) => {
@@ -2681,91 +2459,61 @@
     }
 
     function renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt }) {
-      // ---- Months closing ----
+      // ---- Months closing (棒圖 only) ----
       const monthsRoot = document.getElementById("dashMonths");
-      const monthsType = dashChartTypes.months || "bar";
-      const monthItems = months.map((m) => ({
-        label: m.label.replace(/^\d{4}年/, ""),
-        fullLabel: m.label,
-        value: m.targetCount || m.list.length,
-        a: m.targetCount || m.list.length,
-        b: m.closedCount || 0,
-        aLabel: "Target Closing",
-        bLabel: "Closing Case",
-        total: m.total,
-        weighted: m.weighted,
-        avg: m.avg,
-        month: m,
-      }));
-      let monthsBody = "";
-      if (monthsType === "dots") {
-        monthsBody = renderDotPlot(monthItems, { labelKey: "label", valueKey: "value", color: "#6b46fe" });
-      } else if (monthsType === "compare") {
-        monthsBody = renderCompareList(monthItems.map((it) => ({
-          label: it.fullLabel,
-          a: it.a,
-          b: it.b,
-          aLabel: "Target Closing",
-          bLabel: "Closing Case",
-        })));
-      } else {
-        // 棒圖：Target Closing vs Closing Case（預設六個月）
-        monthsBody = renderGroupedMonthBars(months);
-        // Optional expandable month details under the bars
-        monthsBody += months.map((m) => {
-          const width = Math.max(4, ((m.targetCount || 0) / Math.max(...months.map((x) => x.targetCount || 0), 1)) * 100);
-          const breakdownTarget = m.list.length
-            ? m.list.map((c) => {
-                const s = stageMeta(c.stage);
-                const fd = caseForecastDate(c);
-                return `<div class="breakdown-item" data-case-id="${c.id}">
-                  <div><strong>${escapeHtml((c.customerName || "").split("\n")[0])}</strong></div>
-                  <div><strong>${money(c.amount)}</strong></div>
-                  <div class="breakdown-meta">
-                    <span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span>
-                    <span>Target ${formatLocalDate(fd)}</span>
-                  </div>
-                </div>`;
-              }).join("")
-            : `<div class="breakdown-empty">呢個月未有 Target Closing</div>`;
-          const breakdownClosed = (m.closedList || []).length
-            ? m.closedList.map((c) => {
-                const s = stageMeta(c.stage);
-                const cd = caseClosingDate(c);
-                return `<div class="breakdown-item" data-case-id="${c.id}">
-                  <div><strong>${escapeHtml((c.customerName || "").split("\n")[0])}</strong></div>
-                  <div><strong>${money(c.amount)}</strong></div>
-                  <div class="breakdown-meta">
-                    <span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span>
-                    <span>Closed ${formatLocalDate(cd)}</span>
-                  </div>
-                </div>`;
-              }).join("")
-            : `<div class="breakdown-empty">呢個月未有 Closing Case</div>`;
-          return `<div class="month-row" data-month="${m.key}" role="button" tabindex="0" aria-expanded="false">
-            <div class="month-row-top">
-              <strong>${m.label}<span class="chev">▸</span></strong>
-              <span class="muted">Target ${m.targetCount || 0} · Closed ${m.closedCount || 0} · ${money(m.total)}</span>
-            </div>
-            <div class="bar"><i style="width:${width}%"></i></div>
-            <div class="muted" style="font-size:.7rem">加權預測 ${money(m.weighted)} · 機率 ${pct(m.avg)}</div>
-            <div class="month-breakdown">
-              <div class="eyebrow" style="margin-bottom:4px">Target Closing</div>
-              ${breakdownTarget}
-              <div class="eyebrow" style="margin:10px 0 4px">Closing Case</div>
-              ${breakdownClosed}
-            </div>
-          </div>`;
-        }).join("");
-      }
+      let monthsBody = renderGroupedMonthBars(months);
+      monthsBody += months.map((m) => {
+        const width = Math.max(4, ((m.targetCount || 0) / Math.max(...months.map((x) => x.targetCount || 0), 1)) * 100);
+        const breakdownTarget = m.list.length
+          ? m.list.map((c) => {
+              const s = stageMeta(c.stage);
+              const fd = caseForecastDate(c);
+              return `<div class="breakdown-item" data-case-id="${c.id}">
+                <div><strong>${escapeHtml((c.customerName || "").split("\n")[0])}</strong></div>
+                <div><strong>${money(c.amount)}</strong></div>
+                <div class="breakdown-meta">
+                  <span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span>
+                  <span>Target ${formatLocalDate(fd)}</span>
+                </div>
+              </div>`;
+            }).join("")
+          : `<div class="breakdown-empty">呢個月未有 Target Closing</div>`;
+        const breakdownClosed = (m.closedList || []).length
+          ? m.closedList.map((c) => {
+              const s = stageMeta(c.stage);
+              const cd = caseClosingDate(c);
+              return `<div class="breakdown-item" data-case-id="${c.id}">
+                <div><strong>${escapeHtml((c.customerName || "").split("\n")[0])}</strong></div>
+                <div><strong>${money(c.amount)}</strong></div>
+                <div class="breakdown-meta">
+                  <span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span>
+                  <span>Closed ${formatLocalDate(cd)}</span>
+                </div>
+              </div>`;
+            }).join("")
+          : `<div class="breakdown-empty">呢個月未有 Closing Case</div>`;
+        return `<div class="month-row" data-month="${m.key}" role="button" tabindex="0" aria-expanded="false">
+          <div class="month-row-top">
+            <strong>${m.label}<span class="chev">▸</span></strong>
+            <span class="muted">Target ${m.targetCount || 0} · Closed ${m.closedCount || 0} · ${money(m.total)}</span>
+          </div>
+          <div class="bar"><i style="width:${width}%"></i></div>
+          <div class="muted" style="font-size:.7rem">加權預測 ${money(m.weighted)} · 機率 ${pct(m.avg)}</div>
+          <div class="month-breakdown">
+            <div class="eyebrow" style="margin-bottom:4px">Target Closing</div>
+            ${breakdownTarget}
+            <div class="eyebrow" style="margin:10px 0 4px">Closing Case</div>
+            ${breakdownClosed}
+          </div>
+        </div>`;
+      }).join("");
       const targetSum = months.reduce((s, m) => s + (m.targetCount || 0), 0);
       const closedSum = months.reduce((s, m) => s + (m.closedCount || 0), 0);
       monthsRoot.innerHTML = chartHeadHtml(
         range.title,
-        `Target Closing vs Closing Case · Target ${targetSum} · Closed ${closedSum} · 跟進機會 ${followN}`,
-        "months"
+        `Target Closing vs Closing Case · Target ${targetSum} · Closed ${closedSum} · 跟進機會 ${followN}`
       ) + monthsBody;
-      if (monthsType === "bar") bindMonthRows(monthsRoot);
+      bindMonthRows(monthsRoot);
 
       // ---- Stage ----
       const stageCounts = STAGES.map((s) => ({
@@ -2773,30 +2521,15 @@
         n: cases.filter((c) => c.stage === s.id).length,
       }));
       const stageTotal = stageCounts.reduce((s, x) => s + x.n, 0) || 1;
-      const stageType = dashChartTypes.stage || "bar";
       const stageItems = stageCounts.map((s) => ({
         label: s.short,
         fullLabel: s.label,
         value: s.n,
         color: s.color,
         bg: s.bg,
-        a: s.n,
-        b: Math.round((s.n / stageTotal) * 100),
-        aLabel: "宗數",
-        bLabel: "佔比%",
       }));
-      let stageBody = "";
-      if (stageType === "dots") {
-        stageBody = renderDotPlot(stageItems, { labelKey: "label", valueKey: "value", color: "#6b46fe", height: 200 });
-      } else if (stageType === "compare") {
-        stageBody = renderCompareList(stageItems.map((it) => ({
-          label: it.fullLabel, a: it.a, b: it.b, aLabel: "宗數", bLabel: "佔比%",
-        })));
-      } else {
-        stageBody = renderHBars(stageItems);
-      }
       document.getElementById("dashChartStage").innerHTML =
-        chartHeadHtml("Stage Pipeline", `全部案件階段分佈 · 共 ${stageTotal} 宗`, "stage") + stageBody;
+        chartHeadHtml("Stage Pipeline", `全部案件階段分佈 · 共 ${stageTotal} 宗`) + renderHBars(stageItems);
 
       // ---- Sales ----
       const salesRows = COMPANY_SALES.map((name) => {
@@ -2805,31 +2538,16 @@
         const meets = list.filter((c) => c.meetingDone).length;
         return { name, n: list.length, weighted, meets };
       });
-      const salesType = dashChartTypes.sales || "bar";
       const salesItems = salesRows.map((r, idx) => ({
         label: r.name,
         value: r.n,
         tone: ["purple", "orange", "mint", "sky", "rose"][idx % 5],
         sub: `${money(r.weighted)} 加權 · 會面 ${r.meets}`,
-        a: r.n,
-        b: r.meets,
-        aLabel: "Open cases",
-        bLabel: "已會面",
         color: "#6b46fe",
         bg: "#c4b5fd",
       }));
-      let salesBody = "";
-      if (salesType === "dots") {
-        salesBody = renderDotPlot(salesItems, { labelKey: "label", valueKey: "value", color: "#ff8a4c", height: 190 });
-      } else if (salesType === "compare") {
-        salesBody = renderCompareList(salesItems.map((it) => ({
-          label: it.label, a: it.a, b: it.b, aLabel: "Open cases", bLabel: "已會面",
-        })));
-      } else {
-        salesBody = renderVBars(salesItems);
-      }
       document.getElementById("dashChartSales").innerHTML =
-        chartHeadHtml("銷售員 Pipeline", "本公司銷售員 open cases · 可切換圖表", "sales") + salesBody;
+        chartHeadHtml("銷售員 Pipeline", "本公司銷售員 open cases") + renderVBars(salesItems);
 
       // ---- Funnel ----
       const allN = cases.length;
@@ -2841,21 +2559,7 @@
         { label: "確認簽單", short: "簽單", n: cases.filter((c) => c.stage === "confirmation" || c.closeReason === "won").length, sub: `關閉 ${closed.length}`, color: "#27c281", bg: "#a7f3d0", width: 44 },
       ];
       const top = Math.max(1, funnel[0].n);
-      const funnelType = dashChartTypes.funnel || "bar";
-      let funnelBody = "";
-      if (funnelType === "dots") {
-        funnelBody = renderDotPlot(funnel.map((f) => ({ label: f.short, value: f.n })), { color: "#27c281", height: 190 });
-      } else if (funnelType === "compare") {
-        funnelBody = renderCompareList(funnel.map((f) => ({
-          label: f.label,
-          a: f.n,
-          b: Math.round((f.n / top) * 100),
-          aLabel: "宗數",
-          bLabel: "相對頂層%",
-        })));
-      } else {
-        // bar mode: classic funnel blocks
-        funnelBody = `<div class="funnel-stack">
+      const funnelBody = `<div class="funnel-stack">
           ${funnel.map((f) => {
             const rate = Math.round((f.n / top) * 100);
             return `<div class="funnel-step" style="width:${f.width}%;background:linear-gradient(135deg, ${f.bg}, ${f.color})">
@@ -2877,11 +2581,8 @@
           <span><i style="background:#ff6b9d"></i>報價</span>
           <span><i style="background:#27c281"></i>簽單</span>
         </div>`;
-      }
       document.getElementById("dashChartFunnel").innerHTML =
-        chartHeadHtml("轉換漏斗", `由 Lead 到簽單 · 所選期間 ${inRange.length} 宗`, "funnel") + funnelBody;
-
-      bindChartTypeSegs(document.getElementById("view-dashboard"));
+        chartHeadHtml("轉換漏斗", `由 Lead 到簽單 · 所選期間 ${inRange.length} 宗`) + funnelBody;
     }
 
     function renderBoardDash() {
