@@ -29,23 +29,34 @@ Raw：https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_a
 
 ## 在瀏覽器打開（GitHub）
 
-PR / 分支 Preview（無需自己 host）：
+正式站（只跟 `main`，merge 後先會更新）：
 
-- https://htmlpreview.github.io/?https://github.com/vincentchan1107/CRM/blob/cursor/crm-mobile-portal-backend-f9da/index.html
-- 或 raw：https://cdn.jsdelivr.net/gh/vincentchan1107/CRM@cursor/crm-mobile-portal-backend-f9da/index.html
+- https://vincentchan1107.github.io/CRM/
+
+最新分支 Preview（含 Log History／Dashboard 優化；無需自己 host）：
+
+- https://cdn.jsdelivr.net/gh/vincentchan1107/CRM@cursor/crm-dashboard-board-mgmt-optimize-f9da/index.html
+- 或 https://htmlpreview.github.io/?https://github.com/vincentchan1107/CRM/blob/cursor/crm-dashboard-board-mgmt-optimize-f9da/index.html
 
 本地：用瀏覽器直接開 `index.html`，或任意靜態 server。
+
+## 備份
+
+重大改版前快照：`backups/index.pre-optimize-20261025-103736.html`（可直接覆蓋返 `index.html` 還原）。
 
 ## 功能
 
 - **手機 Portal**：語音（Web Speech）／文字解析 → 客戶、Partner、系統、需求、數量、Budget
-- **Case Management**：首次會見 → 報價 → 跟進 → 最終階段 → 確認簽單 → 已關閉（DQ／失敗）
-- **列表**：details、target closing date、amount
-- **Dashboard**：可揀當月／3／6／12 個月或自訂日期嘅 closing 預測
+- **Case Management**：拖曳改 stage；篩選本公司銷售員／Partner／跟進機會；卡片顯示金額、約見、下次跟進
+- **列表**：欄位顯示／排序、批量改 stage／指派／跟進日、匯出 CSV／Excel
+- **Dashboard**：Closing 點擊鑽取開 case；銷售員／Partner 篩選；Target $／加權 Forecast／目標額
+- **會議／跟進**：逾期標示、今日約見置頂、完成會面一鍵寫 log＋推 stage、週／月曆、Webhook 提醒
+- **Log History**：自動記錄欄位變更（幾時、邊個、由咩改到咩）；可篩選類型／日期；案件詳情同步顯示
 - **資料庫管理**
-  - **客戶管理**：VISIT 次數、上次會議、下次跟進日期；逾期未跟進提示
-  - **Partner 管理**：Team Leader／Sales；近 1／3 個月交 case 數、DQ、Qualified
-  - **銷售員管理**：本公司 5 位（Vincent／Tim／Andrew／Kelly／Sophia）近 1／3 個月會面客人數、DQ、Qualified、成功簽單數與金額（唔係 Partner Sales）
+  - **客戶管理**：VISIT、最後聯絡渠道、下次跟進、重複公司名合併
+  - **Partner 管理**：DQ 率、貢獻金額排行；Team Leader 可編輯寫回 DB
+  - **銷售員管理**：每人 KPI（會面／Qualified／簽單宗數／轉換率）+ 每月 Closing 目標銀碼；本月達成率
+- **Dashboard**：銷售員目標 vs Closing／加權 Forecast 圖表與達成率表
 
 ## 設定
 

@@ -38,7 +38,10 @@
       --font-body: "IBM Plex Sans", "Noto Sans TC", sans-serif;
     }
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    html, body { min-height: 100%; }
+    @media (min-width: 901px) {
+      html, body { height: 100%; }
+    }
     body {
       margin: 0;
       min-height: 100%;
@@ -62,9 +65,6 @@
         radial-gradient(circle at 1px 1px, rgba(107, 70, 254, .12) 1px, transparent 0);
       background-size: 22px 22px;
     }
-    body.mode-board {
-      overflow: hidden;
-    }
     a { color: inherit; text-decoration: none; }
     button, input, select, textarea { font: inherit; }
     .hidden { display: none !important; }
@@ -72,9 +72,11 @@
     .app-shell {
       display: flex;
       min-height: 100%;
-      height: 100%;
       position: relative;
       z-index: 1;
+    }
+    @media (min-width: 901px) {
+      .app-shell { height: 100%; }
     }
     .sidebar {
       width: var(--sidebar-w);
@@ -307,14 +309,58 @@
       min-height: 0;
       overflow: auto;
     }
-    body.mode-board .app-main { overflow: hidden; }
+    body.mode-board {
+      overflow: hidden;
+    }
+    body.mode-board .app-main {
+      overflow: hidden;
+      min-height: 0;
+    }
     body.mode-board .wrap {
       max-width: none;
-      padding: 14px 16px 12px;
+      padding: 12px 14px 10px;
       display: flex;
       flex-direction: column;
+      flex: 1;
+      height: auto;
       min-height: 0;
       overflow: hidden;
+      box-sizing: border-box;
+    }
+    @media (max-width: 900px) {
+      html, body {
+        max-width: 100%;
+        height: 100%;
+      }
+      .app-shell,
+      .app-main,
+      .wrap {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+      body.mode-board,
+      body.mode-board .app-shell,
+      body.mode-board .app-main {
+        height: 100%;
+        max-height: 100dvh;
+        overflow: hidden;
+      }
+      body.mode-board .wrap {
+        max-width: 100%;
+        width: 100%;
+        padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+        flex: 1;
+        height: auto;
+        min-height: 0;
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+      #view-board {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
     }
     .sidebar-backdrop {
       display: none;
@@ -350,21 +396,41 @@
       .app-shell.sidebar-open-mobile .sidebar-backdrop { display: block; }
     }
     #view-board {
+      display: none;
+      width: 100%;
+      min-height: 0;
+    }
+    #view-board:not(.hidden) {
+      display: flex;
+      flex-direction: column;
       flex: 1;
       min-height: 0;
-      display: none;
-      flex-direction: column;
+      height: 100%;
     }
-    #view-board:not(.hidden) { display: flex; }
     .board-toolbar {
       display: flex;
       justify-content: space-between;
       gap: 10px;
       flex-wrap: wrap;
       align-items: end;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       flex-shrink: 0;
     }
+    .board-upper {
+      overflow: hidden;
+      transition: max-height .28s ease, opacity .2s ease, margin .2s ease;
+      max-height: 1200px;
+      opacity: 1;
+      margin-bottom: 4px;
+      flex-shrink: 0;
+    }
+    #view-board.upper-collapsed .board-upper {
+      max-height: 0;
+      opacity: 0;
+      margin: 0;
+      pointer-events: none;
+    }
+    #btnToggleBoardUpper { white-space: nowrap; }
     .board-toolbar-actions {
       display: flex;
       gap: 8px;
@@ -688,10 +754,12 @@
     .stage-filter label input { accent-color: var(--teal); }
     .kanban-shell {
       position: relative;
+      width: 100%;
       flex: 1;
       min-height: 0;
       display: flex;
       flex-direction: column;
+      margin-top: 6px;
     }
     .kanban-nav {
       display: flex;
@@ -822,16 +890,20 @@
     }
     .kanban {
       display: flex;
+      flex-direction: row;
+      align-items: stretch;
       gap: 12px;
       flex: 1;
+      width: 100%;
       min-height: 0;
       overflow-x: auto;
       overflow-y: hidden;
-      padding: 2px 2px 10px;
+      padding: 2px 2px 8px;
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: thin;
       scrollbar-color: #c9c6e8 transparent;
+      overscroll-behavior-x: contain;
     }
     .kanban::-webkit-scrollbar { height: 8px; }
     .kanban::-webkit-scrollbar-thumb {
@@ -840,36 +912,215 @@
     }
     .kanban::-webkit-scrollbar-track { background: transparent; }
     .col {
-      /* Exactly ~5 wider columns per viewport; scroll right for the rest */
       flex: 0 0 calc((100% - 48px) / 5);
       width: calc((100% - 48px) / 5);
       min-width: calc((100% - 48px) / 5);
       max-width: none;
       display: flex;
       flex-direction: column;
-      min-height: 0;
       height: 100%;
+      min-height: 0;
       background: #fff;
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 12px;
-      scroll-snap-align: start;
       box-shadow: var(--shadow);
+      box-sizing: border-box;
+      scroll-snap-align: start;
+    }
+    @media (max-width: 1100px) and (min-width: 901px) {
+      .col {
+        flex-basis: calc((100% - 36px) / 3.2);
+        width: calc((100% - 36px) / 3.2);
+        min-width: calc((100% - 36px) / 3.2);
+      }
     }
     @media (max-width: 900px) {
+      #view-board {
+        flex: 1;
+        height: auto;
+        min-height: 0;
+        display: none;
+        width: 100%;
+        max-width: 100%;
+      }
+      #view-board:not(.hidden) {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      .board-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        margin-bottom: 6px;
+        width: 100%;
+      }
+      .board-toolbar > div:first-child { width: 100%; }
+      .board-toolbar h1 { font-size: 1.2rem; }
+      .board-toolbar-actions {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 8px;
+        justify-content: stretch;
+        align-items: center;
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+      }
+      .board-search-wrap {
+        max-width: none;
+        width: 100%;
+        min-width: 0;
+      }
+      #boardSearch { font-size: 16px; /* avoid iOS zoom */ }
+      .board-filters {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        align-items: stretch;
+        width: 100%;
+        margin: 6px 0;
+      }
+      .board-filters label {
+        min-width: 0;
+        width: 100%;
+      }
+      .board-filters label:last-child {
+        grid-column: 1 / -1;
+      }
+      .board-filters select {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        font-size: 16px;
+        box-sizing: border-box;
+      }
+      .board-dash {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin: 6px 0;
+        width: 100%;
+        max-width: 100%;
+      }
+      .board-dash .stat {
+        min-width: 0;
+        width: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+      }
+      .board-dash .stat .label { font-size: .62rem; }
+      .board-dash .stat .value { font-size: 1.15rem; }
+      .board-dash .stat:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+      }
+      .stage-filter {
+        display: flex;
+        flex-wrap: wrap;
+        overflow: visible;
+        gap: 6px 8px;
+        padding: 10px;
+        margin-bottom: 8px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        background: rgba(255,255,255,.92);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+      }
+      .stage-filter > span:first-child {
+        flex: 1 1 100%;
+        width: 100%;
+        margin: 0 0 2px;
+      }
+      .stage-filter label {
+        flex: 1 1 calc(50% - 8px);
+        min-width: calc(50% - 8px);
+        max-width: 100%;
+        white-space: normal;
+        box-sizing: border-box;
+        font-size: .72rem;
+      }
+      .stage-filter .btn {
+        flex: 1 1 calc(50% - 8px);
+        min-width: calc(50% - 8px);
+      }
+      .card-case .card-meta-row {
+        gap: 6px 8px;
+      }
+      .card-case .card-meta-row span {
+        white-space: normal;
+      }
+      .kanban-shell {
+        flex: 1;
+        min-height: 0;
+        height: auto;
+        width: 100%;
+        max-width: 100%;
+      }
+      .kanban-nav { display: none; }
+      .kanban {
+        flex: 1;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        height: auto;
+        min-height: 0;
+        width: 100%;
+        max-width: 100%;
+        gap: 10px;
+        padding: 2px 2px 6px;
+        scroll-snap-type: x mandatory;
+        box-sizing: border-box;
+        -webkit-overflow-scrolling: touch;
+      }
       .col {
-        flex-basis: calc((100% - 24px) / 2.2);
-        width: calc((100% - 24px) / 2.2);
-        min-width: calc((100% - 24px) / 2.2);
+        flex: 0 0 min(78vw, 300px);
+        width: min(78vw, 300px);
+        min-width: min(78vw, 300px);
+        max-width: none;
+        height: 100%;
+        min-height: 0;
+        scroll-snap-align: start;
+        padding: 10px;
+        box-sizing: border-box;
+      }
+      .col-items {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        max-height: none;
+        min-height: 0;
+        padding-right: 2px;
+        width: 100%;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+      }
+      .col-empty {
+        height: auto;
+        min-height: 64px;
+        padding: 16px 10px;
+      }
+      .card-case {
+        cursor: pointer;
+        touch-action: pan-y;
+        -webkit-user-select: none;
+        user-select: none;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .board-hint-desktop { display: none !important; }
+      .board-hint-mobile { display: block !important; }
+      .topbar {
+        padding-left: 10px;
+        padding-right: 10px;
+        width: 100%;
+        box-sizing: border-box;
       }
     }
-    @media (max-width: 640px) {
-      .col {
-        flex-basis: 85vw;
-        width: 85vw;
-        min-width: 85vw;
-      }
-    }
+    .board-hint-mobile { display: none; }
     .col-head { flex-shrink: 0; margin-bottom: 6px; }
     .col-desc {
       color: var(--muted);
@@ -881,10 +1132,14 @@
     .col-items {
       flex: 1;
       min-height: 0;
+      overflow-x: hidden;
       overflow-y: auto;
       padding-right: 2px;
+      width: 100%;
+      -webkit-overflow-scrolling: touch;
       scrollbar-width: thin;
       scrollbar-color: #d4d1ee transparent;
+      overscroll-behavior: contain;
     }
     .col-items::-webkit-scrollbar { width: 6px; }
     .col-items::-webkit-scrollbar-thumb {
@@ -894,12 +1149,12 @@
     .col-empty {
       border: 1px dashed var(--line);
       border-radius: 12px;
-      padding: 28px 12px;
+      padding: 22px 12px;
       text-align: center;
       font-size: .72rem;
       color: var(--muted);
       height: 100%;
-      min-height: 120px;
+      min-height: 88px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -918,18 +1173,115 @@
     .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: var(--shadow); }
     .drawer-bg {
       position: fixed; inset: 0; background: rgba(31, 36, 48, .28); backdrop-filter: blur(4px);
-      display: flex; justify-content: center; align-items: center; z-index: 60;
+      display: flex; justify-content: center; align-items: center; z-index: 80;
       padding: 16px;
+      overscroll-behavior: contain;
+      width: 100%;
+      max-width: 100vw;
+      box-sizing: border-box;
     }
     .drawer {
       width: min(100%, 960px);
+      max-width: 100%;
       max-height: min(92vh, 880px);
       background: #fff;
+      overflow-x: hidden;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       padding: 20px 22px 18px;
       border-radius: 20px;
       box-shadow: 0 24px 60px rgba(31, 36, 48, .18);
       border: 1px solid var(--line);
+      box-sizing: border-box;
+      min-width: 0;
+    }
+    body.drawer-open {
+      overflow: hidden !important;
+      position: relative;
+    }
+    body.drawer-open .drawer {
+      touch-action: pan-y;
+      overscroll-behavior: contain;
+    }
+    .drawer .field,
+    .drawer .field input,
+    .drawer .field select,
+    .drawer .field textarea,
+    .drawer .row2,
+    .drawer .row3,
+    .drawer .modal-grid,
+    .drawer .modal-col,
+    .drawer .contact-grid,
+    .drawer .breakdown-item,
+    .drawer .modal-log-list {
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .drawer .field input,
+    .drawer .field select,
+    .drawer .field textarea {
+      width: 100%;
+    }
+    .drawer-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .drawer-head > div:first-child { min-width: 0; flex: 1; }
+    .drawer-head h2 {
+      font-size: 1.15rem;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      margin-top: 2px;
+    }
+    @media (max-width: 700px) {
+      .drawer-bg {
+        align-items: stretch;
+        justify-content: stretch;
+        padding: 0;
+        width: 100vw;
+        max-width: 100vw;
+        left: 0;
+        right: 0;
+      }
+      .drawer {
+        width: 100vw;
+        max-width: 100vw;
+        min-height: 100%;
+        max-height: 100%;
+        height: 100%;
+        border-radius: 0;
+        padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(88px + env(safe-area-inset-bottom, 0px));
+        margin: 0;
+      }
+      .drawer .row2,
+      .drawer .row3 {
+        grid-template-columns: 1fr !important;
+      }
+      .drawer .modal-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+      }
+      .drawer .check-row {
+        grid-template-columns: 1fr !important;
+      }
+      .modal-actions {
+        position: sticky;
+        bottom: 0;
+        margin-top: 12px;
+        background: #fff;
+        border-top: 1px solid var(--line);
+        padding: 12px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+        z-index: 2;
+      }
+      .modal-actions .btn {
+        min-width: 0;
+        flex: 1 1 calc(50% - 8px);
+      }
     }
     .modal-grid {
       display: grid;
@@ -1268,6 +1620,347 @@
       color: var(--muted);
       font-size: .75rem;
     }
+
+    .dash-filters, .board-filters, .cases-toolbar, .agenda-toolbar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin: 8px 0 4px;
+    }
+    .dash-filters label, .board-filters label, .cases-toolbar label, .agenda-toolbar label {
+      display: flex; flex-direction: column; gap: 4px;
+      font-size: .68rem; font-weight: 700; color: var(--muted);
+    }
+    .dash-filters select, .board-filters select, .cases-toolbar select,
+    .cases-toolbar input[type="search"], .board-filters select {
+      border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px;
+      background: #fff; font-size: .8rem; min-width: 120px;
+    }
+    .grouped-col { cursor: pointer; border-radius: 12px; padding: 4px 2px; transition: background .15s; }
+    .grouped-col:hover, .grouped-col.active { background: rgba(107,70,254,.08); }
+    .grouped-col .gnums { font-size: .62rem; }
+    .chart-row.clickable, .vbar-col.clickable { cursor: pointer; }
+    .chart-row.clickable:hover .chart-bar, .vbar-col.clickable:hover .vbar-track { outline: 2px solid rgba(107,70,254,.35); outline-offset: 2px; border-radius: 10px; }
+    .drill-panel {
+      margin-top: 10px; padding: 10px 12px; border-radius: 14px;
+      background: #f7f4fc; border: 1px solid #e4dff2;
+    }
+    .drill-panel .drill-head {
+      display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 8px;
+    }
+    .money-compare {
+      display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin: 10px 0 4px; width: 100%;
+    }
+    @media (max-width: 700px) { .money-compare { grid-template-columns: 1fr; } }
+    .money-compare .mc {
+      background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; min-width: 0;
+    }
+    .money-compare .mc .lbl { font-size: .68rem; font-weight: 700; color: var(--muted); }
+    .money-compare .mc .val { font-size: 1.05rem; font-weight: 800; margin-top: 2px; }
+    .money-compare .mc input {
+      width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: .85rem; font-weight: 700;
+    }
+    .card-case .card-meta-row {
+      display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 8px;
+      font-size: .7rem; color: var(--ink-soft); font-weight: 650;
+    }
+    .card-case .card-meta-row span { white-space: nowrap; }
+    .card-case.dragging { opacity: .55; }
+    .col.drag-over { background: rgba(107,70,254,.06); outline: 2px dashed rgba(107,70,254,.35); outline-offset: -4px; border-radius: 16px; }
+    .cases-bulkbar {
+      display: none; align-items: center; flex-wrap: wrap; gap: 8px;
+      margin: 0 0 10px; padding: 10px 12px; border-radius: 14px;
+      background: #efeefe; border: 1px solid #d8d4fb;
+    }
+    .cases-bulkbar.show { display: flex; }
+    .col-menu {
+      position: relative; display: inline-block;
+    }
+    .col-menu-panel {
+      position: absolute; right: 0; top: 110%; z-index: 20; min-width: 180px;
+      background: #fff; border: 1px solid var(--line); border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(40,20,80,.12); padding: 8px; display: none;
+    }
+    .col-menu.open .col-menu-panel { display: grid; gap: 4px; }
+    .col-menu-panel label {
+      display: flex; align-items: center; gap: 8px; font-size: .78rem; font-weight: 650; color: var(--ink-soft);
+      padding: 4px 6px; border-radius: 8px;
+    }
+    .col-menu-panel label:hover { background: #f7f4fc; }
+    th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+    th.sortable .sort-ind { opacity: .45; font-size: .7em; margin-left: 2px; }
+    th.sortable.sorted-asc .sort-ind, th.sortable.sorted-desc .sort-ind { opacity: 1; color: var(--accent); }
+    .empty-state, .loading-state {
+      text-align: center; padding: 36px 16px; color: var(--muted); font-weight: 650;
+    }
+    .loading-state::before {
+      content: ""; display: inline-block; width: 16px; height: 16px; margin-right: 8px;
+      border: 2px solid #d8d4fb; border-top-color: var(--accent); border-radius: 50%;
+      vertical-align: -3px; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    tr.agenda-overdue td { background: rgba(255, 80, 100, .07); }
+    tr.agenda-today-meet td { background: rgba(107, 70, 254, .06); }
+    tr.agenda-overdue td:first-child { box-shadow: inset 3px 0 0 #e11d48; }
+    tr.agenda-today-meet td:first-child { box-shadow: inset 3px 0 0 #6b46fe; }
+    .agenda-view-seg { margin-left: auto; }
+    .agenda-cal {
+      display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 6px; margin-top: 10px;
+    }
+    .agenda-cal .dow {
+      text-align: center; font-size: .68rem; font-weight: 800; color: var(--muted); padding: 4px;
+    }
+    .agenda-cal .day {
+      min-height: 88px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 6px;
+      font-size: .72rem;
+    }
+    .agenda-cal .day.out { opacity: .4; background: #f7f4fc; }
+    .agenda-cal .day.today { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(107,70,254,.25); }
+    .agenda-cal .day .dnum { font-weight: 800; margin-bottom: 4px; }
+    .agenda-cal .pill {
+      display: block; border-radius: 6px; padding: 2px 4px; margin-bottom: 3px;
+      font-size: .62rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+    }
+    .agenda-cal .pill.meet { background: #efeefe; color: #5b21b6; }
+    .agenda-cal .pill.follow { background: #ffedd5; color: #9a3412; }
+    .agenda-cal .pill.overdue { background: #ffe4e6; color: #9f1239; }
+    .webhook-box {
+      margin-top: 10px; padding: 12px; border-radius: 14px; background: #fff; border: 1px solid var(--line);
+    }
+    .webhook-box input[type="url"] {
+      width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: .8rem;
+    }
+
+
+    .log-item.change {
+      border-left: 3px solid var(--accent);
+      background: #f7f4fc;
+    }
+    .log-change-lines { margin-top: 4px; display: grid; gap: 3px; }
+    .log-change-lines .ch {
+      font-size: .74rem; font-weight: 650; color: var(--ink-soft);
+    }
+    .log-change-lines .ch b { color: var(--ink); }
+    .log-history-filters {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin: 8px 0 12px;
+    }
+    .log-history-filters label {
+      display: flex; flex-direction: column; gap: 4px;
+      font-size: .68rem; font-weight: 700; color: var(--muted);
+    }
+    .log-history-filters select, .log-history-filters input {
+      border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px;
+      background: #fff; font-size: .8rem; min-width: 120px;
+    }
+    .log-timeline { display: grid; gap: 10px; }
+    .log-card {
+      background: #fff; border: 1px solid var(--line); border-radius: 16px;
+      padding: 12px 14px; display: grid; gap: 6px;
+    }
+    .log-card.change { border-left: 4px solid var(--accent); }
+    .log-card .log-top {
+      display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center;
+    }
+    .log-card .log-meta { font-size: .72rem; color: var(--muted); font-weight: 650; }
+    .log-card .log-actor { font-size: .72rem; font-weight: 800; color: var(--accent); }
+
+
+    .sales-kpi-grid {
+      display: grid; gap: 12px; grid-template-columns: 1fr; margin: 12px 0;
+    }
+    @media (min-width: 960px) {
+      .sales-kpi-grid { grid-template-columns: 280px 1fr; }
+    }
+    .sales-kpi-nav {
+      background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 10px;
+      display: grid; gap: 6px; align-content: start;
+    }
+    .sales-kpi-nav button {
+      border: 0; background: transparent; text-align: left; padding: 10px 12px;
+      border-radius: 12px; font-weight: 750; cursor: pointer; color: var(--ink-soft);
+    }
+    .sales-kpi-nav button.active {
+      background: var(--accent); color: #fff;
+      box-shadow: 0 8px 18px rgba(107,70,254,.22);
+    }
+    .sales-kpi-nav button .sub {
+      display: block; font-size: .68rem; font-weight: 650; opacity: .85; margin-top: 2px;
+    }
+    .sales-kpi-panel {
+      background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px;
+    }
+    .kpi-form-grid {
+      display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      margin-top: 10px;
+    }
+    .kpi-form-grid label span { font-size: .68rem; font-weight: 700; color: var(--muted); }
+    .kpi-form-grid input {
+      width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+      font-size: .85rem; font-weight: 700; background: #fff;
+    }
+    .month-target-table input[type="number"] {
+      width: 100%; min-width: 110px; border: 1px solid var(--line); border-radius: 10px;
+      padding: 7px 8px; font-size: .8rem; font-weight: 700;
+    }
+    .year-plan-toolbar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
+      margin-top: 18px;
+    }
+    .year-plan-toolbar .left, .year-plan-toolbar .right {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    }
+    .year-plan-toolbar select, .year-plan-toolbar input[type="number"] {
+      border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px;
+      font-size: .8rem; font-weight: 700; background: #fff;
+    }
+    .year-plan-toolbar select { min-width: 110px; }
+    .year-plan-toolbar input[type="number"] { width: 140px; }
+    .year-summary {
+      display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 12px;
+    }
+    @media (max-width: 800px) { .year-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .year-summary .ys {
+      border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: #f7f4fc;
+    }
+    .year-summary .ys .lbl { font-size: .68rem; font-weight: 700; color: var(--muted); }
+    .year-summary .ys .val { font-size: 1.05rem; font-weight: 800; margin-top: 2px; }
+    .year-month-bars {
+      display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px;
+      width: 100%; min-height: 120px; margin-top: 12px; align-items: end;
+    }
+    @media (max-width: 700px) {
+      .year-month-bars { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    }
+    .year-month-bars .ymb {
+      min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 6px 2px; border-radius: 12px; background: rgba(247,244,252,.7);
+    }
+    .year-month-bars .ymb.current { outline: 2px solid #c4b5fd; background: #efeefe; }
+    .year-month-bars .ymb .pair {
+      display: flex; align-items: flex-end; justify-content: center; gap: 3px; height: 72px; width: 100%;
+    }
+    .year-month-bars .ymb .pair > span {
+      flex: 1 1 0; max-width: 14px; min-width: 6px; height: 100%; background: #efe8f8;
+      border-radius: 999px; display: flex; align-items: flex-end; overflow: hidden;
+    }
+    .year-month-bars .ymb .pair > span > i { display: block; width: 100%; min-height: 2px; border-radius: 999px; }
+    .year-month-bars .ymb .pair > span.t > i { background: linear-gradient(180deg, #8b6fff, #6b46fe); }
+    .year-month-bars .ymb .pair > span.a > i { background: linear-gradient(180deg, #5ee4b0, #27c281); }
+    .year-month-bars .ymb .m { font-size: .62rem; font-weight: 800; color: var(--ink-soft); }
+    .year-month-bars .ymb .p { font-size: .58rem; font-weight: 700; color: var(--muted); }
+    .year-fill-box {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-top: 10px;
+      padding: 10px 12px; border: 1px dashed var(--line); border-radius: 14px; background: #faf8ff;
+    }
+    .year-fill-box label { display: grid; gap: 4px; }
+    .year-fill-box label span { font-size: .68rem; font-weight: 700; color: var(--muted); }
+    .kpi-attain {
+      display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      margin-top: 12px;
+    }
+    .kpi-attain .ka {
+      border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: #f7f4fc;
+    }
+    .kpi-attain .ka .lbl { font-size: .68rem; font-weight: 700; color: var(--muted); }
+    .kpi-attain .ka .val { font-size: 1.05rem; font-weight: 800; margin-top: 2px; }
+    .kpi-attain .ka .bar { height: 7px; background: #ebe6f4; border-radius: 999px; margin-top: 8px; overflow: hidden; }
+    .kpi-attain .ka .bar > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #8b6fff, #6b46fe); }
+    .kpi-attain .ka.ok .bar > i { background: linear-gradient(90deg, #5ee4b0, #27c281); }
+    .kpi-attain .ka.warn .val { color: #9f1239; }
+    .dual-money-bars {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: stretch;
+      gap: 12px;
+      width: 100%;
+      min-height: 240px;
+      margin-top: 14px;
+      padding: 4px 0 0;
+      box-sizing: border-box;
+    }
+    @media (max-width: 700px) {
+      .dual-money-bars { flex-wrap: wrap; gap: 10px; }
+      .dual-money-col { flex: 1 1 calc(50% - 10px); min-width: calc(50% - 10px); }
+    }
+    .dual-money-col {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 12px 8px 10px;
+      border-radius: 16px;
+      background: rgba(247, 244, 252, .65);
+      box-sizing: border-box;
+    }
+    .dual-money-pair {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: clamp(6px, 1.4vw, 12px);
+      height: 160px;
+      width: 100%;
+      max-width: 160px;
+      margin: 0 auto;
+    }
+    .dual-money-pair .mbar {
+      flex: 1 1 0;
+      max-width: 32px;
+      min-width: 16px;
+      height: 100%;
+      background: #f0ecf8;
+      border-radius: 999px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .dual-money-pair .mbar > i { display: block; width: 100%; min-height: 3px; border-radius: 999px; }
+    .dual-money-pair .mbar.target > i { background: linear-gradient(180deg, #8b6fff, #6b46fe); }
+    .dual-money-pair .mbar.closed > i { background: linear-gradient(180deg, #5ee4b0, #27c281); }
+    .dual-money-pair .mbar.forecast > i { background: linear-gradient(180deg, #ffb072, #ff8a4c); }
+    .dual-money-col .mlbl {
+      font-size: .78rem; font-weight: 800; color: var(--ink-soft); text-align: center; width: 100%;
+    }
+    .dual-money-col .mnums {
+      font-size: .66rem; font-weight: 700; color: var(--muted); text-align: center; line-height: 1.35; width: 100%;
+    }
+    #dashChartSalesTarget { width: 100%; box-sizing: border-box; }
+    #dashChartSalesTarget .chart-legend {
+      width: 100%;
+      justify-content: flex-start;
+      gap: 10px 18px;
+      margin: 4px 0 2px;
+    }
+    #dashChartSalesTarget .table-wrap { width: 100%; overflow-x: auto; }
+    #dashChartSalesTarget .table-wrap table { width: 100%; min-width: 560px; }
+    #dashPartnerPerf { width: 100%; box-sizing: border-box; }
+    .partner-perf-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 10px 0 12px;
+      width: 100%;
+    }
+    @media (max-width: 700px) {
+      .partner-perf-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .partner-perf-summary .pps {
+      background: #f7f4fc;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      min-width: 0;
+    }
+    .partner-perf-summary .pps .lbl { font-size: .68rem; font-weight: 700; color: var(--muted); }
+    .partner-perf-summary .pps .val { font-size: 1.15rem; font-weight: 800; margin-top: 2px; }
+    .partner-perf-summary .pps.dq .val { color: #9f1239; }
+    .partner-perf-summary .pps.potential .val { color: #0369a1; }
+    .partner-perf-summary .pps.closing .val { color: #15803d; }
+    .partner-perf-table { width: 100%; min-width: 520px; }
+    .partner-perf-table th, .partner-perf-table td { white-space: nowrap; }
+    .partner-perf-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+    .partner-perf-table tfoot td { font-weight: 800; background: #f7f4fc; }
+
     .toast {
       position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
       background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 999px; font-size: .82rem; z-index: 80;
@@ -1358,6 +2051,7 @@
         <button data-view="cases"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span><span class="nav-label">列表</span></button>
         <button data-view="agenda"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></span><span class="nav-label">會議／跟進</span></button>
         <button data-view="mgmt"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><span class="nav-label">資料庫管理</span></button>
+        <button data-view="logs"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span class="nav-label">Log History</span></button>
         <button data-view="portal"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/></svg></span><span class="nav-label">手機 Portal</span></button>
       </nav>
     </aside>
@@ -1475,7 +2169,18 @@
           <button type="button" class="btn btn-teal btn-sm" id="dashApplyCustom">套用</button>
         </div>
       </div>
+      <div class="dash-filters" id="dashFilters">
+        <label>本公司銷售員
+          <select id="dashSalesFilter"><option value="all">全部</option></select>
+        </label>
+        <label>Partner
+          <select id="dashPartnerFilter"><option value="all">全部</option></select>
+        </label>
+        <button type="button" class="btn btn-ghost btn-sm" id="dashFilterReset">重設篩選</button>
+      </div>
       <div style="display:grid;gap:12px;grid-template-columns:1fr;margin-top:8px">
+        <div class="panel" id="dashPartnerPerf"></div>
+        <div class="panel" id="dashChartSalesTarget"></div>
         <div class="panel" id="dashMonths"></div>
         <div class="dash-charts" id="dashCharts">
           <div class="panel chart-panel" id="dashChartStage"></div>
@@ -1490,21 +2195,41 @@
       <div class="board-toolbar">
         <div>
           <h1>Case Management</h1>
+          <p class="muted board-hint-desktop" style="margin:4px 0 0;font-size:.75rem">左右拉睇更多 Status · 欄內上下拉睇所有 Case · 可拖曳改階段</p>
+          <p class="muted board-hint-mobile" style="margin:4px 0 0;font-size:.75rem">左右滑睇更多狀態 · 欄內上下拉睇所有 Case · 點卡片改詳情</p>
         </div>
         <div class="board-toolbar-actions">
           <div class="board-search-wrap">
             <input id="boardSearch" type="search" placeholder="搜尋公司名／聯絡人…" autocomplete="off" aria-autocomplete="list" aria-controls="boardSuggest" aria-expanded="false" />
             <div id="boardSuggest" class="board-suggest hidden" role="listbox"></div>
           </div>
+          <button class="btn btn-ghost btn-sm" id="btnToggleBoardUpper" type="button" aria-expanded="true" aria-controls="boardUpper">收起上方</button>
           <button class="btn btn-ghost btn-sm" id="btnRefreshBoard">重新整理</button>
         </div>
       </div>
-      <div class="board-dash" id="boardDash"></div>
-      <div class="stage-filter" id="stageFilter"></div>
+      <div class="board-upper" id="boardUpper">
+        <div class="board-filters" id="boardFilters">
+          <label>本公司銷售員
+            <select id="boardSalesFilter"><option value="all">全部</option></select>
+          </label>
+          <label>Partner
+            <select id="boardPartnerFilter"><option value="all">全部</option></select>
+          </label>
+          <label>跟進機會
+            <select id="boardFollowFilter">
+              <option value="all">全部</option>
+              <option value="yes">有跟進機會</option>
+              <option value="no">無跟進機會</option>
+            </select>
+          </label>
+        </div>
+        <div class="board-dash" id="boardDash"></div>
+        <div class="stage-filter" id="stageFilter"></div>
+      </div>
       <div class="kanban-shell">
         <div class="kanban-nav">
-          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanLeft" aria-label="向左">←</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanRight" aria-label="向右">→</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanLeft" aria-label="向左">← 較早狀態</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanRight" aria-label="向右">更多狀態 →</button>
         </div>
         <div class="kanban" id="kanban"></div>
       </div>
@@ -1514,15 +2239,32 @@
     <section id="view-cases" class="hidden">
       <div style="margin-bottom:12px">
         <h1>案件列表</h1>
-        <p class="muted">details、target closing date、case amount</p>
+        <p class="muted">可排序、顯示欄位、批量更新、匯出 CSV</p>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-        <input id="caseSearch" placeholder="搜尋客戶／partner／需求…" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff" />
-        <select id="caseStageFilter" style="border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff"></select>
+      <div class="cases-toolbar" id="casesToolbar">
+        <input id="caseSearch" type="search" placeholder="搜尋客戶／partner／需求…" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff" />
+        <select id="caseStageFilter"></select>
+        <select id="caseSalesFilter"><option value="all">全部銷售員</option></select>
+        <div class="col-menu" id="casesColMenu">
+          <button type="button" class="btn btn-ghost btn-sm" id="btnCasesCols">顯示欄位 ▾</button>
+          <div class="col-menu-panel" id="casesColPanel"></div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="btnExportCasesCsv">匯出 CSV</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="btnExportCasesXls">匯出 Excel</button>
       </div>
-      <div class="table-wrap"><table><thead><tr>
-        <th>公司／Case</th><th>Partner／House</th><th>系統</th><th>階段</th><th>約見</th><th>會面</th><th>跟進機會</th><th>操作</th>
-      </tr></thead><tbody id="casesBody"></tbody></table></div>
+      <div class="cases-bulkbar" id="casesBulkBar">
+        <strong id="casesBulkCount">已選 0</strong>
+        <select id="bulkStage"><option value="">改 Stage…</option></select>
+        <select id="bulkSales"><option value="">指派銷售員…</option></select>
+        <label style="flex-direction:row;align-items:center;gap:6px;font-size:.75rem">跟進日 <input type="date" id="bulkFollow" /></label>
+        <button type="button" class="btn btn-teal btn-sm" id="btnBulkApply">套用</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="btnBulkClear">取消選取</button>
+      </div>
+      <div id="casesStatus" class="loading-state hidden">載入中…</div>
+      <div class="table-wrap"><table id="casesTable">
+        <thead id="casesHead"></thead>
+        <tbody id="casesBody"></tbody>
+      </table></div>
     </section>
 
     <!-- DATABASE MANAGEMENT -->
@@ -1538,7 +2280,12 @@
         <strong>建議執行欄位升級 SQL</strong>
         <p class="muted" style="margin:8px 0">為啟用「下次跟進日期」、Team Leader、本公司銷售員（Vincent／Tim／Andrew／Kelly／Sophia）欄位，請在 Supabase SQL Editor Run：<code>supabase/mgmt_alter.sql</code></p>
         <p class="muted" style="margin:0 0 8px">Raw：<a href="https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql" target="_blank" rel="noopener">mgmt_alter.sql</a></p>
-        <button class="btn btn-teal btn-sm" id="btnCopyMgmtSql">複製升級 SQL</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-teal btn-sm" id="btnCopyMgmtSql">複製升級 SQL</button>
+          <button class="btn btn-ghost btn-sm" id="btnRecheckMgmtSchema">我已 Run，重新偵測</button>
+          <button class="btn btn-ghost btn-sm" id="btnOpenMgmtSql">開啟 Raw SQL</button>
+        </div>
+        <p class="muted" style="margin:8px 0 0;font-size:.72rem">靜態 HTML 無法直接代你 Run SQL；一鍵複製後到 Supabase SQL Editor 貼上即可。偵測成功後橫幅會自動收埋。</p>
       </div>
       <div class="mgmt-tabs" id="mgmtTabs">
         <button type="button" data-mgmt="customers" class="active">客戶管理</button>
@@ -1548,13 +2295,15 @@
 
       <div class="mgmt-panel active" id="mgmt-customers">
         <div id="customerOverdueAlert"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
           <input id="customerSearch" placeholder="搜尋公司／聯絡人／Sales…" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff" />
           <label style="display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;color:var(--muted)"><input type="checkbox" id="customerOnlyOverdue" /> 只睇逾期跟進</label>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnFindDupCustomers">搵重複公司名</button>
         </div>
+        <div id="customerMergeBox" class="hidden" style="margin-bottom:12px"></div>
         <div class="table-wrap"><table>
           <thead><tr>
-            <th>客戶公司</th><th>VISIT 次數</th><th>上次會議</th><th>下次跟進</th><th>狀態</th><th>Sales／Partner</th><th>操作</th>
+            <th>客戶公司</th><th>VISIT 次數</th><th>上次會議</th><th>最後聯絡渠道</th><th>下次跟進</th><th>狀態</th><th>Sales／Partner</th><th>操作</th>
           </tr></thead>
           <tbody id="customersBody"></tbody>
         </table></div>
@@ -1573,10 +2322,15 @@
 
       <div class="mgmt-panel" id="mgmt-sales">
         <div class="mgmt-stats" id="salesStats"></div>
-        <p class="muted" style="margin-bottom:10px;font-size:.78rem">本公司銷售員：Vincent／Tim／Andrew／Kelly／Sophia（唔係 Partner Sales）· 會面數依會面完成日期 · 成功簽單 = 確認簽單／won · 請喺案件詳情指派「本公司銷售員」</p>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">本公司銷售員：Vincent／Tim／Andrew／Kelly／Sophia · 可設計每人 KPI，並預先規劃未來每年 12 個月 Closing 目標同表現對照 · Dashboard 會顯示目標 vs 實際</p>
+        <div class="sales-kpi-grid">
+          <div class="sales-kpi-nav" id="salesKpiNav"></div>
+          <div class="sales-kpi-panel" id="salesKpiPanel"></div>
+        </div>
+        <div class="eyebrow" style="margin:16px 0 8px">團隊總覽</div>
         <div class="table-wrap"><table>
           <thead><tr>
-            <th>本公司銷售員</th><th>負責 Case</th><th>近 1 月會面客人</th><th>近 3 月會面客人</th><th>DQ</th><th>Qualified</th><th>成功簽單</th><th>簽單金額</th>
+            <th>本公司銷售員</th><th>本月目標</th><th>本月已 Closing</th><th>本月達成</th><th id="salesYearTargetHead">全年目標</th><th id="salesYearActualHead">全年已 Closing</th><th>Pipeline</th><th>加權預測</th><th>轉換率</th><th>近 1 月會面</th><th>成功簽單</th><th>簽單金額</th>
           </tr></thead>
           <tbody id="salesBody"></tbody>
         </table></div>
@@ -1603,15 +2357,59 @@
             <option value="all">全部銷售員</option>
           </select>
         </label>
+        <div class="seg agenda-view-seg" id="agendaViewSeg">
+          <button type="button" data-agenda-view="list" class="active">列表</button>
+          <button type="button" data-agenda-view="week">週曆</button>
+          <button type="button" data-agenda-view="month">月曆</button>
+        </div>
+      </div>
+      <div class="webhook-box" id="agendaWebhookBox">
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:end">
+          <div style="flex:1;min-width:220px">
+            <div class="eyebrow">每日提醒 Webhook</div>
+            <p class="muted" style="margin:4px 0 8px;font-size:.72rem">可貼 Telegram Bot／WhatsApp／Email webhook URL；開啟頁面時若有逾期會嘗試通知（瀏覽器亦會本地提示）</p>
+            <input type="url" id="agendaWebhookUrl" placeholder="https://hooks.example.com/…" />
+          </div>
+          <button type="button" class="btn btn-teal btn-sm" id="btnSendAgendaReminder">發送今日提醒</button>
+        </div>
       </div>
       <div class="mgmt-stats" id="agendaStats" style="margin-top:4px"></div>
       <div id="agendaAlert"></div>
-      <div class="table-wrap" style="margin-top:8px"><table>
+      <div id="agendaCalendar" class="hidden"></div>
+      <div class="table-wrap" id="agendaTableWrap" style="margin-top:8px"><table>
         <thead><tr>
           <th>日期</th><th>類型</th><th>本公司銷售員</th><th>客戶</th><th>階段</th><th>Partner Sales</th><th>備註</th><th>操作</th>
         </tr></thead>
         <tbody id="agendaBody"></tbody>
       </table></div>
+    </section>
+
+    <!-- LOG HISTORY -->
+    <section id="view-logs" class="hidden">
+      <div style="margin-bottom:8px">
+        <h1>Log History</h1>
+        <p class="muted">查看幾時改咗咩：欄位變更、聯絡 log、會面記錄</p>
+      </div>
+      <div class="log-history-filters" id="logHistoryFilters">
+        <label>搜尋
+          <input type="search" id="logSearch" placeholder="客戶／內容／操作者…" style="min-width:200px" />
+        </label>
+        <label>類型
+          <select id="logTypeFilter">
+            <option value="all">全部</option>
+            <option value="field_change">欄位變更</option>
+            <option value="activity">聯絡／會面 Log</option>
+          </select>
+        </label>
+        <label>由日期<input type="date" id="logFrom" /></label>
+        <label>至日期<input type="date" id="logTo" /></label>
+        <label>操作者名稱
+          <input type="text" id="logActorName" placeholder="ADMIN" style="min-width:120px" />
+        </label>
+        <button type="button" class="btn btn-ghost btn-sm" id="btnRefreshLogs">重新整理</button>
+      </div>
+      <div class="mgmt-stats" id="logStats"></div>
+      <div id="logHistoryList" class="log-timeline"></div>
     </section>
   </main>
     </div>
@@ -1641,6 +2439,7 @@
     // 本公司銷售員（唔係 Partner / Ricoh Sales）
     const COMPANY_SALES = ["Vincent", "Tim", "Andrew", "Kelly", "Sophia"];
     const LOG_TYPES = [
+      { id: "field_change", label: "欄位變更" },
       { id: "call_attempt", label: "致電／聯絡" },
       { id: "call_no_answer", label: "聯絡不到／無人接" },
       { id: "appointment", label: "約會面" },
@@ -1678,6 +2477,285 @@
     let agendaFrom = localStorage.getItem("crm_agenda_from") || "";
     let agendaTo = localStorage.getItem("crm_agenda_to") || "";
     let agendaSalesFilter = localStorage.getItem("crm_agenda_sales") || "all";
+    let agendaView = localStorage.getItem("crm_agenda_view") || "list";
+    let dashSalesFilter = localStorage.getItem("crm_dash_sales") || "all";
+    let dashPartnerFilter = localStorage.getItem("crm_dash_partner") || "all";
+    let boardSalesFilter = localStorage.getItem("crm_board_sales") || "all";
+    let boardPartnerFilter = localStorage.getItem("crm_board_partner") || "all";
+    let boardFollowFilter = localStorage.getItem("crm_board_follow") || "all";
+    let casesSort = (() => { try { return JSON.parse(localStorage.getItem("crm_cases_sort") || '{"key":"customer","dir":"asc"}'); } catch { return { key: "customer", dir: "asc" }; } })();
+    let casesVisibleCols = (() => { try { return JSON.parse(localStorage.getItem("crm_cases_cols") || "null"); } catch { return null; } })();
+    let casesSelected = new Set();
+    let casesLoading = false;
+    let dashDrill = null;
+    const CASES_COL_DEFS = [
+      { id: "select", label: "", always: true },
+      { id: "customer", label: "公司／Case", sort: "customer" },
+      { id: "partner", label: "Partner／House", sort: "partner" },
+      { id: "sales", label: "本公司銷售", sort: "sales" },
+      { id: "systems", label: "系統" },
+      { id: "stage", label: "階段", sort: "stage" },
+      { id: "amount", label: "金額", sort: "amount" },
+      { id: "target", label: "Target Closing", sort: "target" },
+      { id: "appt", label: "約見", sort: "appt" },
+      { id: "meeting", label: "會面" },
+      { id: "follow", label: "跟進機會" },
+      { id: "nextFollow", label: "下次跟進", sort: "nextFollow" },
+      { id: "actions", label: "操作", always: true },
+    ];
+    if (!Array.isArray(casesVisibleCols) || !casesVisibleCols.length) {
+      casesVisibleCols = CASES_COL_DEFS.filter((c) => c.id !== "select").map((c) => c.id);
+    }
+    function loadMonthlyTargets() {
+      try { return JSON.parse(localStorage.getItem("crm_month_targets") || "{}"); } catch { return {}; }
+    }
+    function saveMonthlyTarget(key, amount) {
+      const map = loadMonthlyTargets();
+      if (amount === "" || amount == null) delete map[key];
+      else map[key] = Number(amount) || 0;
+      localStorage.setItem("crm_month_targets", JSON.stringify(map));
+    }
+
+    const DEFAULT_SALES_KPI = {
+      meetTarget: 8,
+      qualifyTarget: 5,
+      closeCountTarget: 2,
+      conversionTarget: 25,
+    };
+    let salesKpiSelected = localStorage.getItem("crm_sales_kpi_selected") || COMPANY_SALES[0];
+    let salesKpiYear = Number(localStorage.getItem("crm_sales_kpi_year")) || new Date().getFullYear();
+
+    function loadSalesPlans() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("crm_sales_plans") || "{}");
+        const out = {};
+        for (const name of COMPANY_SALES) {
+          const src = raw[name] || {};
+          out[name] = {
+            kpi: { ...DEFAULT_SALES_KPI, ...(src.kpi || {}) },
+            months: { ...(src.months || {}) },
+          };
+        }
+        return out;
+      } catch {
+        const out = {};
+        COMPANY_SALES.forEach((n) => { out[n] = { kpi: { ...DEFAULT_SALES_KPI }, months: {} }; });
+        return out;
+      }
+    }
+    function saveSalesPlans(plans) {
+      localStorage.setItem("crm_sales_plans", JSON.stringify(plans));
+    }
+    function getSalesPlan(name) {
+      return loadSalesPlans()[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+    }
+    function setSalesKpi(name, kpi) {
+      const plans = loadSalesPlans();
+      plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+      plans[name].kpi = { ...DEFAULT_SALES_KPI, ...kpi };
+      saveSalesPlans(plans);
+    }
+    function setSalesMonthClosingTarget(name, ym, amount) {
+      const plans = loadSalesPlans();
+      plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+      if (amount === "" || amount == null) {
+        const cur = { ...(plans[name].months[ym] || {}) };
+        delete cur.closingTarget;
+        if (Object.keys(cur).length) plans[name].months[ym] = cur;
+        else delete plans[name].months[ym];
+      } else {
+        plans[name].months[ym] = {
+          ...(plans[name].months[ym] || {}),
+          closingTarget: Number(amount) || 0,
+        };
+      }
+      saveSalesPlans(plans);
+    }
+    function monthKeyFromDate(d) {
+      if (!d || Number.isNaN(d.getTime())) return "";
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    }
+    function currentMonthKey() {
+      return monthKeyFromDate(new Date());
+    }
+    function listMonthKeys(fromYm, count = 6) {
+      const [y0, m0] = (fromYm || currentMonthKey()).split("-").map(Number);
+      const out = [];
+      for (let i = 0; i < count; i++) {
+        const dt = new Date(y0, m0 - 1 + i, 1);
+        out.push({
+          key: monthKeyFromDate(dt),
+          label: `${dt.getFullYear()}年${dt.getMonth() + 1}月`,
+          start: new Date(dt.getFullYear(), dt.getMonth(), 1),
+          end: endOfDay(new Date(dt.getFullYear(), dt.getMonth() + 1, 0)),
+        });
+      }
+      return out;
+    }
+    function availableSalesYears() {
+      const nowY = new Date().getFullYear();
+      const years = new Set();
+      for (let y = nowY - 1; y <= nowY + 5; y++) years.add(y);
+      if (salesKpiYear) years.add(Number(salesKpiYear));
+      const plans = loadSalesPlans();
+      for (const name of COMPANY_SALES) {
+        Object.keys(plans[name]?.months || {}).forEach((k) => {
+          const y = Number(String(k).slice(0, 4));
+          if (y >= 2000 && y <= 2100) years.add(y);
+        });
+      }
+      return [...years].sort((a, b) => a - b);
+    }
+    function listYearMonths(year) {
+      const y = Number(year) || new Date().getFullYear();
+      return Array.from({ length: 12 }, (_, i) => {
+        const start = new Date(y, i, 1);
+        return {
+          key: monthKeyFromDate(start),
+          month: i + 1,
+          short: `${i + 1}月`,
+          label: `${y}年${i + 1}月`,
+          start,
+          end: endOfDay(new Date(y, i + 1, 0)),
+        };
+      });
+    }
+    function salesYearClosingTargetSum(name, year) {
+      return listYearMonths(year).reduce((s, m) => s + (Number(getSalesPlan(name).months[m.key]?.closingTarget) || 0), 0);
+    }
+    function salesYearClosedAmount(name, year) {
+      return listYearMonths(year).reduce((s, m) => s + salesClosedAmountInRange(name, m.start, m.end), 0);
+    }
+    function setSalesYearMonthsBulk(name, year, amountByMonth /* array length 12 */) {
+      const plans = loadSalesPlans();
+      plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+      listYearMonths(year).forEach((m, idx) => {
+        const amount = amountByMonth[idx];
+        if (amount === "" || amount == null) delete plans[name].months[m.key];
+        else plans[name].months[m.key] = {
+          ...(plans[name].months[m.key] || {}),
+          closingTarget: Number(amount) || 0,
+        };
+      });
+      saveSalesPlans(plans);
+    }
+    function copySalesYearTargets(name, fromYear, toYear) {
+      if (fromYear === toYear) return false;
+      const plans = loadSalesPlans();
+      plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+      listYearMonths(fromYear).forEach((m, idx) => {
+        const src = Number(plans[name].months[m.key]?.closingTarget);
+        const dest = listYearMonths(toYear)[idx];
+        if (!src && src !== 0) delete plans[name].months[dest.key];
+        else plans[name].months[dest.key] = {
+          ...(plans[name].months[dest.key] || {}),
+          closingTarget: src || 0,
+        };
+      });
+      saveSalesPlans(plans);
+      return true;
+    }
+    function salesClosedAmountInRange(name, from, to) {
+      return cases.filter((c) => {
+        if (normalizeCompanySales(c.companySales) !== name) return false;
+        const d = caseClosingDate(c);
+        if (!d) return false;
+        return d >= from && d <= to;
+      }).reduce((s, c) => s + (Number(c.amount) || 0), 0);
+    }
+    function salesClosedCountInRange(name, from, to) {
+      return cases.filter((c) => {
+        if (normalizeCompanySales(c.companySales) !== name) return false;
+        const d = caseClosingDate(c);
+        if (!d) return false;
+        return d >= from && d <= to;
+      }).length;
+    }
+    function salesMeetCountInRange(name, from, to) {
+      const set = new Set();
+      for (const c of cases) {
+        if (normalizeCompanySales(c.companySales) !== name) continue;
+        for (const md of meetingDatesForCase(c)) {
+          if (md >= from && md <= to) set.add(companyKey(c) + "|" + formatLocalDate(md));
+        }
+      }
+      return set.size;
+    }
+    function salesQualifyCountInRange(name, from, to) {
+      // approximate: cases that became qualified activity in range — use meeting done or follow-up or stage advanced with updated_at
+      return cases.filter((c) => {
+        if (normalizeCompanySales(c.companySales) !== name) return false;
+        if (!isQualified(c)) return false;
+        const d = c.appointmentAt ? new Date(c.appointmentAt) : (c.updatedAt ? new Date(c.updatedAt) : null);
+        if (!d || Number.isNaN(d.getTime())) return false;
+        return d >= from && d <= to;
+      }).length;
+    }
+    function salesClosingTargetSum(name, monthKeys) {
+      const plan = getSalesPlan(name);
+      return monthKeys.reduce((s, k) => s + (Number(plan.months[k]?.closingTarget) || 0), 0);
+    }
+    function attainPct(actual, target) {
+      if (!target) return actual ? 100 : 0;
+      return Math.round((actual / target) * 100);
+    }
+
+    function partnerOptionsFromCases() {
+      const set = new Set(PARTNERS);
+      cases.forEach((c) => { if (c.partner) set.add(c.partner); });
+      return [...set].filter(Boolean).sort((a, b) => a.localeCompare(b, "zh-HK"));
+    }
+    function fillFilterSelect(id, cur, kind) {
+      const el = document.getElementById(id);
+      if (!el) return cur || "all";
+      if (kind === "sales") {
+        el.innerHTML = `<option value="all">全部</option>` +
+          COMPANY_SALES.map((n) => `<option value="${n}">${n}</option>`).join("") +
+          `<option value="未指派">未指派</option>`;
+      } else if (kind === "partner") {
+        el.innerHTML = `<option value="all">全部</option>` +
+          partnerOptionsFromCases().map((p) => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`).join("");
+      }
+      if ([...el.options].some((o) => o.value === cur)) el.value = cur;
+      else el.value = "all";
+      return el.value;
+    }
+    function caseMatchesDashFilters(c) {
+      if (dashSalesFilter && dashSalesFilter !== "all") {
+        const s = normalizeCompanySales(c.companySales) || "未指派";
+        if (s !== dashSalesFilter) return false;
+      }
+      if (dashPartnerFilter && dashPartnerFilter !== "all") {
+        if ((c.partner || "") !== dashPartnerFilter) return false;
+      }
+      return true;
+    }
+    function caseMatchesBoardFilters(c) {
+      if (boardSalesFilter && boardSalesFilter !== "all") {
+        const s = normalizeCompanySales(c.companySales) || "未指派";
+        if (s !== boardSalesFilter) return false;
+      }
+      if (boardPartnerFilter && boardPartnerFilter !== "all") {
+        if ((c.partner || "") !== boardPartnerFilter) return false;
+      }
+      if (boardFollowFilter === "yes" && !c.followUpOpportunity) return false;
+      if (boardFollowFilter === "no" && c.followUpOpportunity) return false;
+      return true;
+    }
+    function syncDashFilterUi() {
+      dashSalesFilter = fillFilterSelect("dashSalesFilter", dashSalesFilter, "sales");
+      dashPartnerFilter = fillFilterSelect("dashPartnerFilter", dashPartnerFilter, "partner");
+    }
+    function syncBoardFilterUi() {
+      boardSalesFilter = fillFilterSelect("boardSalesFilter", boardSalesFilter, "sales");
+      boardPartnerFilter = fillFilterSelect("boardPartnerFilter", boardPartnerFilter, "partner");
+      const ff = document.getElementById("boardFollowFilter");
+      if (ff) {
+        if ([...ff.options].some((o) => o.value === boardFollowFilter)) ff.value = boardFollowFilter;
+        else { ff.value = "all"; boardFollowFilter = "all"; }
+      }
+    }
+
     const FOLLOWUP_LS_KEY = "crm_followup_dates";
     const ALL_BOARD_STAGES = () => STAGES.map((s) => s.id);
     let visibleStages = loadVisibleStages();
@@ -1725,11 +2803,12 @@
       cases: "案件列表",
       agenda: "銷售員會議及 Case 跟進",
       mgmt: "資料庫管理",
+      logs: "Log History",
     };
 
     function showView(name) {
       if (name === "home") name = "dashboard";
-      ["home", "portal", "dashboard", "board", "cases", "agenda", "mgmt"].forEach((v) => {
+      ["home", "portal", "dashboard", "board", "cases", "agenda", "mgmt", "logs"].forEach((v) => {
         document.getElementById(`view-${v}`).classList.toggle("hidden", v !== name);
       });
       document.body.classList.toggle("mode-board", name === "board");
@@ -1742,6 +2821,7 @@
       if (name === "portal") initPortalForm();
       if (name === "agenda") renderAgenda();
       if (name === "mgmt") renderMgmt();
+      if (name === "logs") renderLogHistory();
       location.hash = (name === "dashboard" || name === "home") ? "" : name;
     }
 
@@ -1771,16 +2851,19 @@
     }
 
     async function loadCases() {
+      casesLoading = true;
       if (!(await checkDb())) {
         cases = [];
         contactsByCase = {};
         logsByCase = {};
+        casesLoading = false;
         return;
       }
       const { data, error } = await db.from("crm_cases").select("*").order("updated_at", { ascending: false });
       if (error) {
         toast("載入失敗：" + error.message);
         cases = [];
+        casesLoading = false;
         return;
       }
       cases = (data || []).map(fromRow);
@@ -1796,6 +2879,7 @@
       (logs || []).forEach((l) => {
         (logsByCase[l.case_id] ||= []).push(l);
       });
+      casesLoading = false;
     }
 
     function fromRow(r) {
@@ -2185,6 +3269,9 @@
     let dashPeriod = localStorage.getItem("crm_dash_period") || "6";
     let dashFrom = localStorage.getItem("crm_dash_from") || "";
     let dashTo = localStorage.getItem("crm_dash_to") || "";
+    let partnerPerfPeriod = localStorage.getItem("crm_partner_perf_period") || "month";
+    let partnerPerfFrom = localStorage.getItem("crm_partner_perf_from") || "";
+    let partnerPerfTo = localStorage.getItem("crm_partner_perf_to") || "";
 
     function parseLocalDate(raw) {
       if (!raw) return null;
@@ -2317,17 +3404,19 @@
 
     function renderDashboard() {
       syncDashPeriodUi();
-      const open = cases.filter((c) => c.stage !== "closed");
-      const closed = cases.filter((c) => c.stage === "closed");
+      syncDashFilterUi();
+      const filtered = cases.filter(caseMatchesDashFilters);
+      const open = filtered.filter((c) => c.stage !== "closed");
+      const closed = filtered.filter((c) => c.stage === "closed");
       const range = getDashRange();
       const inRange = open.filter((c) => {
         const d = caseForecastDate(c);
         if (!d) return false;
         return d >= range.from && d <= range.to;
       });
-      const apptN = cases.filter((c) => c.appointmentFlag || c.appointmentAt).length;
-      const meetN = cases.filter((c) => c.meetingDone).length;
-      const followN = cases.filter((c) => c.followUpOpportunity).length;
+      const apptN = filtered.filter((c) => c.appointmentFlag || c.appointmentAt).length;
+      const meetN = filtered.filter((c) => c.meetingDone).length;
+      const followN = filtered.filter((c) => c.followUpOpportunity).length;
       const rangeAmt = inRange.reduce((s, c) => s + (c.amount || 0), 0);
       const rangeWeighted = inRange.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
       const winHint = open.length ? `${Math.min(99, Math.round((meetN / Math.max(open.length, 1)) * 100))}%` : "";
@@ -2340,15 +3429,13 @@
 
       let maxAmt = 1;
       const months = range.months.map((m) => {
-        // Target closing: pipeline cases aiming to close in this month
-        const list = cases.filter((c) => {
+        const list = filtered.filter((c) => {
           if (c.stage === "closed" && c.closeReason !== "won") return false;
           const d = caseForecastDate(c);
           if (!d) return false;
           return d >= m.monthStart && d <= m.monthEnd;
         });
-        // Closing case: actually won / confirmation in this month
-        const closedList = cases.filter((c) => {
+        const closedList = filtered.filter((c) => {
           const d = caseClosingDate(c);
           if (!d) return false;
           return d >= m.monthStart && d <= m.monthEnd;
@@ -2369,46 +3456,283 @@
         };
       });
 
-      renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt });
+      renderDashPartnerPerf(filtered);
+      renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt, filtered });
+    }
+
+    function caseCreatedDate(c) {
+      if (!c?.createdAt) return null;
+      const d = parseLocalDate(String(c.createdAt).slice(0, 10));
+      if (d) return d;
+      const t = new Date(c.createdAt);
+      if (Number.isNaN(t.getTime())) return null;
+      return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    }
+
+    function caseEventDate(c) {
+      if (c?.updatedAt) {
+        const d = parseLocalDate(String(c.updatedAt).slice(0, 10));
+        if (d) return d;
+        const t = new Date(c.updatedAt);
+        if (!Number.isNaN(t.getTime())) return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+      }
+      return caseCreatedDate(c);
+    }
+
+    function getPartnerPerfRange() {
+      const now = new Date();
+      const thisStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const thisEnd = endOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+      if (partnerPerfPeriod === "custom") {
+        const from = parseLocalDate(partnerPerfFrom);
+        const to = parseLocalDate(partnerPerfTo);
+        if (from && to && from <= to) {
+          return { mode: "custom", from, to: endOfDay(to), title: `${partnerPerfFrom} 至 ${partnerPerfTo}` };
+        }
+        return { mode: "custom", from: thisStart, to: thisEnd, title: "請選擇由日期至日期後按「套用」", incomplete: true };
+      }
+      if (partnerPerfPeriod === "last") {
+        const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const to = endOfDay(new Date(now.getFullYear(), now.getMonth(), 0));
+        return { mode: "last", from, to, title: `${from.getFullYear()}年${from.getMonth() + 1}月（上月）` };
+      }
+      if (partnerPerfPeriod === "3") {
+        const from = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        return { mode: "3", from, to: thisEnd, title: "過去 3 個月（含本月）" };
+      }
+      return {
+        mode: "month",
+        from: thisStart,
+        to: thisEnd,
+        title: `${thisStart.getFullYear()}年${thisStart.getMonth() + 1}月（本月）`,
+      };
+    }
+
+    function isPotential(c) {
+      if (isDq(c) || isWon(c)) return false;
+      return !!c.followUpOpportunity || ["quotation", "follow_up", "final_stage"].includes(c.stage);
+    }
+
+    function buildPartnerPerfRows(pool, range) {
+      const map = new Map();
+      const ensure = (name) => {
+        if (!map.has(name)) map.set(name, { name, lead: 0, dq: 0, potential: 0, closing: 0, closingAmt: 0 });
+        return map.get(name);
+      };
+      for (const c of pool) {
+        const partner = (c.partner || "未分類").trim() || "未分類";
+        const row = ensure(partner);
+        const created = caseCreatedDate(c);
+        if (created && created >= range.from && created <= range.to) {
+          row.lead += 1;
+          if (isDq(c)) row.dq += 1;
+          if (isPotential(c)) row.potential += 1;
+        }
+        // DQ that happened in period even if created earlier
+        if (isDq(c)) {
+          const ev = caseEventDate(c);
+          if (ev && ev >= range.from && ev <= range.to && !(created && created >= range.from && created <= range.to)) {
+            row.dq += 1;
+          }
+        }
+        const closedOn = caseClosingDate(c);
+        if (closedOn && closedOn >= range.from && closedOn <= range.to) {
+          row.closing += 1;
+          row.closingAmt += Number(c.amount) || 0;
+        }
+      }
+      return [...map.values()]
+        .filter((r) => r.lead || r.dq || r.potential || r.closing)
+        .sort((a, b) => b.lead - a.lead || b.closing - a.closing || a.name.localeCompare(b.name, "zh-HK"));
+    }
+
+    function syncPartnerPerfUi() {
+      document.querySelectorAll("#partnerPerfSeg button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.partnerPeriod === partnerPerfPeriod);
+      });
+      const custom = document.getElementById("partnerPerfCustom");
+      if (custom) custom.classList.toggle("hidden", partnerPerfPeriod !== "custom");
+      if (partnerPerfFrom) {
+        const el = document.getElementById("partnerPerfFrom");
+        if (el) el.value = partnerPerfFrom;
+      }
+      if (partnerPerfTo) {
+        const el = document.getElementById("partnerPerfTo");
+        if (el) el.value = partnerPerfTo;
+      }
+    }
+
+    function renderDashPartnerPerf(pool) {
+      const root = document.getElementById("dashPartnerPerf");
+      if (!root) return;
+      const range = getPartnerPerfRange();
+      const rows = range.incomplete ? [] : buildPartnerPerfRows(pool || cases, range);
+      const totals = rows.reduce((acc, r) => {
+        acc.lead += r.lead;
+        acc.dq += r.dq;
+        acc.potential += r.potential;
+        acc.closing += r.closing;
+        acc.closingAmt += r.closingAmt;
+        return acc;
+      }, { lead: 0, dq: 0, potential: 0, closing: 0, closingAmt: 0 });
+      const dqRate = totals.lead ? Math.round((totals.dq / totals.lead) * 100) : 0;
+
+      root.innerHTML = `
+        ${chartHeadHtml("Partner 交 Lead 表現", "按 Partner 統計期間內交了多少 Lead、DQ、Potential 同 Closing")}
+        <div class="dash-period" style="margin:8px 0 0;padding:10px 12px">
+          <div class="seg" id="partnerPerfSeg">
+            <button type="button" data-partner-period="month">本月</button>
+            <button type="button" data-partner-period="last">上月</button>
+            <button type="button" data-partner-period="3">過去 3 個月</button>
+            <button type="button" data-partner-period="custom">日期由至</button>
+          </div>
+          <div class="custom-range${partnerPerfPeriod === "custom" ? "" : " hidden"}" id="partnerPerfCustom">
+            <label>由日期<input type="date" id="partnerPerfFrom" /></label>
+            <label>至日期<input type="date" id="partnerPerfTo" /></label>
+            <button type="button" class="btn btn-teal btn-sm" id="partnerPerfApply">套用</button>
+          </div>
+        </div>
+        <p class="muted" style="margin:8px 0 0;font-size:.75rem">${escapeHtml(range.title)}</p>
+        <div class="partner-perf-summary">
+          <div class="pps"><div class="lbl">LEAD</div><div class="val">${totals.lead}</div><div class="muted" style="font-size:.68rem">期間交入</div></div>
+          <div class="pps dq"><div class="lbl">DQ</div><div class="val">${totals.dq}</div><div class="muted" style="font-size:.68rem">${totals.lead ? `佔 Lead ${dqRate}%` : "—"}</div></div>
+          <div class="pps potential"><div class="lbl">POTENTIAL</div><div class="val">${totals.potential}</div><div class="muted" style="font-size:.68rem">跟進機會／報價+</div></div>
+          <div class="pps closing"><div class="lbl">CLOSING</div><div class="val">${totals.closing}</div><div class="muted" style="font-size:.68rem">${money(totals.closingAmt)}</div></div>
+        </div>
+        <div class="table-wrap"><table class="partner-perf-table">
+          <thead>
+            <tr>
+              <th>Partner</th>
+              <th class="num">LEAD</th>
+              <th class="num">DQ</th>
+              <th class="num">DQ 率</th>
+              <th class="num">POTENTIAL</th>
+              <th class="num">CLOSING</th>
+              <th class="num">Closing $</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((r) => {
+              const rate = r.lead ? Math.round((r.dq / r.lead) * 100) : 0;
+              return `<tr>
+                <td><strong>${escapeHtml(r.name)}</strong></td>
+                <td class="num">${r.lead}</td>
+                <td class="num" style="color:#9f1239">${r.dq}</td>
+                <td class="num" style="color:${!r.lead ? "var(--muted)" : (rate >= 40 ? "#9f1239" : "var(--ink)")}">${r.lead ? rate + "%" : "—"}</td>
+                <td class="num" style="color:#0369a1">${r.potential}</td>
+                <td class="num" style="color:#15803d">${r.closing}</td>
+                <td class="num">${money(r.closingAmt)}</td>
+              </tr>`;
+            }).join("") || `<tr><td colspan="7"><div class="empty-state">${range.incomplete ? "請先套用日期範圍" : "呢段期間未有 Partner Lead 數據"}</div></td></tr>`}
+          </tbody>
+          ${rows.length ? `<tfoot><tr>
+            <td>合計（${rows.length} 個 Partner）</td>
+            <td class="num">${totals.lead}</td>
+            <td class="num" style="color:#9f1239">${totals.dq}</td>
+            <td class="num">${totals.lead ? dqRate + "%" : "—"}</td>
+            <td class="num" style="color:#0369a1">${totals.potential}</td>
+            <td class="num" style="color:#15803d">${totals.closing}</td>
+            <td class="num">${money(totals.closingAmt)}</td>
+          </tr></tfoot>` : ""}
+        </table></div>
+        <p class="muted" style="margin-top:8px;font-size:.72rem">LEAD＝期間新建案件 · DQ＝Disqualified · POTENTIAL＝有跟進機會／報價或之後階段 · CLOSING＝期間確認簽單</p>
+      `;
+      syncPartnerPerfUi();
+      bindPartnerPerfControls();
+    }
+
+    function bindPartnerPerfControls() {
+      const seg = document.getElementById("partnerPerfSeg");
+      if (!seg || seg.dataset.bound === "1") {
+        // rebind each render because innerHTML replaces nodes
+      }
+      document.querySelectorAll("#partnerPerfSeg button").forEach((btn) => {
+        btn.onclick = () => {
+          partnerPerfPeriod = btn.dataset.partnerPeriod || "month";
+          localStorage.setItem("crm_partner_perf_period", partnerPerfPeriod);
+          if (partnerPerfPeriod !== "custom") renderDashboard();
+          else {
+            syncPartnerPerfUi();
+          }
+        };
+      });
+      const apply = document.getElementById("partnerPerfApply");
+      if (apply) {
+        apply.onclick = () => {
+          partnerPerfFrom = document.getElementById("partnerPerfFrom").value || "";
+          partnerPerfTo = document.getElementById("partnerPerfTo").value || "";
+          localStorage.setItem("crm_partner_perf_from", partnerPerfFrom);
+          localStorage.setItem("crm_partner_perf_to", partnerPerfTo);
+          partnerPerfPeriod = "custom";
+          localStorage.setItem("crm_partner_perf_period", "custom");
+          if (!partnerPerfFrom || !partnerPerfTo) {
+            toast("請選擇由日期同至日期");
+            return;
+          }
+          if (partnerPerfFrom > partnerPerfTo) {
+            toast("由日期唔可以晚過至日期");
+            return;
+          }
+          renderDashboard();
+        };
+      }
     }
 
     function renderGroupedMonthBars(months) {
       const maxN = Math.max(1, ...months.map((m) => Math.max(m.targetCount || 0, m.closedCount || 0)));
+      const maxAmt = Math.max(1, ...months.map((m) => Math.max(m.total || 0, m.closedAmt || 0, m.quota || 0)));
       return `<div class="chart-legend">
-          <span><i style="background:#6b46fe"></i>Target Closing</span>
-          <span><i style="background:#27c281"></i>Closing Case</span>
+          <span><i style="background:#6b46fe"></i>Target Closing（宗）</span>
+          <span><i style="background:#27c281"></i>Closing Case（宗）</span>
         </div>
         <div class="grouped-bars">${months.map((m) => {
           const tH = Math.max((m.targetCount || 0) ? 4 : 0, ((m.targetCount || 0) / maxN) * 100);
           const cH = Math.max((m.closedCount || 0) ? 4 : 0, ((m.closedCount || 0) / maxN) * 100);
           const short = m.label.replace(/^\d{4}年/, "");
-          return `<div class="grouped-col" title="${escapeHtml(m.label)} · Target ${m.targetCount || 0} · Closed ${m.closedCount || 0}">
+          const active = dashDrill && dashDrill.type === "month" && dashDrill.key === m.key ? " active" : "";
+          return `<div class="grouped-col${active}" data-month-key="${escapeAttr(m.key)}" title="${escapeHtml(m.label)} · Target ${m.targetCount || 0} · Closed ${m.closedCount || 0} · ${money(m.total)}">
             <div class="gnums">${m.targetCount || 0} / ${m.closedCount || 0}</div>
             <div class="grouped-pair">
               <div class="gbar target"><i style="height:${tH}%"></i></div>
               <div class="gbar closed"><i style="height:${cH}%"></i></div>
             </div>
             <div class="glbl">${escapeHtml(short)}</div>
+            <div class="muted" style="font-size:.58rem;font-weight:700;text-align:center;line-height:1.2">${money(m.total)}</div>
           </div>`;
-        }).join("")}</div>`;
+        }).join("")}</div>
+        <div class="money-compare">
+          ${months.slice(0, 1).map(() => {
+            const targetAmt = months.reduce((s, m) => s + (m.total || 0), 0);
+            const closedAmt = months.reduce((s, m) => s + (m.closedAmt || 0), 0);
+            const weighted = months.reduce((s, m) => s + (m.weighted || 0), 0);
+            const quota = months.reduce((s, m) => s + (m.quota || 0), 0);
+            return `
+              <div class="mc"><div class="lbl">Target Closing $</div><div class="val">${money(targetAmt)}</div><div class="muted" style="font-size:.68rem">期間預測成交金額</div></div>
+              <div class="mc"><div class="lbl">加權 Forecast $</div><div class="val">${money(weighted)}</div><div class="muted" style="font-size:.68rem">× 成功機率</div></div>
+              <div class="mc"><div class="lbl">Closed $ / 目標額</div><div class="val">${money(closedAmt)}${quota ? ` / ${money(quota)}` : ""}</div><div class="muted" style="font-size:.68rem">${quota ? `達成 ${Math.round((closedAmt / Math.max(quota, 1)) * 100)}%` : "可於下方設定每月目標額"}</div></div>`;
+          }).join("")}
+        </div>`;
     }
 
-    function chartHeadHtml(title, sub) {
+    function chartHeadHtml(title, sub, extraHtml = "") {
       return `<div class="chart-head">
         <div>
           <h2>${escapeHtml(title)}</h2>
           <p class="muted" style="margin:4px 0 0">${escapeHtml(sub)}</p>
         </div>
+        ${extraHtml || ""}
       </div>`;
     }
 
-    function renderVBars(items, { labelKey = "label", valueKey = "value", tone = "" } = {}) {
+    function renderVBars(items, { labelKey = "label", valueKey = "value", tone = "", clickAttr = "" } = {}) {
       const maxV = Math.max(1, ...items.map((it) => Number(it[valueKey]) || 0));
       return `<div class="vbars">${items.map((it) => {
         const v = Number(it[valueKey]) || 0;
         const h = Math.max(v ? 6 : 0, (v / maxV) * 100);
         const style = it.color ? `background:linear-gradient(180deg, ${it.bg || it.color}, ${it.color})` : "";
-        return `<div class="vbar-col" title="${escapeHtml(String(it.fullLabel || it[labelKey]))}: ${v}">
+        const clickable = it.drillKey ? " clickable" : "";
+        const data = it.drillKey ? ` data-drill-type="${escapeAttr(it.drillType || "")}" data-drill-key="${escapeAttr(it.drillKey)}" data-drill-title="${escapeAttr(it.fullLabel || it[labelKey])}"` : "";
+        return `<div class="vbar-col${clickable}" title="${escapeHtml(String(it.fullLabel || it[labelKey]))}: ${v}"${data}>
           <div class="vnum">${v}</div>
           <div class="vbar-track"><i class="${tone}" style="height:${h}%;${style}"></i></div>
           <div class="vlbl">${escapeHtml(String(it[labelKey]))}</div>
@@ -2421,12 +3745,35 @@
       return items.map((it) => {
         const w = Math.max((Number(it.value) || 0) ? 6 : 0, ((Number(it.value) || 0) / maxV) * 100);
         const style = it.color ? `background:linear-gradient(90deg, ${it.bg || "#efeaff"}, ${it.color})` : "";
-        return `<div class="chart-row" title="${escapeHtml(it.fullLabel || it.label)}：${it.value}">
+        const clickable = it.drillKey ? " clickable" : "";
+        const data = it.drillKey ? ` data-drill-type="${escapeAttr(it.drillType || "")}" data-drill-key="${escapeAttr(it.drillKey)}" data-drill-title="${escapeAttr(it.fullLabel || it.label)}"` : "";
+        return `<div class="chart-row${clickable}" title="${escapeHtml(it.fullLabel || it.label)}：${it.value}"${data}>
           <div class="name">${escapeHtml(it.label)}</div>
           <div class="chart-bar ${it.tone || ""}"><i style="width:${w}%;${style}"></i></div>
           <div class="count">${it.value}</div>
         </div>${it.sub ? `<div class="muted" style="font-size:.68rem;margin:-2px 0 2px 106px">${escapeHtml(it.sub)}</div>` : ""}`;
       }).join("");
+    }
+
+    function renderDrillList(list, title) {
+      if (!list || !list.length) {
+        return `<div class="drill-panel"><div class="drill-head"><strong>${escapeHtml(title)}</strong><button type="button" class="btn btn-ghost btn-sm" data-clear-drill>關閉</button></div><div class="breakdown-empty">呢度暫時未有案件</div></div>`;
+      }
+      return `<div class="drill-panel"><div class="drill-head"><strong>${escapeHtml(title)} · ${list.length} 宗</strong><button type="button" class="btn btn-ghost btn-sm" data-clear-drill>關閉</button></div>
+        ${list.map((c) => {
+          const s = stageMeta(c.stage);
+          return `<div class="breakdown-item" data-case-id="${escapeAttr(c.id)}" style="cursor:pointer">
+            <div><strong>${escapeHtml(companyKey(c))}</strong>
+              <div class="muted" style="font-size:.68rem">${escapeHtml(normalizeCompanySales(c.companySales) || "未指派")} · ${escapeHtml(c.partner || "")}</div>
+            </div>
+            <div><strong>${money(c.amount)}</strong></div>
+            <div class="breakdown-meta">
+              <span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span>
+              <span>機率 ${pct(c.successRate || 0)}</span>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>`;
     }
 
     function bindMonthRows(root) {
@@ -2440,6 +3787,8 @@
             openDrawer(e.target.closest("[data-case-id]").dataset.caseId);
             return;
           }
+          if (e.target.closest("[data-clear-drill]")) return;
+          if (e.target.closest("input,button,select,label")) return;
           toggle();
         });
         row.addEventListener("keydown", (e) => {
@@ -2449,12 +3798,69 @@
           }
         });
       });
+      root.querySelectorAll(".grouped-col[data-month-key]").forEach((col) => {
+        col.onclick = () => {
+          const key = col.dataset.monthKey;
+          if (dashDrill && dashDrill.type === "month" && dashDrill.key === key) dashDrill = null;
+          else dashDrill = { type: "month", key, title: col.getAttribute("title") || key };
+          renderDashboard();
+        };
+      });
+      root.querySelectorAll("[data-clear-drill]").forEach((b) => {
+        b.onclick = (e) => { e.stopPropagation(); dashDrill = null; renderDashboard(); };
+      });
+      root.querySelectorAll(".month-quota").forEach((input) => {
+        input.onchange = () => {
+          saveMonthlyTarget(input.dataset.monthKey, input.value);
+          renderDashboard();
+        };
+      });
     }
 
-    function renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt }) {
-      // ---- Months closing (棒圖 only) ----
+    function bindChartDrills(root) {
+      (root || document).querySelectorAll("[data-drill-key]").forEach((el) => {
+        el.onclick = () => {
+          const type = el.dataset.drillType;
+          const key = el.dataset.drillKey;
+          if (dashDrill && dashDrill.type === type && dashDrill.key === key) dashDrill = null;
+          else dashDrill = { type, key, title: el.dataset.drillTitle || key };
+          renderDashboard();
+        };
+      });
+      (root || document).querySelectorAll("[data-clear-drill]").forEach((b) => {
+        b.onclick = () => { dashDrill = null; renderDashboard(); };
+      });
+      (root || document).querySelectorAll("[data-case-id]").forEach((el) => {
+        if (el.closest(".month-row")) return;
+        el.onclick = (e) => {
+          e.stopPropagation();
+          openDrawer(el.dataset.caseId);
+        };
+      });
+    }
+
+    function renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt, filtered }) {
       const monthsRoot = document.getElementById("dashMonths");
+      const targets = loadMonthlyTargets();
+      months.forEach((m) => { m.quota = Number(targets[m.key]) || 0; });
+
       let monthsBody = renderGroupedMonthBars(months);
+      // monthly target quota editors
+      monthsBody += `<div style="margin-top:8px;display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+        ${months.map((m) => `<label class="field" style="margin:0"><span style="font-size:.68rem">目標額 · ${escapeHtml(m.label.replace(/^\d{4}年/, ""))}</span>
+          <input class="month-quota" data-month-key="${escapeAttr(m.key)}" type="number" min="0" step="1000" value="${m.quota || ""}" placeholder="HKD" />
+        </label>`).join("")}
+      </div>`;
+
+      if (dashDrill && dashDrill.type === "month") {
+        const m = months.find((x) => x.key === dashDrill.key);
+        if (m) {
+          const combined = [...m.list];
+          m.closedList.forEach((c) => { if (!combined.find((x) => x.id === c.id)) combined.push(c); });
+          monthsBody += renderDrillList(combined, `${m.label} · 點擊案件開啟`);
+        }
+      }
+
       monthsBody += months.map((m) => {
         const width = Math.max(4, ((m.targetCount || 0) / Math.max(...months.map((x) => x.targetCount || 0), 1)) * 100);
         const breakdownTarget = m.list.length
@@ -2488,7 +3894,7 @@
         return `<div class="month-row" data-month="${m.key}" role="button" tabindex="0" aria-expanded="false">
           <div class="month-row-top">
             <strong>${m.label}<span class="chev">▸</span></strong>
-            <span class="muted">Target ${m.targetCount || 0} · Closed ${m.closedCount || 0} · ${money(m.total)}</span>
+            <span class="muted">Target ${m.targetCount || 0} · Closed ${m.closedCount || 0} · ${money(m.total)}${m.quota ? ` · 目標 ${money(m.quota)}` : ""}</span>
           </div>
           <div class="bar"><i style="width:${width}%"></i></div>
           <div class="muted" style="font-size:.7rem">加權預測 ${money(m.weighted)} · 機率 ${pct(m.avg)}</div>
@@ -2500,18 +3906,24 @@
           </div>
         </div>`;
       }).join("");
+
       const targetSum = months.reduce((s, m) => s + (m.targetCount || 0), 0);
       const closedSum = months.reduce((s, m) => s + (m.closedCount || 0), 0);
+      const filterNote = (dashSalesFilter !== "all" || dashPartnerFilter !== "all")
+        ? ` · 篩選 ${dashSalesFilter !== "all" ? dashSalesFilter : ""}${dashSalesFilter !== "all" && dashPartnerFilter !== "all" ? " / " : ""}${dashPartnerFilter !== "all" ? dashPartnerFilter : ""}`
+        : "";
       monthsRoot.innerHTML = chartHeadHtml(
         range.title,
-        `Target Closing vs Closing Case · Target ${targetSum} · Closed ${closedSum} · 跟進機會 ${followN}`
+        `Target Closing vs Closing Case · Target ${targetSum} · Closed ${closedSum} · 跟進機會 ${followN}${filterNote}`
       ) + monthsBody;
       bindMonthRows(monthsRoot);
 
-      // ---- Stage ----
+      // Stage / Sales / Funnel use filtered set
+      const pool = filtered || cases;
       const stageCounts = STAGES.map((s) => ({
         ...s,
-        n: cases.filter((c) => c.stage === s.id).length,
+        n: pool.filter((c) => c.stage === s.id).length,
+        list: pool.filter((c) => c.stage === s.id),
       }));
       const stageTotal = stageCounts.reduce((s, x) => s + x.n, 0) || 1;
       const stageItems = stageCounts.map((s) => ({
@@ -2520,42 +3932,137 @@
         value: s.n,
         color: s.color,
         bg: s.bg,
+        drillType: "stage",
+        drillKey: s.id,
+        sub: s.n ? money(s.list.reduce((sum, c) => sum + (c.amount || 0), 0)) : "",
       }));
-      document.getElementById("dashChartStage").innerHTML =
-        chartHeadHtml("Stage Pipeline", `全部案件階段分佈 · 共 ${stageTotal} 宗`) + renderHBars(stageItems);
+      let stageHtml = chartHeadHtml("Stage Pipeline", `篩選後階段分佈 · 共 ${stageTotal} 宗`) + renderHBars(stageItems);
+      if (dashDrill && dashDrill.type === "stage") {
+        const hit = stageCounts.find((s) => s.id === dashDrill.key);
+        stageHtml += renderDrillList(hit ? hit.list : [], hit ? hit.label : "Stage");
+      }
+      document.getElementById("dashChartStage").innerHTML = stageHtml;
 
-      // ---- Sales ----
       const salesRows = COMPANY_SALES.map((name) => {
-        const list = cases.filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed");
+        const list = pool.filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed");
         const weighted = list.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
+        const amt = list.reduce((s, c) => s + (c.amount || 0), 0);
         const meets = list.filter((c) => c.meetingDone).length;
-        return { name, n: list.length, weighted, meets };
+        return { name, n: list.length, weighted, amt, meets, list };
       });
       const salesItems = salesRows.map((r, idx) => ({
         label: r.name,
         value: r.n,
         tone: ["purple", "orange", "mint", "sky", "rose"][idx % 5],
-        sub: `${money(r.weighted)} 加權 · 會面 ${r.meets}`,
+        sub: `${money(r.amt)} · 加權 ${money(r.weighted)}`,
         color: "#6b46fe",
         bg: "#c4b5fd",
+        drillType: "sales",
+        drillKey: r.name,
+        fullLabel: r.name,
       }));
-      document.getElementById("dashChartSales").innerHTML =
-        chartHeadHtml("銷售員 Pipeline", "本公司銷售員 open cases") + renderVBars(salesItems);
+      let salesHtml = chartHeadHtml("銷售員 Pipeline", "點擊棒圖可鑽取案件") + renderVBars(salesItems);
+      if (dashDrill && dashDrill.type === "sales") {
+        const hit = salesRows.find((r) => r.name === dashDrill.key);
+        salesHtml += renderDrillList(hit ? hit.list : [], dashDrill.key);
+      }
+            document.getElementById("dashChartSales").innerHTML = salesHtml;
 
-      // ---- Funnel ----
-      const allN = cases.length;
+      // ---- Sales Target $ vs Closing $ ----
+      const salesTargetRoot = document.getElementById("dashChartSalesTarget");
+      if (salesTargetRoot) {
+        const monthKeys = (range.months || []).map((m) => m.key);
+        const periodFrom = range.from;
+        const periodTo = range.to;
+        const salesTargetRows = COMPANY_SALES.filter((name) => {
+          if (dashSalesFilter !== "all" && name !== dashSalesFilter) return false;
+          return true;
+        }).map((name) => {
+          const targetAmt = salesClosingTargetSum(name, monthKeys);
+          // If period months don't match plan keys well, also include targets for monthKeys from range.months
+          const closedAmt = salesClosedAmountInRange(name, periodFrom, periodTo);
+          const forecastAmt = (filtered || cases)
+            .filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed")
+            .filter((c) => {
+              const d = caseForecastDate(c);
+              return d && d >= periodFrom && d <= periodTo;
+            })
+            .reduce((s, c) => s + (Number(c.amount) || 0) * ((Number(c.successRate) || 0) / 100), 0);
+          return { name, targetAmt, closedAmt, forecastAmt, pct: attainPct(closedAmt, targetAmt) };
+        });
+        const maxMoney = Math.max(1, ...salesTargetRows.flatMap((r) => [r.targetAmt, r.closedAmt, r.forecastAmt]));
+        const teamT = salesTargetRows.reduce((s, r) => s + r.targetAmt, 0);
+        const teamC = salesTargetRows.reduce((s, r) => s + r.closedAmt, 0);
+        const teamF = salesTargetRows.reduce((s, r) => s + r.forecastAmt, 0);
+        const teamP = attainPct(teamC, teamT);
+        let targetBody = `
+          <div class="chart-legend">
+            <span><i style="background:#6b46fe"></i>Closing 目標 $</span>
+            <span><i style="background:#27c281"></i>已 Closing $</span>
+            <span><i style="background:#ff8a4c"></i>加權 Forecast $</span>
+          </div>
+          <div class="money-compare">
+            <div class="mc"><div class="lbl">團隊 Closing 目標</div><div class="val">${money(teamT)}</div><div class="muted" style="font-size:.68rem">${escapeHtml(range.title)}</div></div>
+            <div class="mc"><div class="lbl">已 Closing</div><div class="val">${money(teamC)}</div><div class="muted" style="font-size:.68rem">${teamT ? teamP + "% 達成" : "未設目標"}</div></div>
+            <div class="mc"><div class="lbl">加權 Forecast</div><div class="val">${money(teamF)}</div><div class="muted" style="font-size:.68rem">Pipeline × 機率</div></div>
+          </div>
+          <div class="dual-money-bars">
+            ${salesTargetRows.map((r) => {
+              const tH = Math.max(r.targetAmt ? 4 : 0, (r.targetAmt / maxMoney) * 100);
+              const cH = Math.max(r.closedAmt ? 4 : 0, (r.closedAmt / maxMoney) * 100);
+              const fH = Math.max(r.forecastAmt ? 4 : 0, (r.forecastAmt / maxMoney) * 100);
+              return `<div class="dual-money-col" title="${escapeAttr(r.name)} · 目標 ${money(r.targetAmt)} · 已完成 ${money(r.closedAmt)}">
+                <div class="mnums">${r.targetAmt ? r.pct + "%" : "—"}</div>
+                <div class="dual-money-pair">
+                  <div class="mbar target"><i style="height:${tH}%"></i></div>
+                  <div class="mbar closed"><i style="height:${cH}%"></i></div>
+                  <div class="mbar forecast"><i style="height:${fH}%"></i></div>
+                </div>
+                <div class="mlbl">${escapeHtml(r.name)}</div>
+                <div class="mnums">${money(r.targetAmt)}<br/>${money(r.closedAmt)}</div>
+              </div>`;
+            }).join("")}
+          </div>
+          <div class="table-wrap" style="margin-top:12px"><table>
+            <thead><tr><th>銷售員</th><th>Closing 目標 $</th><th>已 Closing $</th><th>達成率</th><th>加權 Forecast $</th><th>差距</th></tr></thead>
+            <tbody>
+              ${salesTargetRows.map((r) => {
+                const gap = r.closedAmt - r.targetAmt;
+                return `<tr>
+                  <td><strong>${escapeHtml(r.name)}</strong></td>
+                  <td>${r.targetAmt ? money(r.targetAmt) : '<span class="muted">未設定</span>'}</td>
+                  <td><strong>${money(r.closedAmt)}</strong></td>
+                  <td style="font-weight:800;color:${!r.targetAmt ? "var(--muted)" : (r.pct >= 100 ? "#15803d" : (r.pct < 60 ? "#9f1239" : "var(--ink)"))}">${r.targetAmt ? r.pct + "%" : "—"}</td>
+                  <td>${money(r.forecastAmt)}</td>
+                  <td style="font-weight:700;color:${gap >= 0 ? "#15803d" : "#9f1239"}">${r.targetAmt ? ((gap >= 0 ? "+" : "") + money(gap)) : "—"}</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table></div>
+          <p class="muted" style="margin-top:8px;font-size:.72rem">目標喺「資料庫管理 → 銷售員管理」設定每位同事每月 Closing 銀碼</p>
+        `;
+        if (!salesTargetRows.some((r) => r.targetAmt || r.closedAmt || r.forecastAmt)) {
+          targetBody += `<div class="breakdown-empty" style="margin-top:8px">尚未有目標或 Closing 數據 — 去銷售員管理設定每月目標</div>`;
+        }
+        salesTargetRoot.innerHTML = chartHeadHtml(
+          "銷售員目標 vs Closing",
+          `期間 Closing 目標銀碼對比實際簽單 · 團隊達成 ${teamT ? teamP + "%" : "—"}`
+        ) + targetBody;
+      }
+
+      const allN = pool.length;
       const funnel = [
-        { label: "全部 Lead", short: "Lead", n: allN, sub: "資料庫總數", color: "#6b46fe", bg: "#c4b5fd", width: 100 },
-        { label: "已約／會面", short: "會面", n: Math.max(apptN, meetN), sub: `約見 ${apptN} · 完成 ${meetN}`, color: "#4aa8ff", bg: "#bfdbfe", width: 86 },
-        { label: "跟進機會", short: "跟進", n: followN, sub: "有機會繼續", color: "#ff8a4c", bg: "#fed7aa", width: 72 },
-        { label: "報價／最終", short: "報價", n: cases.filter((c) => ["quotation", "follow_up", "final_stage"].includes(c.stage)).length, sub: "接近成交", color: "#ff6b9d", bg: "#fbcfe8", width: 58 },
-        { label: "確認簽單", short: "簽單", n: cases.filter((c) => c.stage === "confirmation" || c.closeReason === "won").length, sub: `關閉 ${closed.length}`, color: "#27c281", bg: "#a7f3d0", width: 44 },
+        { label: "全部 Lead", short: "Lead", n: allN, list: pool, sub: "篩選後總數", color: "#6b46fe", bg: "#c4b5fd", width: 100, key: "lead" },
+        { label: "已約／會面", short: "會面", n: pool.filter((c) => c.appointmentFlag || c.appointmentAt || c.meetingDone).length, list: pool.filter((c) => c.appointmentFlag || c.appointmentAt || c.meetingDone), sub: `約見／完成`, color: "#4aa8ff", bg: "#bfdbfe", width: 86, key: "meet" },
+        { label: "跟進機會", short: "跟進", n: pool.filter((c) => c.followUpOpportunity).length, list: pool.filter((c) => c.followUpOpportunity), sub: "有機會繼續", color: "#ff8a4c", bg: "#fed7aa", width: 72, key: "follow" },
+        { label: "報價／最終", short: "報價", n: pool.filter((c) => ["quotation", "follow_up", "final_stage"].includes(c.stage)).length, list: pool.filter((c) => ["quotation", "follow_up", "final_stage"].includes(c.stage)), sub: "接近成交", color: "#ff6b9d", bg: "#fbcfe8", width: 58, key: "quote" },
+        { label: "確認簽單", short: "簽單", n: pool.filter((c) => c.stage === "confirmation" || c.closeReason === "won").length, list: pool.filter((c) => c.stage === "confirmation" || c.closeReason === "won"), sub: `關閉 ${closed.length}`, color: "#27c281", bg: "#a7f3d0", width: 44, key: "won" },
       ];
       const top = Math.max(1, funnel[0].n);
-      const funnelBody = `<div class="funnel-stack">
+      let funnelBody = `<div class="funnel-stack">
           ${funnel.map((f) => {
             const rate = Math.round((f.n / top) * 100);
-            return `<div class="funnel-step" style="width:${f.width}%;background:linear-gradient(135deg, ${f.bg}, ${f.color})">
+            return `<div class="funnel-step" data-drill-type="funnel" data-drill-key="${f.key}" data-drill-title="${escapeAttr(f.label)}" style="width:${f.width}%;background:linear-gradient(135deg, ${f.bg}, ${f.color});cursor:pointer">
               <div>
                 <div class="flabel">${escapeHtml(f.label)}</div>
                 <div class="fsub">${escapeHtml(f.sub)}</div>
@@ -2574,8 +4081,14 @@
           <span><i style="background:#ff6b9d"></i>報價</span>
           <span><i style="background:#27c281"></i>簽單</span>
         </div>`;
+      if (dashDrill && dashDrill.type === "funnel") {
+        const hit = funnel.find((f) => f.key === dashDrill.key);
+        funnelBody += renderDrillList(hit ? hit.list : [], hit ? hit.label : "漏斗");
+      }
       document.getElementById("dashChartFunnel").innerHTML =
-        chartHeadHtml("轉換漏斗", `由 Lead 到簽單 · 所選期間 ${inRange.length} 宗`) + funnelBody;
+        chartHeadHtml("轉換漏斗", `由 Lead 到簽單 · 篩選後 ${inRange.length} 宗喺所選期間`) + funnelBody;
+
+      bindChartDrills(document.getElementById("view-dashboard"));
     }
 
     function renderBoardDash() {
@@ -2640,6 +4153,7 @@
     let boardSuggestActive = -1;
 
     function caseMatchesBoardSearch(c) {
+      if (!caseMatchesBoardFilters(c)) return false;
       const q = (document.getElementById("boardSearch")?.value || "").trim().toLowerCase();
       if (!q) return true;
       const company = (c.customerName || "").toLowerCase();
@@ -2733,13 +4247,15 @@
     }
 
     function paintKanbanColumns() {
+      syncBoardFilterUi();
       const root = document.getElementById("kanban");
       const shown = STAGES.filter((s) => visibleStages.includes(s.id));
       const q = (document.getElementById("boardSearch")?.value || "").trim();
       const matched = cases.filter(caseMatchesBoardSearch);
+      const filterOn = boardSalesFilter !== "all" || boardPartnerFilter !== "all" || boardFollowFilter !== "all" || !!q;
       root.innerHTML = shown.map((s) => {
         const items = matched.filter((c) => c.stage === s.id);
-        const emptyMsg = q ? "沒有符合搜尋" : "拖曳案件到此";
+        const emptyMsg = filterOn ? "沒有符合篩選" : "拖曳案件到此";
         return `<section class="col" data-stage="${s.id}">
           <div class="col-head" style="display:flex;justify-content:space-between;align-items:center">
             <span class="badge" style="color:${s.color};background:${s.bg}">${s.label}</span>
@@ -2750,31 +4266,65 @@
         </section>`;
       }).join("") || `<div class="breakdown-empty" style="padding:40px">請至少勾選一個 status</div>`;
 
+      const canDragBoard = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
       root.querySelectorAll(".card-case").forEach((el) => {
-        el.draggable = true;
-        el.ondragstart = (e) => { dragId = el.dataset.id; e.dataTransfer.setData("text/case-id", el.dataset.id); };
+        el.draggable = canDragBoard;
+        if (canDragBoard) {
+          el.ondragstart = (e) => {
+            dragId = el.dataset.id;
+            el.classList.add("dragging");
+            e.dataTransfer.setData("text/case-id", el.dataset.id);
+            e.dataTransfer.effectAllowed = "move";
+          };
+          el.ondragend = () => {
+            el.classList.remove("dragging");
+            root.querySelectorAll(".col").forEach((c) => c.classList.remove("drag-over"));
+          };
+        }
         el.onclick = () => openDrawer(el.dataset.id);
       });
       root.querySelectorAll(".col").forEach((col) => {
-        col.ondragover = (e) => e.preventDefault();
+        if (!canDragBoard) return;
+        col.ondragover = (e) => {
+          e.preventDefault();
+          col.classList.add("drag-over");
+          e.dataTransfer.dropEffect = "move";
+        };
+        col.ondragleave = () => col.classList.remove("drag-over");
         col.ondrop = async (e) => {
           e.preventDefault();
+          col.classList.remove("drag-over");
           const id = e.dataTransfer.getData("text/case-id") || dragId;
           if (!id) return;
           let stage = col.dataset.stage;
+          const prev = cases.find((c) => c.id === id);
+          if (prev && prev.stage === stage) return;
           let closeReason = null;
           if (stage === "closed") {
             closeReason = confirm("按「確定」= Disqualified；「取消」= 失敗") ? "disqualified" : "failed";
           }
-          await updateCase(id, { stage, closeReason, successRate: stage === "closed" ? 0 : undefined });
+          await updateCase(id, { stage, closeReason, successRate: stage === "closed" ? 0 : undefined }, { source: "拖曳看板" });
+          toast(`已移至 ${stageMeta(stage).label}`);
         };
       });
     }
 
+    function applyBoardUpperCollapsed() {
+      const board = document.getElementById("view-board");
+      const btn = document.getElementById("btnToggleBoardUpper");
+      if (!board || !btn) return;
+      const collapsed = localStorage.getItem("crm_board_upper_collapsed") === "1";
+      board.classList.toggle("upper-collapsed", collapsed);
+      btn.textContent = collapsed ? "展開上方" : "收起上方";
+      btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    }
+
     function renderBoard() {
+      syncBoardFilterUi();
       renderBoardDash();
       renderStageFilter();
       paintKanbanColumns();
+      applyBoardUpperCollapsed();
     }
 
     function cardHtml(c) {
@@ -2786,45 +4336,257 @@
       const apptText = appt && !Number.isNaN(appt.getTime())
         ? appt.toLocaleString("zh-HK", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
         : "";
-      return `<article class="card-case" data-id="${c.id}">
+      const followText = c.nextFollowUpAt
+        ? (isFollowUpOverdue(c) ? `跟進 ${formatLocalDate(parseLocalDate(c.nextFollowUpAt))} · 逾期` : `跟進 ${formatLocalDate(parseLocalDate(c.nextFollowUpAt))}`)
+        : "未設跟進";
+      const sales = normalizeCompanySales(c.companySales) || "未指派";
+      return `<article class="card-case" data-id="${c.id}" title="拖曳可改 Stage">
         <strong style="white-space:pre-line;font-size:.9rem">${escapeHtml(companyLine)}</strong>
-        <div class="muted" style="font-size:.7rem;margin-top:3px">Sales: ${escapeHtml(c.ricohSales || "—")} · ${contacts.length} contacts · ${logs.length} logs</div>
+        <div class="muted" style="font-size:.7rem;margin-top:3px">${escapeHtml(sales)} · ${escapeHtml(c.partner || "—")} · ${contacts.length} contacts</div>
+        <div class="card-meta-row">
+          <span>💰 ${money(c.amount)}</span>
+          <span>${c.appointmentFlag || apptText ? `📅 ${apptText || "已約"}` : "📅 未約"}</span>
+          <span style="${isFollowUpOverdue(c) ? "color:#9f1239;font-weight:800" : ""}">🗓 ${escapeHtml(followText)}</span>
+        </div>
         <div class="tags" style="margin-top:6px">${(c.systems || []).slice(0, 3).map((x) => `<span class="tag on" style="cursor:default;padding:2px 8px">${escapeHtml(x)}</span>`).join("")}</div>
-        <div style="margin-top:8px;font-size:.72rem;color:var(--ink-soft)">
-          ${c.appointmentFlag || apptText ? `📅 ${apptText || "已約"}${c.appointmentConfirmed ? " · 已確認" : " · 待確認"}` : "未約會面"}
-          ${c.meetingDone ? " · ✅ 已會面" : ""}
-          ${c.followUpOpportunity ? " · 有跟進機會" : ""}
+        <div style="margin-top:6px;font-size:.7rem;color:var(--ink-soft)">
+          ${c.meetingDone ? "✅ 已會面 · " : ""}${c.followUpOpportunity ? "有跟進機會 · " : ""}${logs.length} logs
         </div>
         ${c.leadStatus === "DQ" || (c.stage === "closed" && c.closeReason) ? `<div style="margin-top:6px;font-size:.68rem;color:var(--rose);font-weight:700">${c.leadStatus === "DQ" || c.closeReason === "disqualified" ? "DQ" : "失敗"}</div>` : ""}
         <div style="margin-top:6px"><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></div>
       </article>`;
     }
 
-    function renderCasesTable() {
-      const q = (document.getElementById("caseSearch").value || "").trim().toLowerCase();
-      const stage = document.getElementById("caseStageFilter").value;
-      const list = cases.filter((c) => {
+    function casesColVisible(id) {
+      const def = CASES_COL_DEFS.find((c) => c.id === id);
+      if (def?.always) return true;
+      return casesVisibleCols.includes(id);
+    }
+
+    function syncCasesToolbar() {
+      const stageSel = document.getElementById("caseStageFilter");
+      if (stageSel && !stageSel.dataset.ready) {
+        stageSel.innerHTML = `<option value="all">全部階段</option>` + STAGES.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
+        stageSel.dataset.ready = "1";
+      }
+      fillFilterSelect("caseSalesFilter", document.getElementById("caseSalesFilter")?.value || "all", "sales");
+      const bulkStage = document.getElementById("bulkStage");
+      if (bulkStage) {
+        bulkStage.innerHTML = `<option value="">改 Stage…</option>` + STAGES.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
+      }
+      const bulkSales = document.getElementById("bulkSales");
+      if (bulkSales) {
+        bulkSales.innerHTML = `<option value="">指派銷售員…</option>` + COMPANY_SALES.map((n) => `<option value="${n}">${n}</option>`).join("") + `<option value="__clear">清除指派</option>`;
+      }
+      const panel = document.getElementById("casesColPanel");
+      if (panel) {
+        panel.innerHTML = CASES_COL_DEFS.filter((c) => !c.always && c.id !== "select").map((c) =>
+          `<label><input type="checkbox" data-col-toggle="${c.id}" ${casesColVisible(c.id) ? "checked" : ""}/> ${escapeHtml(c.label)}</label>`
+        ).join("");
+        panel.querySelectorAll("[data-col-toggle]").forEach((input) => {
+          input.onchange = () => {
+            const id = input.dataset.colToggle;
+            if (input.checked) {
+              if (!casesVisibleCols.includes(id)) casesVisibleCols.push(id);
+            } else {
+              casesVisibleCols = casesVisibleCols.filter((x) => x !== id);
+            }
+            localStorage.setItem("crm_cases_cols", JSON.stringify(casesVisibleCols));
+            renderCasesTable();
+          };
+        });
+      }
+    }
+
+    function updateCasesBulkBar() {
+      const bar = document.getElementById("casesBulkBar");
+      const count = document.getElementById("casesBulkCount");
+      if (!bar) return;
+      bar.classList.toggle("show", casesSelected.size > 0);
+      if (count) count.textContent = `已選 ${casesSelected.size}`;
+    }
+
+    function getFilteredCasesForTable() {
+      const q = (document.getElementById("caseSearch")?.value || "").trim().toLowerCase();
+      const stage = document.getElementById("caseStageFilter")?.value || "all";
+      const sales = document.getElementById("caseSalesFilter")?.value || "all";
+      return cases.filter((c) => {
         if (stage !== "all" && c.stage !== stage) return false;
+        if (sales !== "all") {
+          const s = normalizeCompanySales(c.companySales) || "未指派";
+          if (s !== sales) return false;
+        }
         if (!q) return true;
         const contactHay = (contactsByCase[c.id] || []).map((x) => [x.name, x.email, x.mobile, x.tel].join(" ")).join(" ");
-        return [c.customerName, c.partner, c.ricohSales, c.ricohHouse, c.requirements, (c.systems || []).join(" "), contactHay].join(" ").toLowerCase().includes(q);
+        return [c.customerName, c.partner, c.ricohSales, c.companySales, c.ricohHouse, c.requirements, (c.systems || []).join(" "), contactHay].join(" ").toLowerCase().includes(q);
       });
-      document.getElementById("casesBody").innerHTML = list.map((c) => {
+    }
+
+    function sortCasesList(list) {
+      const key = casesSort.key || "customer";
+      const dir = casesSort.dir === "desc" ? -1 : 1;
+      const val = (c) => {
+        switch (key) {
+          case "partner": return c.partner || "";
+          case "sales": return normalizeCompanySales(c.companySales) || "";
+          case "stage": return STAGES.findIndex((s) => s.id === c.stage);
+          case "amount": return Number(c.amount) || 0;
+          case "target": return caseForecastDate(c)?.getTime() || 0;
+          case "appt": return c.appointmentAt ? new Date(c.appointmentAt).getTime() : 0;
+          case "nextFollow": return c.nextFollowUpAt || "";
+          default: return companyKey(c);
+        }
+      };
+      return [...list].sort((a, b) => {
+        const va = val(a), vb = val(b);
+        if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
+        return String(va).localeCompare(String(vb), "zh-HK") * dir;
+      });
+    }
+
+    function renderCasesHead() {
+      const head = document.getElementById("casesHead");
+      if (!head) return;
+      const cols = CASES_COL_DEFS.filter((c) => c.id === "select" || casesColVisible(c.id));
+      head.innerHTML = `<tr>${cols.map((c) => {
+        if (c.id === "select") return `<th style="width:36px"><input type="checkbox" id="casesSelectAll" title="全選" /></th>`;
+        if (c.sort) {
+          const sorted = casesSort.key === c.sort ? (casesSort.dir === "desc" ? "sorted-desc" : "sorted-asc") : "";
+          const ind = casesSort.key === c.sort ? (casesSort.dir === "desc" ? "▼" : "▲") : "◇";
+          return `<th class="sortable ${sorted}" data-sort="${c.sort}">${escapeHtml(c.label)}<span class="sort-ind">${ind}</span></th>`;
+        }
+        return `<th>${escapeHtml(c.label)}</th>`;
+      }).join("")}</tr>`;
+      head.querySelectorAll("th.sortable").forEach((th) => {
+        th.onclick = () => {
+          const k = th.dataset.sort;
+          if (casesSort.key === k) casesSort.dir = casesSort.dir === "asc" ? "desc" : "asc";
+          else { casesSort.key = k; casesSort.dir = "asc"; }
+          localStorage.setItem("crm_cases_sort", JSON.stringify(casesSort));
+          renderCasesTable();
+        };
+      });
+      const all = document.getElementById("casesSelectAll");
+      if (all) {
+        all.onchange = () => {
+          const list = sortCasesList(getFilteredCasesForTable());
+          if (all.checked) list.forEach((c) => casesSelected.add(c.id));
+          else list.forEach((c) => casesSelected.delete(c.id));
+          renderCasesTable();
+        };
+      }
+    }
+
+    function renderCasesTable() {
+      syncCasesToolbar();
+      renderCasesHead();
+      const status = document.getElementById("casesStatus");
+      const body = document.getElementById("casesBody");
+      if (casesLoading) {
+        status?.classList.remove("hidden");
+        status.textContent = "載入中…";
+        body.innerHTML = "";
+        return;
+      }
+      status?.classList.add("hidden");
+      const list = sortCasesList(getFilteredCasesForTable());
+      const cols = CASES_COL_DEFS.filter((c) => c.id === "select" || casesColVisible(c.id));
+      if (!list.length) {
+        body.innerHTML = `<tr><td colspan="${cols.length}"><div class="empty-state">沒有符合的案件<br/><span class="muted" style="font-weight:650">試下清篩選或換關鍵字</span></div></td></tr>`;
+        updateCasesBulkBar();
+        return;
+      }
+      body.innerHTML = list.map((c) => {
         const s = stageMeta(c.stage);
         const n = (contactsByCase[c.id] || []).length;
         const companyLine = (c.customerName || "").split("\n")[0];
-        return `<tr>
-          <td><strong>${escapeHtml(companyLine)}</strong><div class="muted" style="font-size:.72rem">${n} contacts · ${escapeHtml(c.ricohSales || "—")}</div></td>
-          <td>${escapeHtml(c.partner)}<div class="muted" style="font-size:.68rem">${escapeHtml(c.ricohHouse || "")}</div></td>
-          <td>${(c.systems || []).map((x) => `<span class="badge" style="background:var(--accent-soft);color:var(--accent);margin:1px">${escapeHtml(x)}</span>`).join(" ") || "—"}</td>
-          <td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>
-          <td>${c.appointmentAt ? new Date(c.appointmentAt).toLocaleString("zh-HK") : "—"}<div class="muted" style="font-size:.68rem">${c.appointmentConfirmed ? "已確認" : (c.appointmentFlag ? "待確認" : "")}</div></td>
-          <td>${c.meetingDone ? "已會面" : "未會面"}</td>
-          <td>${c.followUpOpportunity ? "有" : "—"}</td>
-          <td><button class="btn btn-ghost btn-sm" data-open="${c.id}">詳情</button></td>
-        </tr>`;
-      }).join("") || `<tr><td colspan="8" style="text-align:center;padding:28px" class="muted">沒有符合的案件</td></tr>`;
-      document.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => openDrawer(b.dataset.open));
+        const cells = {
+          select: `<td><input type="checkbox" class="case-select" data-id="${escapeAttr(c.id)}" ${casesSelected.has(c.id) ? "checked" : ""} /></td>`,
+          customer: `<td><strong>${escapeHtml(companyLine)}</strong><div class="muted" style="font-size:.72rem">${n} contacts · ${escapeHtml(c.ricohSales || "—")}</div></td>`,
+          partner: `<td>${escapeHtml(c.partner)}<div class="muted" style="font-size:.68rem">${escapeHtml(c.ricohHouse || "")}</div></td>`,
+          sales: `<td>${escapeHtml(normalizeCompanySales(c.companySales) || "未指派")}</td>`,
+          systems: `<td>${(c.systems || []).map((x) => `<span class="badge" style="background:var(--accent-soft);color:var(--accent);margin:1px">${escapeHtml(x)}</span>`).join(" ") || "—"}</td>`,
+          stage: `<td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>`,
+          amount: `<td><strong>${money(c.amount)}</strong></td>`,
+          target: `<td>${c.targetClosingDate ? formatLocalDate(parseLocalDate(c.targetClosingDate) || caseForecastDate(c)) : (caseForecastDate(c) ? formatLocalDate(caseForecastDate(c)) : "—")}</td>`,
+          appt: `<td>${c.appointmentAt ? new Date(c.appointmentAt).toLocaleString("zh-HK") : "—"}<div class="muted" style="font-size:.68rem">${c.appointmentConfirmed ? "已確認" : (c.appointmentFlag ? "待確認" : "")}</div></td>`,
+          meeting: `<td>${c.meetingDone ? "已會面" : "未會面"}</td>`,
+          follow: `<td>${c.followUpOpportunity ? "有" : "—"}</td>`,
+          nextFollow: `<td style="${isFollowUpOverdue(c) ? "color:#9f1239;font-weight:800" : ""}">${c.nextFollowUpAt || "—"}</td>`,
+          actions: `<td><button class="btn btn-ghost btn-sm" data-open="${c.id}">詳情</button></td>`,
+        };
+        return `<tr>${cols.map((col) => cells[col.id] || "<td>—</td>").join("")}</tr>`;
+      }).join("");
+      body.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => openDrawer(b.dataset.open));
+      body.querySelectorAll(".case-select").forEach((cb) => {
+        cb.onchange = () => {
+          if (cb.checked) casesSelected.add(cb.dataset.id);
+          else casesSelected.delete(cb.dataset.id);
+          updateCasesBulkBar();
+        };
+      });
+      updateCasesBulkBar();
+    }
+
+    function exportCasesCsv(asExcel) {
+      const list = sortCasesList(getFilteredCasesForTable());
+      const headers = ["公司", "Partner", "House", "本公司銷售", "系統", "階段", "金額", "Target Closing", "約見", "會面", "跟進機會", "下次跟進"];
+      const rows = list.map((c) => [
+        companyKey(c),
+        c.partner || "",
+        c.ricohHouse || "",
+        normalizeCompanySales(c.companySales) || "",
+        (c.systems || []).join("|"),
+        stageMeta(c.stage).label,
+        c.amount || 0,
+        c.targetClosingDate || "",
+        c.appointmentAt || "",
+        c.meetingDone ? "Y" : "N",
+        c.followUpOpportunity ? "Y" : "N",
+        c.nextFollowUpAt || "",
+      ]);
+      const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      const csv = "\uFEFF" + [headers, ...rows].map((r) => r.map(esc).join(",")).join("\n");
+      const blob = new Blob([csv], { type: asExcel ? "application/vnd.ms-excel;charset=utf-8" : "text/csv;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = asExcel ? `crm-cases-${formatLocalDate(new Date())}.xls` : `crm-cases-${formatLocalDate(new Date())}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast(asExcel ? "已匯出 Excel（CSV 相容）" : "已匯出 CSV");
+    }
+
+    async function applyCasesBulk() {
+      const ids = [...casesSelected];
+      if (!ids.length) return toast("請先勾選案件");
+      const stage = document.getElementById("bulkStage")?.value || "";
+      const sales = document.getElementById("bulkSales")?.value || "";
+      const follow = document.getElementById("bulkFollow")?.value || "";
+      if (!stage && !sales && !follow) return toast("請揀要改嘅 Stage／銷售員／跟進日");
+      let n = 0;
+      for (const id of ids) {
+        const patch = {};
+        if (stage) {
+          patch.stage = stage;
+          if (stage === "closed") patch.closeReason = "disqualified";
+        }
+        if (sales === "__clear") patch.companySales = "";
+        else if (sales) patch.companySales = sales;
+        if (follow) {
+          patch.nextFollowUpAt = follow;
+          localFollowUpSet(id, follow);
+        }
+        const prev = cases.find((c) => c.id === id);
+        if (!prev) continue;
+        await updateCase(id, patch, { silent: true, source: "批量更新" });
+        n += 1;
+      }
+      casesSelected.clear();
+      renderCasesTable();
+      renderBoard();
+      renderDashboard();
+      if (!document.getElementById("view-logs").classList.contains("hidden")) renderLogHistory();
+      toast(`已批量更新 ${n} 宗`);
     }
 
     function setMgmtTab(tab) {
@@ -2841,6 +4603,23 @@
       else renderSalesMgmt();
     }
 
+    function lastContactChannelForCases(caseList) {
+      let best = null;
+      for (const c of caseList) {
+        for (const l of (logsByCase[c.id] || [])) {
+          const t = new Date(l.created_at || 0).getTime();
+          if (!best || t > best.t) best = { t, type: l.log_type || "log", content: l.content || "" };
+        }
+        if (c.meetingDone) {
+          const t = c.appointmentAt ? new Date(c.appointmentAt).getTime() : Date.now();
+          if (!best || t > best.t) best = { t, type: "meeting", content: "會面" };
+        }
+      }
+      if (!best) return { label: "—", detail: "" };
+      const typeLabel = (LOG_TYPES.find((x) => x.id === best.type) || { label: best.type }).label;
+      return { label: typeLabel, detail: String(best.content || "").slice(0, 40) };
+    }
+
     function buildCustomerRows() {
       const map = new Map();
       for (const c of cases) {
@@ -2852,40 +4631,113 @@
             cases: [],
             visit: 0,
             lastMeeting: null,
-            nextFollowUp: "",
-            overdue: false,
             sales: new Set(),
             partners: new Set(),
             primaryCaseId: c.id,
+            nextFollowUp: "",
+            overdue: false,
           });
         }
         const row = map.get(key);
         row.cases.push(c);
-        row.visit += visitCount(c);
-        const lm = lastMeetingDate(c);
-        if (lm && (!row.lastMeeting || lm > row.lastMeeting)) row.lastMeeting = lm;
+        if (c.meetingDone) row.visit += 1;
+        if (normalizeCompanySales(c.companySales)) row.sales.add(normalizeCompanySales(c.companySales));
         if (c.ricohSales) row.sales.add(c.ricohSales);
         if (c.partner) row.partners.add(c.partner);
-        // Prefer soonest upcoming / any follow-up date across cases
-        if (c.nextFollowUpAt) {
-          if (!row.nextFollowUp || c.nextFollowUpAt < row.nextFollowUp) {
-            row.nextFollowUp = c.nextFollowUpAt;
-            row.primaryCaseId = c.id;
-          }
+        const md = c.appointmentAt ? new Date(c.appointmentAt) : null;
+        if (c.meetingDone && md && !Number.isNaN(md.getTime())) {
+          if (!row.lastMeeting || md > row.lastMeeting) row.lastMeeting = md;
         }
-        if (isFollowUpOverdue(c)) row.overdue = true;
       }
       for (const row of map.values()) {
-        if (!row.nextFollowUp) {
-          const open = row.cases.find((c) => c.stage !== "closed") || row.cases[0];
-          row.primaryCaseId = open.id;
-          row.nextFollowUp = open.nextFollowUpAt || "";
-          row.overdue = row.cases.some(isFollowUpOverdue);
-        }
+        const open = row.cases.find((c) => c.stage !== "closed") || row.cases[0];
+        row.primaryCaseId = open.id;
+        row.nextFollowUp = open.nextFollowUpAt || "";
+        row.overdue = row.cases.some(isFollowUpOverdue);
+        row.lastChannel = lastContactChannelForCases(row.cases);
       }
       return [...map.values()].sort((a, b) => {
         if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
         return a.name.localeCompare(b.name, "zh-HK");
+      });
+    }
+
+    function findDuplicateCustomerGroups() {
+      const norm = (s) => String(s || "").toLowerCase().replace(/[\s\-_.]/g, "");
+      const groups = new Map();
+      for (const c of cases) {
+        const name = companyKey(c);
+        const k = norm(name);
+        if (!k) continue;
+        if (!groups.has(k)) groups.set(k, { key: k, name, cases: [] });
+        groups.get(k).cases.push(c);
+      }
+      return [...groups.values()].filter((g) => {
+        const ids = new Set(g.cases.map((c) => c.id));
+        const names = new Set(g.cases.map((c) => companyKey(c)));
+        return ids.size > 1;
+      }).sort((a, b) => b.cases.length - a.cases.length);
+    }
+
+    async function mergeCustomerCases(keepId, dropIds) {
+      const keep = cases.find((c) => c.id === keepId);
+      if (!keep || !dropIds.length) return;
+      for (const id of dropIds) {
+        if (id === keepId) continue;
+        // move contacts & logs
+        await db.from("crm_contacts").update({ case_id: keepId }).eq("case_id", id);
+        await db.from("crm_activity_logs").update({ case_id: keepId }).eq("case_id", id);
+        // soft-close duplicate
+        const dup = cases.find((c) => c.id === id);
+        if (dup) {
+          await db.from("crm_cases").update(toRow({
+            ...dup,
+            stage: "closed",
+            closeReason: "disqualified",
+            notes: (dup.notes || "") + `\\n[合併至 ${companyKey(keep)}]`,
+            successRate: 0,
+          })).eq("id", id);
+        }
+      }
+      await loadCases();
+      renderCustomersMgmt();
+      toast(`已合併 ${dropIds.length} 宗到 ${companyKey(keep)}`);
+    }
+
+    function renderCustomerMergeBox() {
+      const box = document.getElementById("customerMergeBox");
+      if (!box) return;
+      const dups = findDuplicateCustomerGroups();
+      if (!dups.length) {
+        box.classList.remove("hidden");
+        box.innerHTML = `<div class="mgmt-alert ok">✓ 未發現重複公司名（同一正規化名稱多於 1 宗）</div>`;
+        return;
+      }
+      box.classList.remove("hidden");
+      box.innerHTML = `<div class="mgmt-alert">發現 <strong>${dups.length}</strong> 組可能重複公司名 — 揀保留邊一宗，其他會關為 DQ 並搬移 contacts／logs</div>
+        ${dups.slice(0, 12).map((g, gi) => `
+          <div class="panel" style="margin-top:8px;padding:12px">
+            <strong>${escapeHtml(g.name)}</strong>
+            <div class="muted" style="font-size:.72rem;margin:4px 0 8px">${g.cases.length} 宗</div>
+            <div style="display:grid;gap:6px">
+              ${g.cases.map((c) => `
+                <label style="display:flex;gap:8px;align-items:center;font-size:.8rem">
+                  <input type="radio" name="merge-keep-${gi}" value="${escapeAttr(c.id)}" ${c === g.cases[0] ? "checked" : ""} />
+                  <span><strong>${escapeHtml(companyKey(c))}</strong> · ${escapeHtml(stageMeta(c.stage).short)} · ${money(c.amount)} · ${escapeHtml(c.id)}</span>
+                </label>`).join("")}
+            </div>
+            <button type="button" class="btn btn-teal btn-sm" style="margin-top:8px" data-merge-group="${gi}">合併到所選</button>
+          </div>`).join("")}`;
+      box.querySelectorAll("[data-merge-group]").forEach((btn) => {
+        btn.onclick = async () => {
+          const gi = Number(btn.dataset.mergeGroup);
+          const g = dups[gi];
+          const keep = box.querySelector(`input[name="merge-keep-${gi}"]:checked`)?.value;
+          if (!keep) return toast("請揀保留邊一宗");
+          if (!confirm(`合併其餘 ${g.cases.length - 1} 宗到所選案件？此操作會關閉重複案件。`)) return;
+          const drop = g.cases.map((c) => c.id).filter((id) => id !== keep);
+          await mergeCustomerCases(keep, drop);
+        };
       });
     }
 
@@ -2903,7 +4755,7 @@
       if (q) {
         rows = rows.filter((r) => {
           const contactHay = r.cases.flatMap((c) => (contactsByCase[c.id] || []).map((p) => p.name || "")).join(" ");
-          return [r.name, [...r.sales].join(" "), [...r.partners].join(" "), contactHay].join(" ").toLowerCase().includes(q);
+          return [r.name, [...r.sales].join(" "), [...r.partners].join(" "), r.lastChannel?.label || "", contactHay].join(" ").toLowerCase().includes(q);
         });
       }
 
@@ -2912,10 +4764,12 @@
         const status = r.overdue
           ? `<span class="tag-overdue">逾期未跟進</span>`
           : (r.nextFollowUp ? `<span class="tag-ok">已排期</span>` : `<span class="muted">未設跟進日</span>`);
+        const ch = r.lastChannel || { label: "—", detail: "" };
         return `<tr data-customer-key="${escapeAttr(r.key)}">
           <td><strong>${escapeHtml(r.name)}</strong><div class="muted" style="font-size:.68rem">${r.cases.length} 宗案件</div></td>
           <td><strong>${r.visit}</strong></td>
           <td>${lastText}</td>
+          <td><strong>${escapeHtml(ch.label)}</strong>${ch.detail ? `<div class="muted" style="font-size:.68rem">${escapeHtml(ch.detail)}</div>` : ""}</td>
           <td>
             <input type="date" class="cust-follow" data-case-id="${escapeAttr(r.primaryCaseId)}" value="${escapeAttr(r.nextFollowUp || "")}" style="border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:#fff;font-size:.78rem" />
           </td>
@@ -2926,7 +4780,7 @@
           </td>
           <td><button class="btn btn-ghost btn-sm" data-open="${escapeAttr(r.primaryCaseId)}">詳情</button></td>
         </tr>`;
-      }).join("") || `<tr><td colspan="7" style="text-align:center;padding:28px" class="muted">沒有客戶</td></tr>`;
+      }).join("") || `<tr><td colspan="8"><div class="empty-state">沒有客戶</div></td></tr>`;
 
       document.querySelectorAll("#customersBody [data-open]").forEach((b) => b.onclick = () => openDrawer(b.dataset.open));
       document.querySelectorAll("#customersBody .cust-follow").forEach((input) => {
@@ -2934,22 +4788,24 @@
           const id = input.dataset.caseId;
           const val = input.value || "";
           localFollowUpSet(id, val);
-          await updateCase(id, { nextFollowUpAt: val });
+          await updateCase(id, { nextFollowUpAt: val }, { source: "客戶管理" });
           renderCustomersMgmt();
         };
       });
     }
 
     function emptyCaseBucket() {
-      return { cases1m: 0, cases3m: 0, dq: 0, qualified: 0, total: 0 };
+      return { cases1m: 0, cases3m: 0, dq: 0, qualified: 0, total: 0, amount: 0, wonAmt: 0 };
     }
 
     function bumpCaseBucket(bucket, c) {
       bucket.total += 1;
+      bucket.amount += Number(c.amount) || 0;
       if (inLastDays(c.createdAt, 30)) bucket.cases1m += 1;
       if (inLastDays(c.createdAt, 90)) bucket.cases3m += 1;
       if (isDq(c)) bucket.dq += 1;
       if (isQualified(c)) bucket.qualified += 1;
+      if (isWon(c)) bucket.wonAmt += Number(c.amount) || 0;
     }
 
     function teamKeyForCase(c) {
@@ -2975,11 +4831,13 @@
           partner.teams.set(teamName, {
             name: teamName,
             house: c.ricohHouse || "",
+            caseIds: [],
             ...emptyCaseBucket(),
             sales: new Map(),
           });
         }
         const team = partner.teams.get(teamName);
+        team.caseIds.push(c.id);
         bumpCaseBucket(team, c);
         if (c.ricohHouse && !team.house) team.house = c.ricohHouse;
 
@@ -3004,11 +4862,14 @@
     }
 
     function partnerMetricPills(b) {
+      const dqRate = b.total ? Math.round((b.dq / b.total) * 100) : 0;
       return `<div class="partner-metrics">
         <span><strong>${b.cases1m}</strong>近 1 個月</span>
         <span><strong>${b.cases3m}</strong>近 3 個月</span>
-        <span><strong style="color:#9f1239">${b.dq}</strong>DQ</span>
+        <span><strong style="color:#9f1239">${b.dq}</strong>DQ（${dqRate}%）</span>
         <span><strong style="color:#15803d">${b.qualified}</strong>Qualified</span>
+        <span><strong>${money(b.amount || 0)}</strong>貢獻金額</span>
+        <span><strong>${money(b.wonAmt || 0)}</strong>簽單額</span>
         <span><strong>${b.total}</strong>總 Case</span>
       </div>`;
     }
@@ -3036,11 +4897,13 @@
       const totalDq = tree.reduce((s, r) => s + r.dq, 0);
       const totalQ = tree.reduce((s, r) => s + r.qualified, 0);
       const teamN = tree.reduce((s, r) => s + r.teams.length, 0);
+      const totalAmt = tree.reduce((s, r) => s + (r.amount || 0), 0);
+      const topPartner = [...tree].sort((a, b) => (b.amount || 0) - (a.amount || 0))[0];
       document.getElementById("partnerStats").innerHTML = [
         renderStatCard({ label: "Partner", value: tree.length, sub: `${teamN} 個 Team`, tone: "purple", icon: "people" }),
-        renderStatCard({ label: "近 1 個月 Case", value: total1, sub: "按建立日期", tone: "sky", icon: "cases" }),
-        renderStatCard({ label: "近 3 個月 Case", value: total3, sub: "按建立日期", tone: "orange", icon: "chart" }),
-        renderStatCard({ label: "DQ / Qualified", value: `${totalDq} / ${totalQ}`, sub: "目前篩選合計", tone: "mint", icon: "check", valueStyle: "font-size:1.2rem" }),
+        renderStatCard({ label: "貢獻金額排行榜首", value: topPartner ? money(topPartner.amount || 0) : "—", sub: topPartner ? topPartner.name : "—", tone: "sky", icon: "money", valueStyle: "font-size:1.05rem" }),
+        renderStatCard({ label: "近 3 個月 Case", value: total3, sub: `近 1 月 ${total1} · 總額 ${money(totalAmt)}`, tone: "orange", icon: "chart" }),
+        renderStatCard({ label: "DQ / Qualified", value: `${totalDq} / ${totalQ}`, sub: tree.length ? `平均 DQ 率 ${Math.round((totalDq / Math.max(1, tree.reduce((s, r) => s + r.total, 0))) * 100)}%` : "—", tone: "mint", icon: "check", valueStyle: "font-size:1.2rem" }),
       ].join("");
 
       const openAll = forceOpen === true || !!q;
@@ -3063,19 +4926,25 @@
                 <button type="button" class="team-row-head">
                   <div>
                     <div class="team-row-title"><span class="chev">▸</span> ${escapeHtml(t.name)}</div>
-                    <div class="team-row-sub">${t.house && t.house !== t.name ? escapeHtml(t.house) + " · " : ""}${t.sales.length} 位 Sales</div>
+                    <div class="team-row-sub">${t.house && t.house !== t.name ? escapeHtml(t.house) + " · " : ""}${t.sales.length} 位 Sales · ${money(t.amount || 0)}</div>
                   </div>
                   <div class="team-row-metrics">
                     <span>1月 <b>${t.cases1m}</b></span>
                     <span>3月 <b>${t.cases3m}</b></span>
-                    <span class="dq">DQ <b>${t.dq}</b></span>
+                    <span class="dq">DQ <b>${t.dq}</b>（${t.total ? Math.round(t.dq / t.total * 100) : 0}%）</span>
                     <span class="q">Q <b>${t.qualified}</b></span>
                   </div>
                 </button>
                 <div class="team-sales">
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin:0 0 10px;padding:0 4px">
+                    <label style="display:flex;flex-direction:column;gap:4px;font-size:.68rem;font-weight:700;color:var(--muted)">Team Leader
+                      <input type="text" class="tl-edit" data-case-ids="${escapeAttr((t.caseIds || []).join(","))}" value="${escapeAttr(t.name === "未分配團隊" ? "" : t.name)}" placeholder="例如 Polly Lee" style="border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:#fff;font-size:.78rem;min-width:160px" />
+                    </label>
+                    <button type="button" class="btn btn-teal btn-sm tl-save" data-case-ids="${escapeAttr((t.caseIds || []).join(","))}">儲存 Team Leader</button>
+                  </div>
                   <table>
                     <thead><tr>
-                      <th>Sales</th><th>近 1 個月</th><th>近 3 個月</th><th>DQ</th><th>Qualified</th><th>總 Case</th>
+                      <th>Sales</th><th>近 1 個月</th><th>近 3 個月</th><th>DQ</th><th>金額</th><th>Qualified</th><th>總 Case</th>
                     </tr></thead>
                     <tbody>
                       ${t.sales.map((s) => `<tr>
@@ -3083,9 +4952,10 @@
                         <td class="num">${s.cases1m}</td>
                         <td class="num">${s.cases3m}</td>
                         <td class="dq">${s.dq}</td>
+                        <td class="num">${money(s.amount || 0)}</td>
                         <td class="q">${s.qualified}</td>
                         <td class="num">${s.total}</td>
-                      </tr>`).join("") || `<tr><td colspan="6" class="muted">未有 Sales</td></tr>`}
+                      </tr>`).join("") || `<tr><td colspan="7" class="muted">未有 Sales</td></tr>`}
                     </tbody>
                   </table>
                 </div>
@@ -3097,6 +4967,25 @@
 
       document.querySelectorAll("#partnersTree .team-row-head").forEach((btn) => {
         btn.onclick = () => btn.closest(".team-row")?.classList.toggle("open");
+      });
+      document.querySelectorAll("#partnersTree .tl-save").forEach((btn) => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const ids = (btn.dataset.caseIds || "").split(",").filter(Boolean);
+          const input = btn.parentElement.querySelector(".tl-edit");
+          const val = (input?.value || "").trim();
+          if (!ids.length) return toast("呢個 Team 未有案件");
+          let n = 0;
+          for (const id of ids) {
+            const prev = cases.find((c) => c.id === id);
+            if (!prev) continue;
+            if ((prev.teamLeader || "") === val) continue;
+            await updateCase(id, { teamLeader: val }, { silent: true, source: "Partner 管理" });
+            n += 1;
+          }
+          renderPartnersMgmt();
+          toast(`已更新 ${n} 宗 Team Leader`);
+        };
       });
     }
 
@@ -3110,6 +4999,9 @@
         qualified: 0,
         wonN: 0,
         wonAmt: 0,
+        pipelineAmt: 0,
+        weightedAmt: 0,
+        openN: 0,
       };
     }
 
@@ -3125,6 +5017,11 @@
       if (isWon(c)) {
         row.wonN += 1;
         row.wonAmt += Number(c.amount) || 0;
+      }
+      if (c.stage !== "closed") {
+        row.openN += 1;
+        row.pipelineAmt += Number(c.amount) || 0;
+        row.weightedAmt += (Number(c.amount) || 0) * ((Number(c.successRate) || 0) / 100);
       }
     }
 
@@ -3180,6 +5077,9 @@
 
     function buildAgendaItems(range) {
       const items = [];
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayEnd = endOfDay(todayStart);
       for (const c of cases) {
         if (c.stage === "closed" && isDq(c)) continue;
         const sales = normalizeCompanySales(c.companySales) || "未指派";
@@ -3195,6 +5095,7 @@
             kind: "followup",
             kindLabel: "Case 跟進",
             overdue: isFollowUpOverdue(c),
+            isTodayMeet: false,
             sales,
             case: c,
             note: c.followUpOpportunity ? "有跟進機會" : (c.requirements || "").slice(0, 60),
@@ -3204,6 +5105,7 @@
         if (c.appointmentAt && dateInAgendaRange(c.appointmentAt, range)) {
           const d = new Date(c.appointmentAt);
           if (!Number.isNaN(d.getTime())) {
+            const isTodayMeet = d >= todayStart && d <= todayEnd && !c.meetingDone;
             items.push({
               sortKey: d.toISOString() + "|0|" + sales,
               date: d,
@@ -3212,6 +5114,7 @@
               kind: "meeting",
               kindLabel: c.meetingDone ? "會議（已完成）" : (c.appointmentConfirmed ? "會議（已確認）" : "會議（待確認）"),
               overdue: false,
+              isTodayMeet,
               sales,
               case: c,
               note: c.meetingNotes ? String(c.meetingNotes).slice(0, 60) : (c.appointmentConfirmed ? "已確認會面" : "約見"),
@@ -3219,14 +5122,138 @@
           }
         }
       }
-      return items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+      // 今天有約見置頂，其後逾期跟進，再按時間
+      return items.sort((a, b) => {
+        if (a.isTodayMeet !== b.isTodayMeet) return a.isTodayMeet ? -1 : 1;
+        if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+        return a.sortKey.localeCompare(b.sortKey);
+      });
+    }
+
+    function nextStageAfterMeeting(stage) {
+      const order = ["new_lead", "contacting", "unreachable", "first_interview", "quotation", "follow_up", "final_stage", "confirmation"];
+      const idx = order.indexOf(stage);
+      if (idx < 0) return "quotation";
+      if (stage === "confirmation" || stage === "closed") return stage;
+      return order[Math.min(idx + 1, order.length - 1)];
+    }
+
+    async function completeMeetingQuick(caseId) {
+      const c = cases.find((x) => x.id === caseId);
+      if (!c) return;
+      const nextStage = nextStageAfterMeeting(c.stage);
+      const note = prompt("會後 comment（可留空）", c.meetingNotes || "") ?? null;
+      if (note === null) return;
+      const logContent = note.trim() || "會面已完成";
+      await db.from("crm_activity_logs").insert({
+        case_id: c.id,
+        log_type: "meeting_done",
+        content: logContent,
+        created_at: new Date().toISOString(),
+      });
+      await updateCase(c.id, {
+        meetingDone: true,
+        meetingNotes: note.trim() || c.meetingNotes || logContent,
+        appointmentConfirmed: true,
+        stage: nextStage === c.stage ? c.stage : nextStage,
+        followUpOpportunity: true,
+      }, { source: "完成會面" });
+      toast(`已完成會面${nextStage !== c.stage ? " · 階段 → " + stageMeta(nextStage).label : ""}`);
+      renderAgenda();
+    }
+
+    function renderAgendaCalendar(items, range) {
+      const root = document.getElementById("agendaCalendar");
+      if (!root) return;
+      const mode = agendaView === "week" ? "week" : "month";
+      let start = new Date(range.from);
+      let days = 7;
+      if (mode === "month") {
+        start = new Date(range.from.getFullYear(), range.from.getMonth(), 1);
+        const startPad = (start.getDay() + 6) % 7; // Mon=0
+        start = new Date(start.getFullYear(), start.getMonth(), 1 - startPad);
+        days = 42;
+      } else {
+        start = startOfWeek(range.from);
+        days = 7;
+      }
+      const dow = ["一", "二", "三", "四", "五", "六", "日"].map((d) => `<div class="dow">${d}</div>`).join("");
+      let cells = "";
+      for (let i = 0; i < days; i++) {
+        const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+        const key = formatLocalDate(d);
+        const inMonth = mode === "week" || d.getMonth() === range.from.getMonth();
+        const isToday = key === formatLocalDate(new Date());
+        const dayItems = items.filter((it) => formatLocalDate(it.date) === key);
+        cells += `<div class="day${inMonth ? "" : " out"}${isToday ? " today" : ""}">
+          <div class="dnum">${d.getDate()}</div>
+          ${dayItems.slice(0, 4).map((it) => {
+            const cls = it.overdue ? "overdue" : (it.kind === "meeting" ? "meet" : "follow");
+            return `<span class="pill ${cls}" data-open="${escapeAttr(it.case.id)}" title="${escapeAttr(it.kindLabel + " · " + companyKey(it.case))}">${escapeHtml((it.timeText ? it.timeText + " " : "") + companyKey(it.case))}</span>`;
+          }).join("")}
+          ${dayItems.length > 4 ? `<div class="muted" style="font-size:.62rem">+${dayItems.length - 4} 更多</div>` : ""}
+        </div>`;
+      }
+      root.innerHTML = `<div class="agenda-cal">${dow}${cells}</div>`;
+      root.querySelectorAll("[data-open]").forEach((el) => el.onclick = () => openDrawer(el.dataset.open));
+    }
+
+    function agendaReminderPayload(items) {
+      const overdue = items.filter((i) => i.overdue);
+      const meets = items.filter((i) => i.kind === "meeting" && i.isTodayMeet);
+      const lines = [
+        `Achiever CRM 每日提醒 · ${formatLocalDate(new Date())}`,
+        `今日約見：${meets.length}`,
+        ...meets.slice(0, 8).map((i) => `· ${i.timeText || ""} ${companyKey(i.case)} (${i.sales})`),
+        `逾期跟進：${overdue.length}`,
+        ...overdue.slice(0, 8).map((i) => `· ${companyKey(i.case)} · ${i.dateText} (${i.sales})`),
+      ];
+      return { text: lines.join("\n"), overdue: overdue.length, meetings: meets.length, at: new Date().toISOString() };
+    }
+
+    async function sendAgendaReminder(items) {
+      const payload = agendaReminderPayload(items);
+      const url = (document.getElementById("agendaWebhookUrl")?.value || localStorage.getItem("crm_agenda_webhook") || "").trim();
+      if (url) {
+        localStorage.setItem("crm_agenda_webhook", url);
+        try {
+          await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              text: payload.text,
+              content: payload.text,
+              message: payload.text,
+              ...payload,
+            }),
+            mode: "no-cors",
+          });
+          toast("已發送 webhook 提醒（no-cors，請喺對方端確認）");
+        } catch (e) {
+          toast("Webhook 發送失敗：" + (e.message || e));
+        }
+      } else {
+        toast("未設定 webhook；改用瀏覽器通知／畫面提示");
+      }
+      if (window.Notification) {
+        if (Notification.permission === "granted") {
+          new Notification("Achiever CRM 提醒", { body: payload.text.slice(0, 180) });
+        } else if (Notification.permission !== "denied") {
+          Notification.requestPermission().then((p) => {
+            if (p === "granted") new Notification("Achiever CRM 提醒", { body: payload.text.slice(0, 180) });
+          });
+        }
+      }
+      alert(payload.text);
     }
 
     function syncAgendaPeriodUi() {
       document.querySelectorAll("#agendaPeriodSeg button").forEach((b) => {
         b.classList.toggle("active", b.dataset.agendaPeriod === agendaPeriod);
       });
-      // 當天／本星期／自訂 都顯示由－至日期
+      document.querySelectorAll("#agendaViewSeg button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.agendaView === agendaView);
+      });
       const range = getAgendaRange();
       const fromStr = formatLocalDate(range.from);
       const toStr = formatLocalDate(range.to);
@@ -3246,6 +5273,12 @@
         `<option value="未指派">未指派</option>`;
       sel.value = [...sel.options].some((o) => o.value === cur) ? cur : "all";
       agendaSalesFilter = sel.value;
+      const wh = document.getElementById("agendaWebhookUrl");
+      if (wh && !wh.dataset.ready) {
+        wh.value = localStorage.getItem("crm_agenda_webhook") || "";
+        wh.dataset.ready = "1";
+        wh.onchange = () => localStorage.setItem("crm_agenda_webhook", wh.value.trim());
+      }
     }
 
     function renderAgenda() {
@@ -3255,34 +5288,55 @@
       const followN = items.filter((i) => i.kind === "followup").length;
       const meetN = items.filter((i) => i.kind === "meeting").length;
       const overdueN = items.filter((i) => i.overdue).length;
+      const todayMeetN = items.filter((i) => i.isTodayMeet).length;
       const salesHit = new Set(items.map((i) => i.sales));
 
       document.getElementById("agendaStats").innerHTML = [
         renderStatCard({ label: "期間", value: range.title.replace(/（.*）/, "") || "—", sub: range.mode === "today" ? "當天" : (range.mode === "week" ? "本星期" : "自訂"), tone: "purple", icon: "clock", valueStyle: "font-size:1.05rem" }),
-        renderStatCard({ label: "跟進 Case", value: followN, sub: "已設下次跟進日期", tone: "orange", icon: "follow" }),
+        renderStatCard({ label: "今日約見", value: todayMeetN, sub: "置頂顯示", tone: "sky", icon: "meet" }),
+        renderStatCard({ label: "跟進 Case", value: followN, sub: overdueN ? `${overdueN} 逾期` : "已設下次跟進日期", tone: overdueN ? "rose" : "orange", icon: "follow" }),
         renderStatCard({ label: "會議", value: meetN, sub: "約見日期落喺期間內", tone: "mint", icon: "meet" }),
-        renderStatCard({ label: "涉及銷售員", value: salesHit.size, sub: [...salesHit].slice(0, 5).join(" · ") || "—", tone: "sky", icon: "people" }),
       ].join("");
 
       const alert = document.getElementById("agendaAlert");
       if (range.incomplete) {
         alert.innerHTML = `<div class="mgmt-alert">請揀「由日期」同「至日期」，再按「套用」</div>`;
       } else if (overdueN) {
-        alert.innerHTML = `<div class="mgmt-alert">期間內有 <strong>${overdueN}</strong> 宗跟進已過期仍未更新</div>`;
+        alert.innerHTML = `<div class="mgmt-alert">⚠ 期間內有 <strong>${overdueN}</strong> 宗跟進已過期 · 今日約見 <strong>${todayMeetN}</strong> · <button type="button" class="btn btn-ghost btn-sm" id="btnAgendaRemindInline">發送提醒</button></div>`;
       } else if (!items.length) {
         alert.innerHTML = `<div class="mgmt-alert ok">呢段期間暫時未有會議或跟進 Case</div>`;
       } else {
         alert.innerHTML = `<div class="mgmt-alert ok">共 <strong>${items.length}</strong> 項 · ${escapeHtml(range.title)}</div>`;
+      }
+      document.getElementById("btnAgendaRemindInline")?.addEventListener("click", () => sendAgendaReminder(items));
+
+      const cal = document.getElementById("agendaCalendar");
+      const tableWrap = document.getElementById("agendaTableWrap");
+      if (agendaView === "list") {
+        cal?.classList.add("hidden");
+        tableWrap?.classList.remove("hidden");
+      } else {
+        cal?.classList.remove("hidden");
+        tableWrap?.classList.add("hidden");
+        renderAgendaCalendar(items, range);
       }
 
       document.getElementById("agendaBody").innerHTML = items.map((it) => {
         const c = it.case;
         const s = stageMeta(c.stage);
         const kindClass = it.kind === "meeting" ? "tag-ok" : (it.overdue ? "tag-overdue" : "tag-ok");
-        return `<tr>
+        const trClass = it.overdue ? "agenda-overdue" : (it.isTodayMeet ? "agenda-today-meet" : "");
+        const actions = [
+          `<button class="btn btn-ghost btn-sm" data-open="${escapeAttr(c.id)}">詳情</button>`,
+        ];
+        if (it.kind === "meeting" && !c.meetingDone) {
+          actions.unshift(`<button class="btn btn-teal btn-sm" data-complete-meet="${escapeAttr(c.id)}">完成會面</button>`);
+        }
+        return `<tr class="${trClass}">
           <td>
             <strong>${escapeHtml(it.dateText)}</strong>
             ${it.timeText ? `<div class="muted" style="font-size:.72rem">${escapeHtml(it.timeText)}</div>` : ""}
+            ${it.isTodayMeet ? `<div style="margin-top:4px"><span class="badge" style="color:#5b21b6;background:#efeefe">今日約見</span></div>` : ""}
             ${it.overdue ? `<div style="margin-top:4px"><span class="tag-overdue">逾期</span></div>` : ""}
           </td>
           <td><span class="${kindClass}">${escapeHtml(it.kindLabel)}</span></td>
@@ -3294,40 +5348,347 @@
           <td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>
           <td class="muted" style="font-size:.75rem">${escapeHtml(c.ricohSales || "—")}</td>
           <td class="muted" style="font-size:.75rem">${escapeHtml(it.note || "—")}</td>
-          <td><button class="btn btn-ghost btn-sm" data-open="${escapeAttr(c.id)}">詳情</button></td>
+          <td style="display:flex;gap:4px;flex-wrap:wrap">${actions.join("")}</td>
         </tr>`;
-      }).join("") || `<tr><td colspan="8" style="text-align:center;padding:28px" class="muted">${range.incomplete ? "請先套用日期範圍" : "沒有符合項目"}</td></tr>`;
+      }).join("") || `<tr><td colspan="8"><div class="empty-state">${range.incomplete ? "請先套用日期範圍" : "沒有符合項目"}</div></td></tr>`;
 
       document.querySelectorAll("#agendaBody [data-open]").forEach((b) => {
         b.onclick = () => openDrawer(b.dataset.open);
       });
+      document.querySelectorAll("#agendaBody [data-complete-meet]").forEach((b) => {
+        b.onclick = () => completeMeetingQuick(b.dataset.completeMeet);
+      });
+
+      // auto local reminder once per day when overdue
+      if (overdueN || todayMeetN) {
+        const flag = "crm_agenda_reminded_" + formatLocalDate(new Date());
+        if (!sessionStorage.getItem(flag) && overdueN) {
+          sessionStorage.setItem(flag, "1");
+          // soft prompt only
+        }
+      }
+    }
+
+    function renderSalesKpiEditor(name) {
+      const plan = getSalesPlan(name);
+      const kpi = plan.kpi;
+      const year = Number(salesKpiYear) || new Date().getFullYear();
+      salesKpiYear = year;
+      const years = availableSalesYears();
+      const months = listYearMonths(year);
+      const cur = currentMonthKey();
+      const nowY = new Date().getFullYear();
+      const curMonthMeta = listYearMonths(nowY).find((m) => m.key === cur) || months[new Date().getMonth()];
+      const closedAmt = salesClosedAmountInRange(name, curMonthMeta.start, curMonthMeta.end);
+      const closedN = salesClosedCountInRange(name, curMonthMeta.start, curMonthMeta.end);
+      const meetN = salesMeetCountInRange(name, curMonthMeta.start, curMonthMeta.end);
+      const qualN = salesQualifyCountInRange(name, curMonthMeta.start, curMonthMeta.end);
+      const monthTarget = Number(plan.months[cur]?.closingTarget) || 0;
+      const row = buildSalesRows().find((r) => r.name === name);
+      const conv = row && row.caseIds.size ? Math.round((row.wonN / row.caseIds.size) * 100) : 0;
+
+      const monthRows = months.map((m) => {
+        const t = Number(plan.months[m.key]?.closingTarget) || 0;
+        const a = salesClosedAmountInRange(name, m.start, m.end);
+        const n = salesClosedCountInRange(name, m.start, m.end);
+        const meet = salesMeetCountInRange(name, m.start, m.end);
+        const p = attainPct(a, t);
+        return { ...m, t, a, n, meet, p };
+      });
+      const yearTarget = monthRows.reduce((s, r) => s + r.t, 0);
+      const yearActual = monthRows.reduce((s, r) => s + r.a, 0);
+      const yearClosedN = monthRows.reduce((s, r) => s + r.n, 0);
+      const yearMeetN = monthRows.reduce((s, r) => s + r.meet, 0);
+      const yearPct = attainPct(yearActual, yearTarget);
+      const maxBar = Math.max(1, ...monthRows.flatMap((r) => [r.t, r.a]));
+      const filledMonths = monthRows.filter((r) => r.t > 0).length;
+
+      const attainCard = (label, actual, target, format = (v) => v) => {
+        const p = attainPct(actual, target);
+        const cls = !target ? "" : (p >= 100 ? " ok" : (p < 60 ? " warn" : ""));
+        const w = Math.min(100, p);
+        return `<div class="ka${cls}">
+          <div class="lbl">${escapeHtml(label)}</div>
+          <div class="val">${format(actual)} / ${format(target || 0)}</div>
+          <div class="muted" style="font-size:.68rem;font-weight:700">${target ? p + "% 達成" : "未設目標"}</div>
+          <div class="bar"><i style="width:${w}%"></i></div>
+        </div>`;
+      };
+
+      const yearOptions = years.map((y) =>
+        `<option value="${y}" ${y === year ? "selected" : ""}>${y}年${y === nowY ? "（今年）" : (y > nowY ? "（未來）" : "")}</option>`
+      ).join("");
+
+      return `
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
+          <div>
+            <div class="eyebrow">銷售員 KPI · 全年目標設計</div>
+            <h2 style="margin:2px 0 0;font-size:1.35rem">${escapeHtml(name)}</h2>
+            <p class="muted" style="margin:4px 0 0;font-size:.75rem">可規劃未來每年 12 個月 Closing 目標，並對照實際銷售表現</p>
+          </div>
+          <button type="button" class="btn btn-teal btn-sm" id="btnSaveSalesKpi">儲存 KPI</button>
+        </div>
+        <div class="kpi-attain">
+          ${attainCard("本月 Closing 銀碼", closedAmt, monthTarget, money)}
+          ${attainCard("本月簽單宗數", closedN, kpi.closeCountTarget || 0)}
+          ${attainCard("本月會面", meetN, kpi.meetTarget || 0)}
+          ${attainCard("本月 Qualified", qualN, kpi.qualifyTarget || 0)}
+          ${attainCard("轉換率", conv, kpi.conversionTarget || 0, (v) => v + "%")}
+        </div>
+        <div class="eyebrow" style="margin-top:16px">KPI 設計（每月目標）</div>
+        <div class="kpi-form-grid" id="salesKpiForm">
+          <label><span>會面目標（宗／月）</span><input type="number" min="0" data-kpi="meetTarget" value="${kpi.meetTarget || 0}" /></label>
+          <label><span>Qualified 目標（宗／月）</span><input type="number" min="0" data-kpi="qualifyTarget" value="${kpi.qualifyTarget || 0}" /></label>
+          <label><span>簽單宗數目標（宗／月）</span><input type="number" min="0" data-kpi="closeCountTarget" value="${kpi.closeCountTarget || 0}" /></label>
+          <label><span>轉換率目標（%）</span><input type="number" min="0" max="100" data-kpi="conversionTarget" value="${kpi.conversionTarget || 0}" /></label>
+        </div>
+
+        <div class="year-plan-toolbar">
+          <div class="left">
+            <div class="eyebrow" style="margin:0">全年 12 個月 Closing 目標</div>
+            <select id="salesKpiYearSelect" aria-label="選擇年份">${yearOptions}</select>
+          </div>
+          <div class="right">
+            <button type="button" class="btn btn-ghost btn-sm" id="btnSalesYearPrev">← 上一年</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnSalesYearNext">下一年 →</button>
+          </div>
+        </div>
+
+        <div class="year-summary">
+          <div class="ys"><div class="lbl">${year} 年 Closing 目標</div><div class="val">${money(yearTarget)}</div><div class="muted" style="font-size:.68rem">${filledMonths}/12 個月已設</div></div>
+          <div class="ys"><div class="lbl">${year} 年實際 Closing</div><div class="val">${money(yearActual)}</div><div class="muted" style="font-size:.68rem">簽單 ${yearClosedN} 宗</div></div>
+          <div class="ys"><div class="lbl">全年達成率</div><div class="val" style="color:${!yearTarget ? "var(--muted)" : (yearPct >= 100 ? "#15803d" : (yearPct < 60 ? "#9f1239" : "var(--ink)"))}">${yearTarget ? yearPct + "%" : "—"}</div><div class="muted" style="font-size:.68rem">差距 ${yearTarget ? ((yearActual - yearTarget >= 0 ? "+" : "") + money(yearActual - yearTarget)) : "—"}</div></div>
+          <div class="ys"><div class="lbl">全年會面</div><div class="val">${yearMeetN}</div><div class="muted" style="font-size:.68rem">目標 ${ (kpi.meetTarget || 0) * 12 } 宗／年</div></div>
+        </div>
+
+        <div class="chart-legend" style="margin-top:10px">
+          <span><i style="background:#6b46fe"></i>Closing 目標 $</span>
+          <span><i style="background:#27c281"></i>實際 Closing $</span>
+        </div>
+        <div class="year-month-bars">
+          ${monthRows.map((r) => {
+            const tH = Math.max(r.t ? 4 : 0, (r.t / maxBar) * 100);
+            const aH = Math.max(r.a ? 4 : 0, (r.a / maxBar) * 100);
+            return `<div class="ymb${r.key === cur ? " current" : ""}" title="${escapeAttr(r.label)} · 目標 ${money(r.t)} · 實際 ${money(r.a)}">
+              <div class="p">${r.t ? r.p + "%" : "—"}</div>
+              <div class="pair">
+                <span class="t"><i style="height:${tH}%"></i></span>
+                <span class="a"><i style="height:${aH}%"></i></span>
+              </div>
+              <div class="m">${r.month}月</div>
+            </div>`;
+          }).join("")}
+        </div>
+
+        <div class="year-fill-box">
+          <label><span>快速填入全年／每月目標（HKD）</span><input type="number" min="0" step="1000" id="salesYearFillAmount" placeholder="例如 1200000" /></label>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnFillYearEqual">平均分配到 12 個月</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnFillYearSame">每月同一金額</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnCopyPrevYear">複製上一年目標</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnClearYearTargets">清空本年目標</button>
+        </div>
+
+        <div class="table-wrap" style="margin-top:12px">
+          <table class="month-target-table">
+            <thead>
+              <tr>
+                <th>月份</th>
+                <th>Closing 目標 $</th>
+                <th>實際 Closing $</th>
+                <th>達成率</th>
+                <th>簽單宗數</th>
+                <th>會面數</th>
+                <th>差距</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${monthRows.map((r) => {
+                const gap = r.a - r.t;
+                return `<tr>
+                  <td><strong>${escapeHtml(r.label)}</strong>${r.key === cur ? ' <span class="badge" style="color:#5b21b6;background:#efeefe">本月</span>' : ""}${r.start > new Date() && r.key !== cur ? ' <span class="badge" style="color:#0369a1;background:#e0f2fe">未來</span>' : ""}</td>
+                  <td><input type="number" min="0" step="1000" data-ym="${escapeAttr(r.key)}" class="sales-month-target" value="${r.t || ""}" placeholder="0" /></td>
+                  <td><strong>${money(r.a)}</strong></td>
+                  <td style="font-weight:800;color:${!r.t ? "var(--muted)" : (r.p >= 100 ? "#15803d" : (r.p < 60 ? "#9f1239" : "var(--ink)"))}">${r.t ? r.p + "%" : "—"}</td>
+                  <td>${r.n}</td>
+                  <td>${r.meet}</td>
+                  <td style="font-weight:700;color:${!r.t ? "var(--muted)" : (gap >= 0 ? "#15803d" : "#9f1239")}">${r.t ? ((gap >= 0 ? "+" : "") + money(gap)) : "—"}</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td><strong>${year} 年合計</strong></td>
+                <td><strong>${money(yearTarget)}</strong></td>
+                <td><strong>${money(yearActual)}</strong></td>
+                <td style="font-weight:800;color:${!yearTarget ? "var(--muted)" : (yearPct >= 100 ? "#15803d" : (yearPct < 60 ? "#9f1239" : "var(--ink)"))}">${yearTarget ? yearPct + "%" : "—"}</td>
+                <td><strong>${yearClosedN}</strong></td>
+                <td><strong>${yearMeetN}</strong></td>
+                <td style="font-weight:700;color:${!yearTarget ? "var(--muted)" : (yearActual - yearTarget >= 0 ? "#15803d" : "#9f1239")}">${yearTarget ? (((yearActual - yearTarget) >= 0 ? "+" : "") + money(yearActual - yearTarget)) : "—"}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p class="muted" style="margin-top:8px;font-size:.72rem">改完目標會即時儲存 · 可預先設定未來年份 · Dashboard「銷售員目標 vs Closing」會按期間月份合計顯示</p>
+      `;
+    }
+
+    function bindSalesKpiEditor(name) {
+      const panel = document.getElementById("salesKpiPanel");
+      const refreshDash = () => {
+        if (!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashboard();
+      };
+      document.getElementById("btnSaveSalesKpi").onclick = () => {
+        const kpi = {};
+        panel.querySelectorAll("#salesKpiForm [data-kpi]").forEach((input) => {
+          kpi[input.dataset.kpi] = Number(input.value) || 0;
+        });
+        setSalesKpi(name, kpi);
+        toast(`已儲存 ${name} 的 KPI`);
+        renderSalesMgmt();
+        refreshDash();
+      };
+      panel.querySelectorAll(".sales-month-target").forEach((input) => {
+        input.onchange = () => {
+          setSalesMonthClosingTarget(name, input.dataset.ym, input.value);
+          toast(`已更新 ${name} · ${input.dataset.ym} Closing 目標`);
+          renderSalesMgmt();
+          refreshDash();
+        };
+      });
+      const yearSelect = document.getElementById("salesKpiYearSelect");
+      yearSelect.onchange = () => {
+        salesKpiYear = Number(yearSelect.value) || new Date().getFullYear();
+        localStorage.setItem("crm_sales_kpi_year", String(salesKpiYear));
+        renderSalesMgmt();
+      };
+      document.getElementById("btnSalesYearPrev").onclick = () => {
+        salesKpiYear -= 1;
+        localStorage.setItem("crm_sales_kpi_year", String(salesKpiYear));
+        renderSalesMgmt();
+      };
+      document.getElementById("btnSalesYearNext").onclick = () => {
+        salesKpiYear += 1;
+        localStorage.setItem("crm_sales_kpi_year", String(salesKpiYear));
+        renderSalesMgmt();
+      };
+      const readFillAmount = () => {
+        const raw = document.getElementById("salesYearFillAmount").value;
+        if (raw === "" || raw == null) {
+          toast("請先輸入金額");
+          return null;
+        }
+        return Math.max(0, Number(raw) || 0);
+      };
+      document.getElementById("btnFillYearEqual").onclick = () => {
+        const total = readFillAmount();
+        if (total == null) return;
+        const base = Math.floor(total / 12);
+        const amounts = Array.from({ length: 12 }, () => base);
+        amounts[11] = total - base * 11;
+        setSalesYearMonthsBulk(name, salesKpiYear, amounts);
+        toast(`已將 ${money(total)} 平均分配到 ${salesKpiYear} 年 12 個月`);
+        renderSalesMgmt();
+        refreshDash();
+      };
+      document.getElementById("btnFillYearSame").onclick = () => {
+        const each = readFillAmount();
+        if (each == null) return;
+        setSalesYearMonthsBulk(name, salesKpiYear, Array.from({ length: 12 }, () => each));
+        toast(`已設定 ${salesKpiYear} 年每月 Closing 目標 ${money(each)}`);
+        renderSalesMgmt();
+        refreshDash();
+      };
+      document.getElementById("btnCopyPrevYear").onclick = () => {
+        const fromY = salesKpiYear - 1;
+        const has = listYearMonths(fromY).some((m) => Number(getSalesPlan(name).months[m.key]?.closingTarget));
+        if (!has) {
+          toast(`${fromY} 年尚未有目標可複製`);
+          return;
+        }
+        copySalesYearTargets(name, fromY, salesKpiYear);
+        toast(`已複製 ${fromY} → ${salesKpiYear} 年目標`);
+        renderSalesMgmt();
+        refreshDash();
+      };
+      document.getElementById("btnClearYearTargets").onclick = () => {
+        setSalesYearMonthsBulk(name, salesKpiYear, Array.from({ length: 12 }, () => null));
+        toast(`已清空 ${name} · ${salesKpiYear} 年目標`);
+        renderSalesMgmt();
+        refreshDash();
+      };
     }
 
     function renderSalesMgmt() {
+      if (!COMPANY_SALES.includes(salesKpiSelected)) salesKpiSelected = COMPANY_SALES[0];
       const rows = buildSalesRows();
       const assigned = cases.filter((c) => !!normalizeCompanySales(c.companySales)).length;
       const unassigned = cases.length - assigned;
-      const meet1 = rows.reduce((s, r) => s + r.meet1m.size, 0);
-      const meet3 = rows.reduce((s, r) => s + r.meet3m.size, 0);
-      const wonN = rows.reduce((s, r) => s + r.wonN, 0);
-      const wonAmt = rows.reduce((s, r) => s + r.wonAmt, 0);
+      const cur = currentMonthKey();
+      const curStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      const curEnd = endOfDay(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
+      const teamTarget = COMPANY_SALES.reduce((s, n) => s + (Number(getSalesPlan(n).months[cur]?.closingTarget) || 0), 0);
+      const teamClosed = COMPANY_SALES.reduce((s, n) => s + salesClosedAmountInRange(n, curStart, curEnd), 0);
+      const teamPct = attainPct(teamClosed, teamTarget);
+      const planYear = salesKpiYear || new Date().getFullYear();
+      const teamYearTarget = COMPANY_SALES.reduce((s, n) => s + salesYearClosingTargetSum(n, planYear), 0);
+      const teamYearClosed = COMPANY_SALES.reduce((s, n) => s + salesYearClosedAmount(n, planYear), 0);
+      const teamYearPct = attainPct(teamYearClosed, teamYearTarget);
+
       document.getElementById("salesStats").innerHTML = [
         renderStatCard({ label: "本公司銷售員", value: COMPANY_SALES.length, sub: COMPANY_SALES.join(" · "), tone: "purple", icon: "people" }),
-        renderStatCard({ label: "已指派 Case", value: `${assigned} / ${cases.length}`, sub: unassigned ? `${unassigned} 宗未指派` : "全部已指派", tone: "sky", icon: "cases", valueStyle: "font-size:1.2rem" }),
-        renderStatCard({ label: "近 1／3 月會面", value: `${meet1} / ${meet3}`, sub: "去重公司數合計", tone: "orange", icon: "meet", valueStyle: "font-size:1.2rem" }),
-        renderStatCard({ label: "成功簽單", value: `${wonN} · ${money(wonAmt)}`, sub: "確認簽單／won", tone: "mint", icon: "money", valueStyle: "font-size:1.05rem", trend: wonN ? `${wonN}` : "" }),
+        renderStatCard({ label: "本月團隊 Closing 目標", value: money(teamTarget), sub: `已完成 ${money(teamClosed)} · 達成 ${teamTarget ? teamPct + "%" : "—"}`, tone: "sky", icon: "money", valueStyle: "font-size:1.05rem" }),
+        renderStatCard({ label: `${planYear} 年團隊目標`, value: money(teamYearTarget), sub: `全年已完成 ${money(teamYearClosed)} · ${teamYearTarget ? teamYearPct + "%" : "未設"}`, tone: teamYearPct >= 100 ? "mint" : "orange", icon: "chart", valueStyle: "font-size:1.05rem" }),
+        renderStatCard({ label: "已指派 Case", value: `${assigned} / ${cases.length}`, sub: unassigned ? `${unassigned} 宗未指派` : "全部已指派", tone: "mint", icon: "cases", valueStyle: "font-size:1.2rem" }),
       ].join("");
 
-      document.getElementById("salesBody").innerHTML = rows.map((r) => `<tr>
-        <td><strong>${escapeHtml(r.name)}</strong></td>
-        <td><strong>${r.caseIds.size}</strong></td>
+      document.getElementById("salesKpiNav").innerHTML = COMPANY_SALES.map((n) => {
+        const t = Number(getSalesPlan(n).months[cur]?.closingTarget) || 0;
+        const a = salesClosedAmountInRange(n, curStart, curEnd);
+        const p = attainPct(a, t);
+        const yt = salesYearClosingTargetSum(n, planYear);
+        return `<button type="button" data-sales-kpi="${escapeAttr(n)}" class="${n === salesKpiSelected ? "active" : ""}">
+          ${escapeHtml(n)}
+          <span class="sub">${yt ? `${planYear}年 ${money(yt)}` : (t ? `本月 ${p}% · ${money(t)}` : "未設全年目標")}</span>
+        </button>`;
+      }).join("");
+      document.querySelectorAll("#salesKpiNav [data-sales-kpi]").forEach((btn) => {
+        btn.onclick = () => {
+          salesKpiSelected = btn.dataset.salesKpi;
+          localStorage.setItem("crm_sales_kpi_selected", salesKpiSelected);
+          renderSalesMgmt();
+        };
+      });
+
+      document.getElementById("salesKpiPanel").innerHTML = renderSalesKpiEditor(salesKpiSelected);
+      bindSalesKpiEditor(salesKpiSelected);
+
+      const yearHeadT = document.getElementById("salesYearTargetHead");
+      const yearHeadA = document.getElementById("salesYearActualHead");
+      if (yearHeadT) yearHeadT.textContent = `${planYear}年目標`;
+      if (yearHeadA) yearHeadA.textContent = `${planYear}年已 Closing`;
+      document.getElementById("salesBody").innerHTML = rows.map((r) => {
+        const conv = r.caseIds.size ? Math.round((r.wonN / r.caseIds.size) * 100) : 0;
+        const t = Number(getSalesPlan(r.name).months[cur]?.closingTarget) || 0;
+        const a = salesClosedAmountInRange(r.name, curStart, curEnd);
+        const p = attainPct(a, t);
+        const yt = salesYearClosingTargetSum(r.name, planYear);
+        const ya = salesYearClosedAmount(r.name, planYear);
+        const yp = attainPct(ya, yt);
+        return `<tr>
+        <td><strong>${escapeHtml(r.name)}</strong><div class="muted" style="font-size:.68rem">open ${r.openN}</div></td>
+        <td><strong>${t ? money(t) : "—"}</strong></td>
+        <td><strong>${money(a)}</strong></td>
+        <td style="font-weight:800;color:${!t ? "var(--muted)" : (p >= 100 ? "#15803d" : (p < 60 ? "#9f1239" : "var(--ink)"))}">${t ? p + "%" : "—"}</td>
+        <td><strong>${yt ? money(yt) : "—"}</strong><div class="muted" style="font-size:.68rem">${yt ? yp + "%" : "未設"}</div></td>
+        <td><strong>${money(ya)}</strong></td>
+        <td><strong>${money(r.pipelineAmt)}</strong></td>
+        <td><strong>${money(r.weightedAmt)}</strong></td>
+        <td><strong>${conv}%</strong></td>
         <td><strong>${r.meet1m.size}</strong></td>
-        <td><strong>${r.meet3m.size}</strong></td>
-        <td style="color:#9f1239;font-weight:700">${r.dq}</td>
-        <td style="color:#15803d;font-weight:700">${r.qualified}</td>
         <td><strong>${r.wonN}</strong></td>
         <td>${money(r.wonAmt)}</td>
-      </tr>`).join("");
+      </tr>`;
+      }).join("");
 
       const unset = cases.filter((c) => !normalizeCompanySales(c.companySales));
       const box = document.getElementById("salesUnassigned");
@@ -3354,7 +5715,7 @@
         ${unset.length > 40 ? `<p class="muted" style="margin-top:8px;font-size:.75rem">只顯示前 40 宗，其餘請開案件詳情指派</p>` : ""}`;
       box.querySelectorAll(".assign-company-sales").forEach((sel) => {
         sel.onchange = async () => {
-          await updateCase(sel.dataset.caseId, { companySales: sel.value || "" });
+          await updateCase(sel.dataset.caseId, { companySales: sel.value || "" }, { source: "銷售員管理" });
           renderSalesMgmt();
         };
       });
@@ -3370,11 +5731,12 @@
       const apptValue = apptLocal && !Number.isNaN(apptLocal.getTime())
         ? new Date(apptLocal.getTime() - apptLocal.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
         : "";
+      document.body.classList.add("drawer-open");
       root.innerHTML = `<div class="drawer-bg"><div class="drawer" role="dialog" aria-modal="true">
-        <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:14px">
+        <div class="drawer-head">
           <div>
             <div class="eyebrow">Case · Multi contact</div>
-            <h2 style="font-size:1.25rem;white-space:pre-line;margin-top:2px">${escapeHtml(c.customerName)}</h2>
+            <h2>${escapeHtml(c.customerName)}</h2>
             <div class="muted" style="font-size:.72rem;margin-top:4px">${escapeHtml(c.partner || "")}${c.ricohSales ? " · " + escapeHtml(c.ricohSales) : ""}</div>
           </div>
           <button class="btn btn-ghost btn-sm" id="drawerClose">關閉</button>
@@ -3444,20 +5806,29 @@
           </div>
 
           <div class="modal-col">
-            <div class="eyebrow">Activity Log（每次聯絡都要留下）</div>
+            <div class="eyebrow">Log History（聯絡 + 欄位變更）</div>
             <div class="modal-log-list">${logs.map((l) => {
               const typeLabel = (LOG_TYPES.find((t) => t.id === l.log_type) || { label: l.log_type }).label;
               const when = l.happened_at || l.created_at;
-              return `<div class="breakdown-item">
+              const isChange = l.log_type === "field_change";
+              const body = isChange
+                ? `<div class="log-change-lines">${String(l.content || "").split("\n").map((line, idx) => {
+                    if (idx === 0) return `<div class="log-actor">${escapeHtml(line)}</div>`;
+                    const m = line.match(/^·\s*(.+?):\s*(.*?)\s*→\s*(.*)$/);
+                    if (m) return `<div class="ch">· <b>${escapeHtml(m[1])}</b>: ${escapeHtml(m[2])} → <b>${escapeHtml(m[3])}</b></div>`;
+                    return `<div class="ch">${escapeHtml(line)}</div>`;
+                  }).join("")}</div>`
+                : `<div class="breakdown-meta">${escapeHtml(l.content || "")}</div>`;
+              return `<div class="breakdown-item${isChange ? " log-item change" : ""}">
                 <div><strong>${escapeHtml(typeLabel)}</strong></div>
                 <div class="muted" style="font-size:.68rem">${when ? new Date(when).toLocaleString("zh-HK") : ""}</div>
-                <div class="breakdown-meta">${escapeHtml(l.content || "")}</div>
+                ${body}
               </div>`;
             }).join("") || `<div class="breakdown-empty">未有 log</div>`}</div>
 
             <div class="row2">
               <label class="field"><span>新增 Log 類型</span>
-                <select id="d_logType">${LOG_TYPES.map((t) => `<option value="${t.id}">${t.label}</option>`).join("")}</select>
+                <select id="d_logType">${LOG_TYPES.filter((t) => t.id !== "field_change").map((t) => `<option value="${t.id}">${t.label}</option>`).join("")}</select>
               </label>
               <label class="field"><span>Log 內容</span><textarea id="d_logContent" rows="2" placeholder="例如：3/10 上午致電無人接聽"></textarea></label>
             </div>
@@ -3470,7 +5841,10 @@
           <button class="btn btn-teal" id="drawerSave">儲存案件</button>
         </div>
       </div></div>`;
-      const closeModal = () => { root.innerHTML = ""; };
+      const closeModal = () => {
+        document.body.classList.remove("drawer-open");
+        root.innerHTML = "";
+      };
       root.querySelector(".drawer-bg").onclick = (e) => { if (e.target.classList.contains("drawer-bg")) closeModal(); };
       document.getElementById("drawerClose").onclick = closeModal;
       document.getElementById("drawerCancel").onclick = closeModal;
@@ -3501,7 +5875,7 @@
           meetingNotes: document.getElementById("d_meetNotes").value,
           followUpOpportunity: document.getElementById("d_follow").checked,
           nextFollowUpAt: nextFollow,
-        });
+        }, { source: "案件詳情" });
         openDrawer(c.id);
       };
       document.getElementById("drawerAddLog").onclick = async () => {
@@ -3520,13 +5894,13 @@
         if (error) return toast("Log 失敗：" + error.message);
         // auto stage hints
         if (logType === "call_no_answer" && ["new_lead", "contacting"].includes(c.stage)) {
-          await updateCase(c.id, { stage: "contacting" });
+          await updateCase(c.id, { stage: "contacting" }, { source: "加入 Log" });
         } else if (logType === "appointment_confirmed") {
-          await updateCase(c.id, { stage: "appointment_set", appointmentConfirmed: true, appointmentFlag: true });
+          await updateCase(c.id, { stage: "appointment_set", appointmentConfirmed: true, appointmentFlag: true }, { source: "加入 Log" });
         } else if (logType === "meeting_done") {
-          await updateCase(c.id, { stage: "first_interview", meetingDone: true, meetingNotes: (c.meetingNotes ? c.meetingNotes + "\n" : "") + content });
+          await updateCase(c.id, { stage: "first_interview", meetingDone: true, meetingNotes: (c.meetingNotes ? c.meetingNotes + "\n" : "") + content }, { source: "加入 Log" });
         } else if (logType === "follow_up") {
-          await updateCase(c.id, { followUpOpportunity: true, stage: c.stage === "first_interview" ? "follow_up" : c.stage });
+          await updateCase(c.id, { followUpOpportunity: true, stage: c.stage === "first_interview" ? "follow_up" : c.stage }, { source: "加入 Log" });
         } else {
           await loadCases();
         }
@@ -3535,7 +5909,198 @@
       };
     }
 
-    async function updateCase(id, patch) {
+    const TRACKED_FIELDS = [
+      { key: "stage", label: "Stage", fmt: (v) => stageMeta(v).label },
+      { key: "closeReason", label: "關閉原因", fmt: (v) => v || "—" },
+      { key: "leadStatus", label: "Lead Status", fmt: (v) => v || "—" },
+      { key: "companySales", label: "本公司銷售員", fmt: (v) => v || "未指派" },
+      { key: "teamLeader", label: "Team Leader", fmt: (v) => v || "—" },
+      { key: "partner", label: "Partner", fmt: (v) => v || "—" },
+      { key: "ricohSales", label: "Partner Sales", fmt: (v) => v || "—" },
+      { key: "ricohHouse", label: "Ricoh House", fmt: (v) => v || "—" },
+      { key: "ricohConsultant", label: "Consultant", fmt: (v) => v || "—" },
+      { key: "amount", label: "金額", fmt: (v) => money(Number(v) || 0) },
+      { key: "budget", label: "Budget", fmt: (v) => money(Number(v) || 0) },
+      { key: "successRate", label: "成功機率", fmt: (v) => pct(Number(v) || 0) },
+      { key: "targetClosingDate", label: "Target Closing", fmt: (v) => v || "—" },
+      { key: "nextFollowUpAt", label: "下次跟進", fmt: (v) => v || "—" },
+      { key: "appointmentAt", label: "約見時間", fmt: (v) => v ? new Date(v).toLocaleString("zh-HK") : "—" },
+      { key: "appointmentFlag", label: "已約會面", fmt: (v) => v ? "是" : "否" },
+      { key: "appointmentConfirmed", label: "會面已確認", fmt: (v) => v ? "是" : "否" },
+      { key: "meetingDone", label: "會面已完成", fmt: (v) => v ? "是" : "否" },
+      { key: "followUpOpportunity", label: "跟進機會", fmt: (v) => v ? "有" : "無" },
+      { key: "systems", label: "系統", fmt: (v) => Array.isArray(v) ? (v.join(", ") || "—") : String(v || "—") },
+      { key: "requirements", label: "需求", fmt: (v) => String(v || "—").slice(0, 80) },
+      { key: "meetingNotes", label: "會後 Comment", fmt: (v) => String(v || "—").slice(0, 80) },
+      { key: "notes", label: "備註", fmt: (v) => String(v || "—").slice(0, 80) },
+    ];
+
+    function currentActor() {
+      const el = document.getElementById("logActorName");
+      const v = (el?.value || localStorage.getItem("crm_actor_name") || "ADMIN").trim();
+      return v || "ADMIN";
+    }
+
+    function valuesEqual(a, b) {
+      if (Array.isArray(a) || Array.isArray(b)) {
+        const aa = Array.isArray(a) ? a : [];
+        const bb = Array.isArray(b) ? b : [];
+        return aa.join("\u0001") === bb.join("\u0001");
+      }
+      if (typeof a === "boolean" || typeof b === "boolean") return !!a === !!b;
+      if (a == null && b == null) return true;
+      if (a == null || b == null) return String(a || "") === String(b || "");
+      return String(a) === String(b);
+    }
+
+    function diffCaseChanges(prev, next) {
+      const changes = [];
+      for (const f of TRACKED_FIELDS) {
+        const before = prev[f.key];
+        const after = next[f.key];
+        if (valuesEqual(before, after)) continue;
+        changes.push({
+          key: f.key,
+          label: f.label,
+          from: f.fmt(before),
+          to: f.fmt(after),
+        });
+      }
+      return changes;
+    }
+
+    function formatChangeContent(changes, actor, source) {
+      const head = `[變更] ${actor}${source ? " · " + source : ""}`;
+      const lines = changes.map((c) => `· ${c.label}: ${c.from} → ${c.to}`);
+      return [head, ...lines].join("\n");
+    }
+
+    async function insertChangeLog(caseId, changes, source = "") {
+      if (!changes || !changes.length) return null;
+      const actor = currentActor();
+      const content = formatChangeContent(changes, actor, source);
+      const row = {
+        id: `log-${crypto.randomUUID().slice(0, 10)}`,
+        case_id: caseId,
+        contact_id: null,
+        log_type: "field_change",
+        content,
+        happened_at: new Date().toISOString(),
+      };
+      const { error } = await db.from("crm_activity_logs").insert(row);
+      if (error) {
+        console.warn("change log failed", error);
+        // local fallback so UI still shows something this session
+        const local = JSON.parse(localStorage.getItem("crm_local_change_logs") || "[]");
+        local.unshift({ ...row, created_at: row.happened_at, _local: true });
+        localStorage.setItem("crm_local_change_logs", JSON.stringify(local.slice(0, 500)));
+        return row;
+      }
+      return row;
+    }
+
+    function allLogsMerged() {
+      const fromDb = [];
+      Object.values(logsByCase).forEach((arr) => fromDb.push(...arr));
+      let local = [];
+      try { local = JSON.parse(localStorage.getItem("crm_local_change_logs") || "[]"); } catch { local = []; }
+      const seen = new Set(fromDb.map((l) => l.id));
+      const merged = fromDb.concat(local.filter((l) => !seen.has(l.id)));
+      return merged.sort((a, b) => {
+        const ta = new Date(a.happened_at || a.created_at || 0).getTime();
+        const tb = new Date(b.happened_at || b.created_at || 0).getTime();
+        return tb - ta;
+      });
+    }
+
+    function renderLogHistory() {
+      const actorInput = document.getElementById("logActorName");
+      if (actorInput && !actorInput.dataset.ready) {
+        actorInput.value = localStorage.getItem("crm_actor_name") || "ADMIN";
+        actorInput.dataset.ready = "1";
+        actorInput.onchange = () => localStorage.setItem("crm_actor_name", actorInput.value.trim() || "ADMIN");
+      }
+      const q = (document.getElementById("logSearch")?.value || "").trim().toLowerCase();
+      const typeF = document.getElementById("logTypeFilter")?.value || "all";
+      const fromStr = document.getElementById("logFrom")?.value || "";
+      const toStr = document.getElementById("logTo")?.value || "";
+      const from = fromStr ? parseLocalDate(fromStr) : null;
+      const to = toStr ? endOfDay(parseLocalDate(toStr)) : null;
+
+      let items = allLogsMerged().map((l) => {
+        const c = cases.find((x) => x.id === l.case_id);
+        return { log: l, case: c };
+      });
+
+      items = items.filter(({ log, case: c }) => {
+        const isChange = log.log_type === "field_change";
+        if (typeF === "field_change" && !isChange) return false;
+        if (typeF === "activity" && isChange) return false;
+        const when = new Date(log.happened_at || log.created_at || 0);
+        if (from && when < from) return false;
+        if (to && when > to) return false;
+        if (!q) return true;
+        const typeLabel = (LOG_TYPES.find((t) => t.id === log.log_type) || { label: log.log_type }).label;
+        const hay = [
+          log.content || "",
+          typeLabel,
+          c ? companyKey(c) : "",
+          c ? (c.partner || "") : "",
+          c ? (c.companySales || "") : "",
+        ].join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+
+      const changeN = items.filter((i) => i.log.log_type === "field_change").length;
+      const actN = items.length - changeN;
+      document.getElementById("logStats").innerHTML = [
+        renderStatCard({ label: "顯示項目", value: items.length, sub: "依目前篩選", tone: "purple", icon: "clock" }),
+        renderStatCard({ label: "欄位變更", value: changeN, sub: "自動記錄", tone: "sky", icon: "chart" }),
+        renderStatCard({ label: "聯絡／會面 Log", value: actN, sub: "手動／系統", tone: "orange", icon: "follow" }),
+        renderStatCard({ label: "操作者", value: currentActor(), sub: "寫入變更時使用", tone: "mint", icon: "people", valueStyle: "font-size:1.05rem" }),
+      ].join("");
+
+      const root = document.getElementById("logHistoryList");
+      if (!items.length) {
+        root.innerHTML = `<div class="empty-state">未有符合嘅 Log History<br/><span class="muted" style="font-weight:650">改 case／拖曳 stage／批量更新後會自動出現欄位變更</span></div>`;
+        return;
+      }
+
+      root.innerHTML = items.slice(0, 300).map(({ log, case: c }) => {
+        const isChange = log.log_type === "field_change";
+        const typeLabel = (LOG_TYPES.find((t) => t.id === log.log_type) || { label: log.log_type }).label;
+        const when = log.happened_at || log.created_at;
+        const whenText = when ? new Date(when).toLocaleString("zh-HK") : "—";
+        const company = c ? companyKey(c) : (log.case_id || "—");
+        const lines = String(log.content || "").split("\n");
+        const body = isChange
+          ? `<div class="log-change-lines">${lines.map((line, idx) => {
+              if (idx === 0) return `<div class="log-actor">${escapeHtml(line)}</div>`;
+              const m = line.match(/^·\s*(.+?):\s*(.*?)\s*→\s*(.*)$/);
+              if (m) return `<div class="ch">· <b>${escapeHtml(m[1])}</b>: ${escapeHtml(m[2])} → <b>${escapeHtml(m[3])}</b></div>`;
+              return `<div class="ch">${escapeHtml(line)}</div>`;
+            }).join("")}</div>`
+          : `<div style="font-size:.84rem;font-weight:650;color:var(--ink-soft);white-space:pre-wrap">${escapeHtml(log.content || "")}</div>`;
+        return `<article class="log-card${isChange ? " change" : ""}">
+          <div class="log-top">
+            <div>
+              <span class="badge" style="color:${isChange ? "#5b21b6" : "#0f766e"};background:${isChange ? "#efeefe" : "#ccfbf1"}">${escapeHtml(typeLabel)}</span>
+              <strong style="margin-left:8px">${escapeHtml(company)}</strong>
+            </div>
+            <div class="log-meta">${escapeHtml(whenText)}</div>
+          </div>
+          ${body}
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <span class="log-meta">${escapeHtml(c ? (normalizeCompanySales(c.companySales) || "未指派") : "")}${c?.partner ? " · " + escapeHtml(c.partner) : ""}</span>
+            ${c ? `<button type="button" class="btn btn-ghost btn-sm" data-open="${escapeAttr(c.id)}">打開案件</button>` : ""}
+          </div>
+        </article>`;
+      }).join("") + (items.length > 300 ? `<p class="muted" style="text-align:center">只顯示最新 300 項</p>` : "");
+
+      root.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => openDrawer(b.dataset.open));
+    }
+
+    async function updateCase(id, patch, opts = {}) {
       const prev = cases.find((c) => c.id === id);
       if (!prev) return;
       const next = {
@@ -3546,15 +6111,18 @@
       if (next.stage === "confirmation" && !next.closeReason) next.closeReason = "won";
       if (next.stage !== "closed" && next.closeReason !== "won") next.closeReason = null;
       if (next.stage === "closed" && !next.closeReason) next.closeReason = "disqualified";
+      const changes = diffCaseChanges(prev, next);
       const { error } = await db.from("crm_cases").update(toRow(next)).eq("id", id);
       if (error) return toast("更新失敗：" + error.message);
-      toast("已更新");
+      if (changes.length) await insertChangeLog(id, changes, opts.source || "");
+      if (!opts.silent) toast("已更新");
       await loadCases();
       renderBoard();
       renderCasesTable();
       renderDashboard();
       if (!document.getElementById("view-mgmt").classList.contains("hidden")) renderMgmt();
       if (!document.getElementById("view-agenda").classList.contains("hidden")) renderAgenda();
+      if (!document.getElementById("view-logs").classList.contains("hidden")) renderLogHistory();
     }
 
     function escapeHtml(s) {
@@ -3616,6 +6184,23 @@
     };
     document.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => showView(b.dataset.go));
     document.getElementById("btnRefreshBoard").onclick = async () => { await loadCases(); renderBoard(); toast("已重新整理"); };
+    document.getElementById("btnToggleBoardUpper").onclick = () => {
+      const next = localStorage.getItem("crm_board_upper_collapsed") === "1" ? "0" : "1";
+      localStorage.setItem("crm_board_upper_collapsed", next);
+      applyBoardUpperCollapsed();
+      toast(next === "1" ? "已收起上方篩選／統計" : "已展開上方");
+    };
+    applyBoardUpperCollapsed();
+    document.getElementById("btnKanbanLeft").onclick = () => {
+      const el = document.getElementById("kanban");
+      const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 3;
+      el.scrollBy({ left: -(step + 12), behavior: "smooth" });
+    };
+    document.getElementById("btnKanbanRight").onclick = () => {
+      const el = document.getElementById("kanban");
+      const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 3;
+      el.scrollBy({ left: step + 12, behavior: "smooth" });
+    };
     (function setupBoardSearch() {
       const input = document.getElementById("boardSearch");
       const box = document.getElementById("boardSuggest");
@@ -3651,19 +6236,58 @@
         if (!e.target.closest(".board-search-wrap")) hideBoardSuggest();
       });
     })();
-    document.getElementById("btnKanbanLeft").onclick = () => {
-      const el = document.getElementById("kanban");
-      const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 5;
-      el.scrollBy({ left: -(step + 12), behavior: "smooth" });
-    };
-    document.getElementById("btnKanbanRight").onclick = () => {
-      const el = document.getElementById("kanban");
-      const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 5;
-      el.scrollBy({ left: step + 12, behavior: "smooth" });
-    };
     document.getElementById("caseSearch").oninput = () => renderCasesTable();
     document.getElementById("caseStageFilter").innerHTML = `<option value="all">全部階段</option>` + STAGES.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
     document.getElementById("caseStageFilter").onchange = () => renderCasesTable();
+    document.getElementById("caseSalesFilter").onchange = () => renderCasesTable();
+    document.getElementById("btnCasesCols").onclick = (e) => {
+      e.stopPropagation();
+      document.getElementById("casesColMenu").classList.toggle("open");
+    };
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest("#casesColMenu")) document.getElementById("casesColMenu")?.classList.remove("open");
+    });
+    document.getElementById("btnExportCasesCsv").onclick = () => exportCasesCsv(false);
+    document.getElementById("btnExportCasesXls").onclick = () => exportCasesCsv(true);
+    document.getElementById("btnBulkApply").onclick = () => applyCasesBulk();
+    document.getElementById("btnBulkClear").onclick = () => { casesSelected.clear(); renderCasesTable(); };
+
+    document.getElementById("dashSalesFilter").onchange = () => {
+      dashSalesFilter = document.getElementById("dashSalesFilter").value || "all";
+      localStorage.setItem("crm_dash_sales", dashSalesFilter);
+      dashDrill = null;
+      renderDashboard();
+    };
+    document.getElementById("dashPartnerFilter").onchange = () => {
+      dashPartnerFilter = document.getElementById("dashPartnerFilter").value || "all";
+      localStorage.setItem("crm_dash_partner", dashPartnerFilter);
+      dashDrill = null;
+      renderDashboard();
+    };
+    document.getElementById("dashFilterReset").onclick = () => {
+      dashSalesFilter = "all";
+      dashPartnerFilter = "all";
+      localStorage.setItem("crm_dash_sales", "all");
+      localStorage.setItem("crm_dash_partner", "all");
+      dashDrill = null;
+      renderDashboard();
+    };
+
+    document.getElementById("boardSalesFilter").onchange = () => {
+      boardSalesFilter = document.getElementById("boardSalesFilter").value || "all";
+      localStorage.setItem("crm_board_sales", boardSalesFilter);
+      paintKanbanColumns();
+    };
+    document.getElementById("boardPartnerFilter").onchange = () => {
+      boardPartnerFilter = document.getElementById("boardPartnerFilter").value || "all";
+      localStorage.setItem("crm_board_partner", boardPartnerFilter);
+      paintKanbanColumns();
+    };
+    document.getElementById("boardFollowFilter").onchange = () => {
+      boardFollowFilter = document.getElementById("boardFollowFilter").value || "all";
+      localStorage.setItem("crm_board_follow", boardFollowFilter);
+      paintKanbanColumns();
+    };
 
     document.getElementById("dashPeriodSeg").onclick = (e) => {
       const btn = e.target.closest("button[data-period]");
@@ -3676,7 +6300,7 @@
           syncDashPeriodUi();
           document.getElementById("dashMonths").innerHTML =
             `<h2 style="font-size:1.2rem">自訂日期</h2><p class="muted">請揀「由日期」同「至日期」，再按「套用」</p>`;
-          ["dashChartStage", "dashChartSales", "dashChartFunnel"].forEach((id) => {
+          ["dashChartStage", "dashChartSales", "dashChartFunnel", "dashChartSalesTarget"].forEach((id) => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = `<h2>等待日期</h2><p class="muted">套用自訂期間後顯示 chart</p>`;
           });
@@ -3873,18 +6497,54 @@
       localStorage.setItem("crm_agenda_sales", agendaSalesFilter);
       renderAgenda();
     };
+    document.getElementById("agendaViewSeg").onclick = (e) => {
+      const btn = e.target.closest("button[data-agenda-view]");
+      if (!btn) return;
+      agendaView = btn.dataset.agendaView;
+      localStorage.setItem("crm_agenda_view", agendaView);
+      renderAgenda();
+    };
+    document.getElementById("btnSendAgendaReminder").onclick = () => {
+      const range = getAgendaRange();
+      const items = range.incomplete ? [] : buildAgendaItems(range);
+      sendAgendaReminder(items);
+    };
+    document.getElementById("btnFindDupCustomers").onclick = () => renderCustomerMergeBox();
+
+    let cachedMgmtSql = "";
     fetch("./supabase/mgmt_alter.sql").then((r) => r.text()).then((t) => {
+      cachedMgmtSql = t;
       document.getElementById("btnCopyMgmtSql").onclick = async () => {
         await navigator.clipboard.writeText(t);
-        toast("已複製 mgmt_alter.sql");
+        toast("已複製 mgmt_alter.sql — 請到 Supabase SQL Editor 貼上 Run");
       };
     }).catch(() => {});
+    document.getElementById("btnRecheckMgmtSchema").onclick = async () => {
+      await loadCases();
+      renderMgmt();
+      toast(mgmtColsReady ? "欄位已就緒，橫幅已收埋" : "仍偵測唔到新欄位，請確認已 Run SQL");
+    };
+    document.getElementById("btnOpenMgmtSql").onclick = () => {
+      window.open("https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql", "_blank", "noopener");
+    };
+
+    document.getElementById("logSearch").oninput = () => renderLogHistory();
+    document.getElementById("logTypeFilter").onchange = () => renderLogHistory();
+    document.getElementById("logFrom").onchange = () => renderLogHistory();
+    document.getElementById("logTo").onchange = () => renderLogHistory();
+    document.getElementById("btnRefreshLogs").onclick = async () => {
+      await loadCases();
+      renderLogHistory();
+      toast("已重新整理 Log History");
+    };
 
     // boot
     initPortalForm();
+    casesLoading = true;
     loadCases().then(() => {
+      casesLoading = false;
       const hash = (location.hash || "").replace("#", "");
-      showView(["portal", "dashboard", "board", "cases", "agenda", "mgmt"].includes(hash) ? hash : "dashboard");
+      showView(["portal", "dashboard", "board", "cases", "agenda", "mgmt", "logs"].includes(hash) ? hash : "dashboard");
     });
   </script>
 </body>
