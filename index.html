@@ -29,6 +29,7 @@
       --shadow: 0 8px 24px rgba(26, 43, 68, 0.08);
       --radius: 10px;
       --sidebar-w: 220px;
+      --sidebar-w-collapsed: 64px;
       --font-display: "IBM Plex Sans", "Noto Sans TC", sans-serif;
       --font-body: "IBM Plex Sans", "Noto Sans TC", sans-serif;
     }
@@ -62,28 +63,34 @@
       flex-direction: column;
       padding: 18px 12px;
       z-index: 50;
+      transition: width .2s ease, padding .2s ease;
+      overflow: hidden;
     }
     .sidebar-brand {
       display: flex;
       align-items: center;
+      justify-content: center;
       padding: 8px 10px 20px;
+      min-height: 52px;
     }
-    .sidebar-brand img {
+    .sidebar-brand img.logo-full {
       display: block;
       width: min(100%, 168px);
       height: auto;
       object-fit: contain;
     }
-    .topbar-brand {
+    .sidebar-brand img.logo-mark {
       display: none;
+      width: 28px;
       height: 28px;
-      width: auto;
+      object-fit: contain;
     }
     .nav-pills {
       display: flex;
       flex-direction: column;
       gap: 4px;
       overflow-y: auto;
+      overflow-x: hidden;
     }
     .nav-pills button {
       border: 0;
@@ -96,13 +103,35 @@
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
+    .nav-pills button .nav-ico {
+      width: 22px;
+      text-align: center;
+      flex-shrink: 0;
+      font-size: .78rem;
+      opacity: .9;
+    }
+    .nav-pills button .nav-label { overflow: hidden; text-overflow: ellipsis; }
     .nav-pills button:hover { background: rgba(255,255,255,.06); color: #fff; }
     .nav-pills button.active {
       background: var(--accent);
       color: #fff;
       box-shadow: 0 6px 16px rgba(47, 111, 237, .35);
     }
+    .app-shell.sidebar-collapsed .sidebar {
+      width: var(--sidebar-w-collapsed);
+      padding: 14px 8px;
+    }
+    .app-shell.sidebar-collapsed .sidebar-brand img.logo-full { display: none; }
+    .app-shell.sidebar-collapsed .sidebar-brand img.logo-mark { display: block; }
+    .app-shell.sidebar-collapsed .nav-pills button {
+      justify-content: center;
+      padding: 10px 8px;
+    }
+    .app-shell.sidebar-collapsed .nav-pills button .nav-label { display: none; }
     .app-main {
       flex: 1;
       min-width: 0;
@@ -118,19 +147,72 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 0 20px;
+      padding: 0 16px 0 12px;
       background: #fff;
       border-bottom: 1px solid var(--line);
+    }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .sidebar-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 0;
+      background: transparent;
+      color: var(--ink-soft);
+      cursor: pointer;
+      padding: 6px 8px;
+      border-radius: 6px;
+    }
+    .sidebar-toggle:hover { background: var(--paper); color: var(--accent); }
+    .sidebar-toggle .toggle-chev {
+      width: 0;
+      height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-right: 6px solid currentColor;
+      transition: transform .2s ease;
+    }
+    .app-shell.sidebar-collapsed .sidebar-toggle .toggle-chev {
+      transform: rotate(180deg);
+    }
+    .sidebar-toggle .toggle-burger {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      width: 16px;
+    }
+    .sidebar-toggle .toggle-burger i {
+      display: block;
+      height: 2px;
+      background: currentColor;
+      border-radius: 2px;
+    }
+    .topbar-company {
+      font-weight: 600;
+      font-size: .88rem;
+      color: var(--ink-soft);
+      white-space: nowrap;
     }
     .topbar-title {
       font-weight: 700;
       font-size: .95rem;
       color: var(--ink);
+      padding-left: 10px;
+      border-left: 1px solid var(--line);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .topbar-meta {
       font-size: .75rem;
       color: var(--muted);
       font-weight: 600;
+      flex-shrink: 0;
     }
     .wrap {
       width: 100%;
@@ -150,21 +232,38 @@
       min-height: 0;
       overflow: hidden;
     }
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(26,43,68,.35);
+      z-index: 45;
+    }
     @media (max-width: 900px) {
       .app-shell { flex-direction: column; height: auto; min-height: 100%; }
       .sidebar {
-        width: 100%;
-        flex-direction: row;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 12px;
-        overflow-x: auto;
+        position: fixed;
+        inset: 0 auto 0 0;
+        height: 100%;
+        width: min(82vw, var(--sidebar-w));
+        padding: 18px 12px;
+        transform: translateX(-105%);
+        transition: transform .2s ease;
+        box-shadow: 12px 0 30px rgba(0,0,0,.25);
       }
-      .sidebar-brand { padding: 0 8px 0 0; }
-      .sidebar-brand img { width: 110px; }
-      .nav-pills { flex-direction: row; overflow-x: auto; }
-      .nav-pills button { padding: 8px 12px; font-size: .76rem; }
-      .topbar { display: none; }
+      .app-shell.sidebar-open-mobile .sidebar { transform: translateX(0); }
+      .app-shell.sidebar-collapsed .sidebar {
+        width: min(82vw, var(--sidebar-w));
+        padding: 18px 12px;
+      }
+      .app-shell.sidebar-collapsed .sidebar-brand img.logo-full { display: block; }
+      .app-shell.sidebar-collapsed .sidebar-brand img.logo-mark { display: none; }
+      .app-shell.sidebar-collapsed .nav-pills button { justify-content: flex-start; padding: 10px 12px; }
+      .app-shell.sidebar-collapsed .nav-pills button .nav-label { display: inline; }
+      .sidebar-brand img.logo-full { width: 140px; }
+      .topbar { display: flex; }
+      .topbar-company { display: none; }
+      .app-shell.sidebar-open-mobile .sidebar-backdrop { display: block; }
     }
     #view-board {
       flex: 1;
@@ -878,26 +977,35 @@
   </style>
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar">
+  <div class="app-shell" id="appShell">
+    <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
         <a href="https://achiever.hk/" target="_blank" rel="noopener" title="Achiever">
-          <img src="./images/achiever-logo.png" alt="Achiever" />
+          <img class="logo-full" src="./images/achiever-logo.png" alt="Achiever" />
+          <img class="logo-mark" src="./images/achiever-icon.png" alt="Achiever" />
         </a>
       </div>
       <nav class="nav-pills" id="navPills">
-        <button data-view="home" class="active">首頁</button>
-        <button data-view="portal">手機 Portal</button>
-        <button data-view="dashboard">Dashboard</button>
-        <button data-view="board">Kanban</button>
-        <button data-view="cases">列表</button>
-        <button data-view="agenda">會議／跟進</button>
-        <button data-view="mgmt">資料庫管理</button>
+        <button data-view="home" class="active"><span class="nav-ico">H</span><span class="nav-label">首頁</span></button>
+        <button data-view="portal"><span class="nav-ico">P</span><span class="nav-label">手機 Portal</span></button>
+        <button data-view="dashboard"><span class="nav-ico">D</span><span class="nav-label">Dashboard</span></button>
+        <button data-view="board"><span class="nav-ico">K</span><span class="nav-label">Kanban</span></button>
+        <button data-view="cases"><span class="nav-ico">L</span><span class="nav-label">列表</span></button>
+        <button data-view="agenda"><span class="nav-ico">A</span><span class="nav-label">會議／跟進</span></button>
+        <button data-view="mgmt"><span class="nav-ico">M</span><span class="nav-label">資料庫管理</span></button>
       </nav>
     </aside>
     <div class="app-main">
       <header class="topbar">
-        <div class="topbar-title" id="topbarTitle">首頁</div>
+        <div class="topbar-left">
+          <button type="button" class="sidebar-toggle" id="btnSidebarToggle" aria-label="伸縮側欄" title="伸縮側欄">
+            <span class="toggle-chev" aria-hidden="true"></span>
+            <span class="toggle-burger" aria-hidden="true"><i></i><i></i><i></i></span>
+          </button>
+          <span class="topbar-company">Achiever Solutions Ltd.</span>
+          <div class="topbar-title" id="topbarTitle">首頁</div>
+        </div>
         <div class="topbar-meta">ADMIN · Achiever</div>
       </header>
       <main class="wrap">
@@ -2888,9 +2996,56 @@
     function escapeAttr(s) { return escapeHtml(s).replace(/`/g, "&#96;"); }
 
     /* -------- events -------- */
+    (function setupSidebarToggle() {
+      const shell = document.getElementById("appShell");
+      const btn = document.getElementById("btnSidebarToggle");
+      const backdrop = document.getElementById("sidebarBackdrop");
+      const isMobile = () => window.matchMedia("(max-width: 900px)").matches;
+      const saved = localStorage.getItem("crm_sidebar_collapsed");
+      if (saved === "1" && !isMobile()) shell.classList.add("sidebar-collapsed");
+      if (isMobile()) shell.classList.add("sidebar-collapsed");
+
+      const syncAria = () => {
+        const collapsed = isMobile()
+          ? !shell.classList.contains("sidebar-open-mobile")
+          : shell.classList.contains("sidebar-collapsed");
+        btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      };
+      syncAria();
+
+      btn.onclick = () => {
+        if (isMobile()) {
+          shell.classList.toggle("sidebar-open-mobile");
+        } else {
+          shell.classList.toggle("sidebar-collapsed");
+          localStorage.setItem("crm_sidebar_collapsed", shell.classList.contains("sidebar-collapsed") ? "1" : "0");
+        }
+        syncAria();
+      };
+      backdrop.onclick = () => {
+        shell.classList.remove("sidebar-open-mobile");
+        syncAria();
+      };
+      window.addEventListener("resize", () => {
+        if (!isMobile()) {
+          shell.classList.remove("sidebar-open-mobile");
+          if (localStorage.getItem("crm_sidebar_collapsed") === "1") shell.classList.add("sidebar-collapsed");
+        } else {
+          shell.classList.add("sidebar-collapsed");
+          shell.classList.remove("sidebar-open-mobile");
+        }
+        syncAria();
+      });
+    })();
+
     document.getElementById("navPills").onclick = (e) => {
       const btn = e.target.closest("button[data-view]");
-      if (btn) showView(btn.dataset.view);
+      if (!btn) return;
+      showView(btn.dataset.view);
+      // mobile：選完頁面自動收埋側欄
+      if (window.matchMedia("(max-width: 900px)").matches) {
+        document.getElementById("appShell").classList.remove("sidebar-open-mobile");
+      }
     };
     document.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => showView(b.dataset.go));
     document.getElementById("btnRefreshBoard").onclick = async () => { await loadCases(); renderBoard(); toast("已重新整理"); };
