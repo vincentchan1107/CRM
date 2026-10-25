@@ -11,25 +11,27 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --ink: #1c1f2a;
-      --ink-soft: #5b6475;
-      --muted: #9aa3b5;
-      --paper: #f8f9fb;
+      --ink: #1a1630;
+      --ink-soft: #5a5470;
+      --muted: #9a93ad;
+      --paper: #f6f3fb;
       --panel: #ffffff;
-      --line: #e9ecf3;
-      --teal: #7c6cf0;
-      --teal-deep: #6556d6;
-      --amber: #f59e0b;
-      --sky: #38bdf8;
-      --rose: #fb7185;
-      --mint: #6ee7b7;
-      --peach: #fdba74;
-      --navy: #2a2f3a;
-      --navy-2: #3a4150;
-      --accent: #7c6cf0;
-      --accent-soft: #efeefe;
-      --shadow: 0 12px 32px rgba(28, 31, 42, 0.05);
-      --radius: 18px;
+      --line: #ebe6f4;
+      --teal: #6b46fe;
+      --teal-deep: #5530e8;
+      --amber: #ff8a4c;
+      --sky: #4aa8ff;
+      --rose: #ff6b9d;
+      --mint: #27c281;
+      --peach: #ffb086;
+      --navy: #2a2440;
+      --navy-2: #3b3454;
+      --accent: #6b46fe;
+      --accent-soft: #efeaff;
+      --success: #27c281;
+      --success-soft: #e8faf2;
+      --shadow: 0 14px 36px rgba(80, 55, 160, 0.08);
+      --radius: 20px;
       --sidebar-w: 228px;
       --sidebar-w-collapsed: 72px;
       --font-display: "IBM Plex Sans", "Noto Sans TC", sans-serif;
@@ -43,7 +45,22 @@
       color: var(--ink);
       font-family: var(--font-body);
       background:
-        linear-gradient(180deg, #fbfcfe 0%, var(--paper) 48%, #f4f5f9 100%);
+        radial-gradient(900px 520px at 8% -10%, rgba(167, 139, 250, .42), transparent 60%),
+        radial-gradient(820px 480px at 92% 4%, rgba(251, 182, 206, .38), transparent 58%),
+        radial-gradient(700px 420px at 70% 95%, rgba(165, 243, 252, .28), transparent 55%),
+        linear-gradient(165deg, #fbf8ff 0%, #f4f0fb 48%, #eef4ff 100%);
+      background-attachment: fixed;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: .35;
+      background-image:
+        radial-gradient(circle at 1px 1px, rgba(107, 70, 254, .12) 1px, transparent 0);
+      background-size: 22px 22px;
     }
     body.mode-board {
       overflow: hidden;
@@ -56,11 +73,14 @@
       display: flex;
       min-height: 100%;
       height: 100%;
+      position: relative;
+      z-index: 1;
     }
     .sidebar {
       width: var(--sidebar-w);
       flex-shrink: 0;
-      background: #ffffff;
+      background: rgba(255, 255, 255, .82);
+      backdrop-filter: blur(14px);
       color: var(--ink-soft);
       display: flex;
       flex-direction: column;
@@ -68,7 +88,8 @@
       z-index: 50;
       transition: width .2s ease, padding .2s ease;
       overflow: hidden;
-      border-right: 1px solid var(--line);
+      border-right: 1px solid rgba(235, 230, 244, .9);
+      box-shadow: 8px 0 28px rgba(107, 70, 254, .04);
     }
     .sidebar-brand {
       display: flex;
@@ -121,22 +142,37 @@
       gap: 10px;
     }
     .nav-pills button .nav-ico {
-      width: 22px;
-      text-align: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
-      font-size: .78rem;
-      opacity: .85;
+      background: #f3effc;
       color: var(--muted);
+    }
+    .nav-pills button .nav-ico svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
     .nav-pills button .nav-label { overflow: hidden; text-overflow: ellipsis; }
     .nav-pills button:hover { background: var(--accent-soft); color: var(--ink); }
-    .nav-pills button:hover .nav-ico { color: var(--accent); }
+    .nav-pills button:hover .nav-ico { color: var(--accent); background: #fff; }
     .nav-pills button.active {
       background: var(--accent);
       color: #fff;
-      box-shadow: 0 10px 22px rgba(124, 108, 240, .26);
+      box-shadow: 0 12px 24px rgba(107, 70, 254, .32);
     }
-    .nav-pills button.active .nav-ico { color: #fff; opacity: 1; }
+    .nav-pills button.active .nav-ico {
+      color: #fff;
+      background: rgba(255, 255, 255, .18);
+    }
     .app-shell.sidebar-collapsed .sidebar {
       width: var(--sidebar-w-collapsed);
       padding: 14px 10px;
@@ -146,7 +182,12 @@
     .app-shell.sidebar-collapsed .sidebar-brand img.logo-mark { display: block; }
     .app-shell.sidebar-collapsed .nav-pills button {
       justify-content: center;
-      padding: 12px 8px;
+      padding: 10px 8px;
+      gap: 0;
+    }
+    .app-shell.sidebar-collapsed .nav-pills button .nav-ico {
+      width: 38px;
+      height: 38px;
     }
     .app-shell.sidebar-collapsed .nav-pills button .nav-label { display: none; }
     .app-main {
@@ -155,8 +196,34 @@
       min-height: 0;
       display: flex;
       flex-direction: column;
-      background: var(--paper);
+      background: transparent;
+      position: relative;
     }
+    .app-main::before {
+      content: "";
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      right: -60px;
+      top: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(167, 139, 250, .28), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .app-main::after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      left: 12%;
+      bottom: 8%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(251, 182, 206, .22), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .topbar, .wrap { position: relative; z-index: 1; }
     .topbar {
       flex-shrink: 0;
       height: 60px;
@@ -323,7 +390,7 @@
     }
     #boardSearch:focus {
       outline: 0;
-      box-shadow: 0 0 0 3px rgba(124,108,240,.16);
+      box-shadow: 0 0 0 3px rgba(107,70,254,.16);
       border-color: var(--accent);
     }
     .board-suggest {
@@ -590,8 +657,11 @@
     @media (min-width: 900px) {
       .board-dash { grid-template-columns: repeat(5, 1fr); }
     }
-    .board-dash .stat { padding: 10px 12px; }
+    .board-dash .stat { padding: 12px; }
     .board-dash .stat .value { font-size: 1.25rem; }
+    .board-dash .stat-ico { width: 34px; height: 34px; border-radius: 12px; }
+    .board-dash .stat-ico svg { width: 16px; height: 16px; }
+    .board-dash .stat-trend { display: none; }
     .stage-filter {
       display: flex;
       flex-wrap: wrap;
@@ -637,17 +707,52 @@
       align-self: center;
     }
     .hero-card, .panel {
-      background: var(--panel);
-      border: 1px solid rgba(232, 235, 242, .9);
-      border-radius: 20px;
+      background: rgba(255, 255, 255, .92);
+      border: 1px solid rgba(235, 230, 244, .95);
+      border-radius: 24px;
       box-shadow: var(--shadow);
       padding: 20px 22px;
+      backdrop-filter: blur(8px);
+    }
+    .hero-card {
+      position: relative;
+      overflow: hidden;
+      padding: 28px 26px;
+    }
+    .hero-card::before,
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero-card::before {
+      width: 180px; height: 180px; right: -40px; top: -50px;
+      background: radial-gradient(circle, rgba(107, 70, 254, .22), transparent 70%);
+    }
+    .hero-card::after {
+      width: 140px; height: 140px; right: 70px; bottom: -60px;
+      background: radial-gradient(circle, rgba(255, 138, 76, .18), transparent 70%);
+    }
+    .hero-deco {
+      position: absolute;
+      right: 28px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: min(180px, 28vw);
+      height: 120px;
+      pointer-events: none;
+      opacity: .95;
+    }
+    .hero-deco svg { width: 100%; height: 100%; display: block; }
+    @media (max-width: 720px) {
+      .hero-deco { display: none; }
     }
     h1, h2 { font-family: var(--font-display); margin: 0; font-weight: 700; color: var(--ink); }
     h1 { font-size: 1.5rem; }
     .eyebrow {
       font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-      background: linear-gradient(90deg, #38bdf8, #7c6cf0);
+      background: linear-gradient(90deg, #4aa8ff, #6b46fe, #ff6b9d);
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
     .muted { color: var(--muted); font-size: .88rem; }
@@ -655,20 +760,48 @@
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       border: 0; border-radius: 999px; padding: 10px 16px; font-weight: 600; font-size: .84rem; cursor: pointer;
     }
-    .btn-teal { background: var(--accent); color: #fff; box-shadow: 0 8px 18px rgba(124,108,240,.28); }
+    .btn-teal { background: linear-gradient(135deg, #7b5cff, var(--accent)); color: #fff; box-shadow: 0 10px 22px rgba(107,70,254,.32); }
     .btn-teal:hover { background: var(--teal-deep); }
     .btn-ink { background: var(--navy); color: #fff; }
-    .btn-ghost { background: #fff; border: 1px solid #d9dee8; color: var(--ink); }
+    .btn-ghost { background: rgba(255,255,255,.9); border: 1px solid #ddd5ef; color: var(--ink); }
     .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
     .btn-sm { padding: 6px 12px; font-size: .75rem; }
-    .grid-stats { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); margin: 16px 0; }
+    .grid-stats { display: grid; gap: 14px; grid-template-columns: repeat(2, 1fr); margin: 16px 0; }
     @media (min-width: 800px) { .grid-stats { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 1100px) { .grid-stats.cols-5 { grid-template-columns: repeat(5, 1fr); } }
     .stat {
-      background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 16px;
+      background: rgba(255,255,255,.95); border: 1px solid var(--line); border-radius: 22px; padding: 16px 16px 14px;
       box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .stat-ico {
+      width: 42px; height: 42px; border-radius: 14px;
+      display: inline-flex; align-items: center; justify-content: center;
+      color: #fff; flex-shrink: 0;
+      box-shadow: 0 8px 16px rgba(107, 70, 254, .18);
+    }
+    .stat-ico svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+    .stat-ico.purple { background: linear-gradient(145deg, #8b6fff, #6b46fe); }
+    .stat-ico.orange { background: linear-gradient(145deg, #ffb086, #ff8a4c); }
+    .stat-ico.mint { background: linear-gradient(145deg, #5ee4b0, #27c281); }
+    .stat-ico.sky { background: linear-gradient(145deg, #7ec4ff, #4aa8ff); }
+    .stat-ico.rose { background: linear-gradient(145deg, #ff9abc, #ff6b9d); }
+    .stat-trend {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 4px 8px; border-radius: 999px;
+      background: var(--success-soft); color: #0f9f63;
+      font-size: .68rem; font-weight: 700; white-space: nowrap;
     }
     .stat .label { font-size: .68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-    .stat .value { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; margin-top: 4px; color: var(--ink); }
+    .stat .value { font-family: var(--font-display); font-size: 1.55rem; font-weight: 700; margin-top: 2px; color: var(--ink); letter-spacing: -.02em; }
     .field { display: block; margin-bottom: 12px; }
     .field span { display: block; font-size: .72rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
     .field input, .field select, .field textarea {
@@ -676,7 +809,7 @@
       padding: 9px 11px; outline: none; color: var(--ink);
     }
     .field input:focus, .field select:focus, .field textarea:focus {
-      border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,108,240,.16);
+      border-color: var(--accent); box-shadow: 0 0 0 3px rgba(107,70,254,.16);
     }
     .tags { display: flex; flex-wrap: wrap; gap: 6px; }
     .tag {
@@ -689,9 +822,9 @@
     }
     .mic.listening { background: var(--rose); animation: pulse 1.4s ease-out infinite; }
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(124, 108, 240, .42); }
-      70% { box-shadow: 0 0 0 18px rgba(124, 108, 240, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(124, 108, 240, 0); }
+      0% { box-shadow: 0 0 0 0 rgba(107, 70, 254, .42); }
+      70% { box-shadow: 0 0 0 18px rgba(107, 70, 254, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(107, 70, 254, 0); }
     }
     .kanban {
       display: flex;
@@ -867,7 +1000,7 @@
     .bar {
       height: 10px; background: var(--paper); border-radius: 999px; overflow: hidden; margin: 4px 0 2px;
     }
-    .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #38bdf8, var(--accent)); }
+    .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #4aa8ff, var(--accent), #ff6b9d); }
     .month-row {
       margin-top: 12px;
       padding: 10px 10px 8px;
@@ -877,10 +1010,10 @@
       transition: background .15s ease, border-color .15s ease;
       user-select: none;
     }
-    .month-row:hover { background: rgba(124, 108, 240, 0.05); }
+    .month-row:hover { background: rgba(107, 70, 254, 0.05); }
     .month-row.open {
-      background: rgba(124, 108, 240, 0.06);
-      border-color: rgba(124, 108, 240, 0.18);
+      background: rgba(107, 70, 254, 0.06);
+      border-color: rgba(107, 70, 254, 0.18);
     }
     .month-row-top {
       display: flex;
@@ -975,7 +1108,10 @@
     .dash-period .seg button.active {
       background: var(--accent);
       color: #fff;
-      box-shadow: 0 6px 14px rgba(124,108,240,.25);
+      box-shadow: 0 8px 16px rgba(107,70,254,.28);
+    }
+    .dash-period, .stage-filter, .mgmt-tabs {
+      background: rgba(255,255,255,.92);
     }
     .dash-period .custom-range {
       display: flex;
@@ -1011,13 +1147,13 @@
         </a>
       </div>
       <nav class="nav-pills" id="navPills">
-        <button data-view="home" class="active"><span class="nav-ico">H</span><span class="nav-label">首頁</span></button>
-        <button data-view="portal"><span class="nav-ico">P</span><span class="nav-label">手機 Portal</span></button>
-        <button data-view="dashboard"><span class="nav-ico">D</span><span class="nav-label">Dashboard</span></button>
-        <button data-view="board"><span class="nav-ico">K</span><span class="nav-label">Kanban</span></button>
-        <button data-view="cases"><span class="nav-ico">L</span><span class="nav-label">列表</span></button>
-        <button data-view="agenda"><span class="nav-ico">A</span><span class="nav-label">會議／跟進</span></button>
-        <button data-view="mgmt"><span class="nav-ico">M</span><span class="nav-label">資料庫管理</span></button>
+        <button data-view="home" class="active"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg></span><span class="nav-label">首頁</span></button>
+        <button data-view="portal"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/></svg></span><span class="nav-label">手機 Portal</span></button>
+        <button data-view="dashboard"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V10M10 19V5M16 19v-7M22 19H2"/></svg></span><span class="nav-label">Dashboard</span></button>
+        <button data-view="board"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="5.5" height="16" rx="1.5"/><rect x="9.25" y="4" width="5.5" height="11" rx="1.5"/><rect x="15.5" y="4" width="5.5" height="14" rx="1.5"/></svg></span><span class="nav-label">Kanban</span></button>
+        <button data-view="cases"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span><span class="nav-label">列表</span></button>
+        <button data-view="agenda"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></span><span class="nav-label">會議／跟進</span></button>
+        <button data-view="mgmt"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><span class="nav-label">資料庫管理</span></button>
       </nav>
     </aside>
     <div class="app-main">
@@ -1047,8 +1183,27 @@
     <!-- HOME -->
     <section id="view-home">
       <div class="hero-card">
+        <div class="hero-deco" aria-hidden="true">
+          <svg viewBox="0 0 200 140" fill="none">
+            <defs>
+              <linearGradient id="hg1" x1="0" y1="0" x2="1" y2="1">
+                <stop stop-color="#6b46fe"/><stop offset="1" stop-color="#a78bfa"/>
+              </linearGradient>
+              <linearGradient id="hg2" x1="0" y1="1" x2="1" y2="0">
+                <stop stop-color="#ff8a4c"/><stop offset="1" stop-color="#ff6b9d"/>
+              </linearGradient>
+            </defs>
+            <rect x="18" y="28" width="110" height="78" rx="18" fill="#fff" fill-opacity=".72" stroke="#ebe6f4"/>
+            <path d="M34 78c10-18 22-28 34-28s24 16 36 10 18-22 28-18" stroke="url(#hg1)" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 5"/>
+            <path d="M34 92c12-10 24-6 36-14s20-8 34-4 22 2 34-8" stroke="url(#hg2)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 5" opacity=".85"/>
+            <circle cx="156" cy="42" r="22" fill="url(#hg1)" opacity=".9"/>
+            <circle cx="168" cy="98" r="14" fill="url(#hg2)" opacity=".85"/>
+            <rect x="40" y="42" width="36" height="8" rx="4" fill="#efeaff"/>
+            <rect x="40" y="56" width="54" height="8" rx="4" fill="#f3effc"/>
+          </svg>
+        </div>
         <div class="eyebrow">Achiever · Sales CRM</div>
-        <h1 style="font-size:clamp(1.8rem,4vw,2.6rem);margin-top:8px;line-height:1.15">講出嚟，就變案件。</h1>
+        <h1 style="font-size:clamp(1.8rem,4vw,2.6rem);margin-top:8px;line-height:1.15;max-width:18ch">講出嚟，就變案件。</h1>
         <p class="muted" style="max-width:520px;margin-top:12px;line-height:1.6">
           手機 Portal 用語音／文字填表；後台用 Kanban 跟進會見→報價→確認／關閉，並預測未來成交額。
         </p>
@@ -1277,7 +1432,7 @@
 
     const STAGES = [
       { id: "new_lead", label: "新 Lead", short: "新客", color: "#0891b2", bg: "#e0f7fa", desc: "活動／渠道新進客戶" },
-      { id: "contacting", label: "聯絡中", short: "聯絡", color: "#7c6cf0", bg: "#efeefe", desc: "致電／跟進中（含聯絡不到 log）" },
+      { id: "contacting", label: "聯絡中", short: "聯絡", color: "#6b46fe", bg: "#efeaff", desc: "致電／跟進中（含聯絡不到 log）" },
       { id: "unreachable", label: "聯絡不到", short: "失聯", color: "#e11d48", bg: "#ffe4e6", desc: "多次無法聯繫" },
       { id: "appointment_set", label: "已約會面", short: "已約", color: "#2563eb", bg: "#e8efff", desc: "已約時間，待確認／會面" },
       { id: "first_interview", label: "已會面", short: "會見", color: "#0d9488", bg: "#d1fae5", desc: "會面完成，可寫會後 comment" },
@@ -1926,6 +2081,32 @@
       if (dashTo) document.getElementById("dashTo").value = dashTo;
     }
 
+    const STAT_ICONS = {
+      cases: '<path d="M7 7h10v12H7z"/><path d="M9 4h6v3H9z"/>',
+      meet: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>',
+      check: '<circle cx="12" cy="12" r="8"/><path d="m8.5 12.5 2.2 2.2 4.8-5"/>',
+      chart: '<path d="M4 19V10M10 19V5M16 19v-7M22 19H2"/>',
+      phone: '<path d="M8 4h3l1.5 4-2 1.5a10 10 0 0 0 4 4L16 12l4 1.5V17a2 2 0 0 1-2 2A12 12 0 0 1 6 7a2 2 0 0 1 2-2z"/>',
+      follow: '<path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="8"/>',
+      people: '<circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M3.5 18c1.2-3 3.2-4.5 5.5-4.5S13.3 15 14.5 18M14 13.5c1.5.2 2.8 1 3.8 2.5"/>',
+      money: '<circle cx="12" cy="12" r="8"/><path d="M12 7v10M9.5 9.5c.6-1 1.5-1.5 2.5-1.5s2 .7 2 1.8-1 1.6-2.5 2-2.5 1-2.5 2.2 1.1 1.8 2.5 1.8 1.9-.5 2.5-1.5"/>',
+      clock: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 2"/>',
+    };
+
+    function renderStatCard({ label, value, sub = "", tone = "purple", icon = "cases", trend = "", valueStyle = "" }) {
+      const path = STAT_ICONS[icon] || STAT_ICONS.cases;
+      const trendHtml = trend ? `<span class="stat-trend">↑ ${escapeHtml(String(trend))}</span>` : "";
+      return `<article class="stat">
+        <div class="stat-top">
+          <span class="stat-ico ${tone}" aria-hidden="true"><svg viewBox="0 0 24 24">${path}</svg></span>
+          ${trendHtml}
+        </div>
+        <div class="label">${escapeHtml(label)}</div>
+        <div class="value" style="${valueStyle}">${typeof value === "number" ? value : escapeHtml(String(value))}</div>
+        ${sub ? `<div class="muted" style="font-size:.72rem;margin-top:4px">${escapeHtml(sub)}</div>` : ""}
+      </article>`;
+    }
+
     function renderDashboard() {
       syncDashPeriodUi();
       const open = cases.filter((c) => c.stage !== "closed");
@@ -1941,12 +2122,13 @@
       const followN = cases.filter((c) => c.followUpOpportunity).length;
       const rangeAmt = inRange.reduce((s, c) => s + (c.amount || 0), 0);
       const rangeWeighted = inRange.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
+      const winHint = open.length ? `${Math.min(99, Math.round((meetN / Math.max(open.length, 1)) * 100))}%` : "";
       document.getElementById("dashStats").innerHTML = [
-        ["公司 Cases", open.length, `${closed.length} 宗 DQ／關閉`],
-        ["已約會面", apptN, "含待確認／已確認"],
-        ["已完成會面", meetN, "會後可寫 comment"],
-        ["所選期間案件", inRange.length, `${money(rangeAmt)} · 加權 ${money(rangeWeighted)}`],
-      ].map(([l, v, s]) => `<article class="stat"><div class="label">${l}</div><div class="value">${v}</div><div class="muted" style="font-size:.72rem;margin-top:4px">${s}</div></article>`).join("");
+        renderStatCard({ label: "公司 Cases", value: open.length, sub: `${closed.length} 宗 DQ／關閉`, tone: "purple", icon: "cases", trend: winHint }),
+        renderStatCard({ label: "已約會面", value: apptN, sub: "含待確認／已確認", tone: "orange", icon: "meet" }),
+        renderStatCard({ label: "已完成會面", value: meetN, sub: "會後可寫 comment", tone: "mint", icon: "check" }),
+        renderStatCard({ label: "所選期間案件", value: inRange.length, sub: `${money(rangeAmt)} · 加權 ${money(rangeWeighted)}`, tone: "sky", icon: "chart" }),
+      ].join("");
 
       let maxAmt = 1;
       const months = range.months.map((m) => {
@@ -2039,12 +2221,12 @@
       const followN = cases.filter((c) => c.followUpOpportunity).length;
       const contactingN = cases.filter((c) => ["contacting", "unreachable"].includes(c.stage)).length;
       document.getElementById("boardDash").innerHTML = [
-        ["公司 Cases", open.length, `${cases.length} 總數`],
-        ["聯絡中／失聯", contactingN, "需要跟進致電"],
-        ["已約會面", apptN, "含待確認"],
-        ["已會面", meetN, "可寫會後 comment"],
-        ["跟進機會", followN, "有機會繼續"],
-      ].map(([l, v, s]) => `<article class="stat"><div class="label">${l}</div><div class="value">${v}</div><div class="muted" style="font-size:.68rem;margin-top:2px">${s}</div></article>`).join("");
+        renderStatCard({ label: "公司 Cases", value: open.length, sub: `${cases.length} 總數`, tone: "purple", icon: "cases" }),
+        renderStatCard({ label: "聯絡中／失聯", value: contactingN, sub: "需要跟進致電", tone: "rose", icon: "phone" }),
+        renderStatCard({ label: "已約會面", value: apptN, sub: "含待確認", tone: "orange", icon: "meet" }),
+        renderStatCard({ label: "已會面", value: meetN, sub: "可寫會後 comment", tone: "mint", icon: "check" }),
+        renderStatCard({ label: "跟進機會", value: followN, sub: "有機會繼續", tone: "sky", icon: "follow" }),
+      ].join("");
     }
 
     function renderStageFilter() {
@@ -2494,11 +2676,11 @@
       const totalQ = tree.reduce((s, r) => s + r.qualified, 0);
       const teamN = tree.reduce((s, r) => s + r.teams.length, 0);
       document.getElementById("partnerStats").innerHTML = [
-        ["Partner", tree.length, `${teamN} 個 Team`],
-        ["近 1 個月 Case", total1, "按建立日期"],
-        ["近 3 個月 Case", total3, "按建立日期"],
-        ["DQ / Qualified", `${totalDq} / ${totalQ}`, "目前篩選合計"],
-      ].map(([l, v, s]) => `<article class="stat"><div class="label">${l}</div><div class="value">${v}</div><div class="muted" style="font-size:.68rem;margin-top:2px">${s}</div></article>`).join("");
+        renderStatCard({ label: "Partner", value: tree.length, sub: `${teamN} 個 Team`, tone: "purple", icon: "people" }),
+        renderStatCard({ label: "近 1 個月 Case", value: total1, sub: "按建立日期", tone: "sky", icon: "cases" }),
+        renderStatCard({ label: "近 3 個月 Case", value: total3, sub: "按建立日期", tone: "orange", icon: "chart" }),
+        renderStatCard({ label: "DQ / Qualified", value: `${totalDq} / ${totalQ}`, sub: "目前篩選合計", tone: "mint", icon: "check", valueStyle: "font-size:1.2rem" }),
+      ].join("");
 
       const openAll = forceOpen === true || !!q;
       const closeAll = forceOpen === false;
@@ -2715,11 +2897,11 @@
       const salesHit = new Set(items.map((i) => i.sales));
 
       document.getElementById("agendaStats").innerHTML = [
-        ["期間", range.title.replace(/（.*）/, "") || "—", range.mode === "today" ? "當天" : (range.mode === "week" ? "本星期" : "自訂")],
-        ["跟進 Case", followN, "已設下次跟進日期"],
-        ["會議", meetN, "約見日期落喺期間內"],
-        ["涉及銷售員", salesHit.size, [...salesHit].slice(0, 5).join(" · ") || "—"],
-      ].map(([l, v, s]) => `<article class="stat"><div class="label">${l}</div><div class="value" style="font-size:1.05rem">${escapeHtml(String(v))}</div><div class="muted" style="font-size:.68rem;margin-top:2px">${escapeHtml(s)}</div></article>`).join("");
+        renderStatCard({ label: "期間", value: range.title.replace(/（.*）/, "") || "—", sub: range.mode === "today" ? "當天" : (range.mode === "week" ? "本星期" : "自訂"), tone: "purple", icon: "clock", valueStyle: "font-size:1.05rem" }),
+        renderStatCard({ label: "跟進 Case", value: followN, sub: "已設下次跟進日期", tone: "orange", icon: "follow" }),
+        renderStatCard({ label: "會議", value: meetN, sub: "約見日期落喺期間內", tone: "mint", icon: "meet" }),
+        renderStatCard({ label: "涉及銷售員", value: salesHit.size, sub: [...salesHit].slice(0, 5).join(" · ") || "—", tone: "sky", icon: "people" }),
+      ].join("");
 
       const alert = document.getElementById("agendaAlert");
       if (range.incomplete) {
@@ -2769,11 +2951,11 @@
       const wonN = rows.reduce((s, r) => s + r.wonN, 0);
       const wonAmt = rows.reduce((s, r) => s + r.wonAmt, 0);
       document.getElementById("salesStats").innerHTML = [
-        ["本公司銷售員", COMPANY_SALES.length, COMPANY_SALES.join(" · ")],
-        ["已指派 Case", `${assigned} / ${cases.length}`, unassigned ? `${unassigned} 宗未指派` : "全部已指派"],
-        ["近 1／3 月會面", `${meet1} / ${meet3}`, "去重公司數合計"],
-        ["成功簽單", `${wonN} · ${money(wonAmt)}`, "確認簽單／won"],
-      ].map(([l, v, s]) => `<article class="stat"><div class="label">${l}</div><div class="value" style="font-size:1.15rem">${v}</div><div class="muted" style="font-size:.68rem;margin-top:2px">${s}</div></article>`).join("");
+        renderStatCard({ label: "本公司銷售員", value: COMPANY_SALES.length, sub: COMPANY_SALES.join(" · "), tone: "purple", icon: "people" }),
+        renderStatCard({ label: "已指派 Case", value: `${assigned} / ${cases.length}`, sub: unassigned ? `${unassigned} 宗未指派` : "全部已指派", tone: "sky", icon: "cases", valueStyle: "font-size:1.2rem" }),
+        renderStatCard({ label: "近 1／3 月會面", value: `${meet1} / ${meet3}`, sub: "去重公司數合計", tone: "orange", icon: "meet", valueStyle: "font-size:1.2rem" }),
+        renderStatCard({ label: "成功簽單", value: `${wonN} · ${money(wonAmt)}`, sub: "確認簽單／won", tone: "mint", icon: "money", valueStyle: "font-size:1.05rem", trend: wonN ? `${wonN}` : "" }),
+      ].join("");
 
       document.getElementById("salesBody").innerHTML = rows.map((r) => `<tr>
         <td><strong>${escapeHtml(r.name)}</strong></td>
