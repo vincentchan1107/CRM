@@ -1480,19 +1480,25 @@
       flex-wrap: wrap;
       margin-bottom: 2px;
     }
-    .chart-head-main {
+    .chart-head-main,
+    .page-head {
       display: flex;
       align-items: baseline;
       flex-wrap: wrap;
       gap: 0 0.55em; /* ~兩格空白 */
       min-width: 0;
     }
-    .chart-head h2 { margin: 0; flex: 0 0 auto; }
-    .chart-head-sub {
+    .chart-head h2,
+    .page-head h1,
+    .page-head h2,
+    .page-head h3 { margin: 0; flex: 0 0 auto; }
+    .chart-head-sub,
+    .page-head-sub {
       margin: 0;
       font-size: .78rem;
       font-weight: 650;
       line-height: 1.35;
+      order: -1; /* 小字放標題左邊 */
     }
     .vbars {
       display: flex;
@@ -2242,8 +2248,10 @@
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
           <div>
             <div class="eyebrow">Mobile Portal</div>
-            <h1 style="font-size:1.6rem;margin-top:4px">語音建案</h1>
-            <p class="muted" id="portalStatus" style="margin-top:8px">按麥克風講出案件，或貼文字後解析</p>
+            <div class="page-head" style="margin-top:4px">
+              <h1 style="font-size:1.6rem">語音建案</h1>
+              <p class="muted page-head-sub" id="portalStatus">按麥克風講出案件，或貼文字後解析</p>
+            </div>
           </div>
           <button class="mic" id="micBtn" title="語音輸入">🎤</button>
         </div>
@@ -2349,9 +2357,9 @@
 
     <!-- CASES LIST -->
     <section id="view-cases" class="hidden">
-      <div style="margin-bottom:12px">
+      <div class="page-head" style="margin-bottom:12px">
         <h1>案件列表</h1>
-        <p class="muted">可排序、顯示欄位、批量更新、匯出 CSV</p>
+        <p class="muted page-head-sub">可排序、顯示欄位、批量更新、匯出 CSV</p>
       </div>
       <div class="cases-toolbar" id="casesToolbar">
         <input id="caseSearch" type="search" placeholder="搜尋客戶／partner／需求…" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff" />
@@ -2382,9 +2390,9 @@
     <!-- DATABASE MANAGEMENT -->
     <section id="view-mgmt" class="hidden">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
-        <div>
+        <div class="page-head">
           <h1 id="mgmtPageTitle">客戶管理</h1>
-          <p class="muted" id="mgmtPageSub">客戶統計與跟進提示</p>
+          <p class="muted page-head-sub" id="mgmtPageSub">客戶統計與跟進提示</p>
         </div>
         <button class="btn btn-ghost btn-sm" id="btnRefreshMgmt">重新整理</button>
       </div>
@@ -2473,8 +2481,10 @@
       <div class="webhook-box" id="agendaWebhookBox">
         <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:end">
           <div style="flex:1;min-width:220px">
-            <div class="eyebrow">每日提醒 Webhook</div>
-            <p class="muted" style="margin:4px 0 8px;font-size:.72rem">可貼 Telegram Bot／WhatsApp／Email webhook URL；開啟頁面時若有逾期會嘗試通知（瀏覽器亦會本地提示）</p>
+            <div class="page-head" style="margin-bottom:8px">
+              <div class="eyebrow" style="margin:0">每日提醒 Webhook</div>
+              <p class="muted page-head-sub">可貼 Telegram Bot／WhatsApp／Email webhook URL；開啟頁面時若有逾期會嘗試通知（瀏覽器亦會本地提示）</p>
+            </div>
             <input type="url" id="agendaWebhookUrl" placeholder="https://hooks.example.com/…" />
           </div>
           <button type="button" class="btn btn-teal btn-sm" id="btnSendAgendaReminder">發送今日提醒</button>
@@ -2494,8 +2504,10 @@
     <!-- LOG HISTORY -->
     <section id="view-logs" class="hidden">
       <div style="margin-bottom:8px">
-        <h1>Log History</h1>
-        <p class="muted">查看幾時改咗咩：欄位變更、聯絡 log、會面記錄</p>
+        <div class="page-head">
+          <h1>Log History</h1>
+          <p class="muted page-head-sub">查看幾時改咗咩：欄位變更、聯絡 log、會面記錄</p>
+        </div>
       </div>
       <div class="log-history-filters" id="logHistoryFilters">
         <label>搜尋
@@ -3960,7 +3972,7 @@
     }
 
     function chartHeadHtml(title, sub, extraHtml = "") {
-      // 小字同標題同一行：標題在左，小字隔約兩格跟喺右邊
+      // 小字同標題同一行：小字隔約兩格放標題左邊
       return `<div class="chart-head">
         <div class="chart-head-main">
           <h2>${escapeHtml(title)}</h2>${sub ? `<span class="muted chart-head-sub">${escapeHtml(sub)}</span>` : ""}
@@ -5291,8 +5303,10 @@
           <div class="partner-card-head">
             <div>
               <div class="eyebrow">Partner</div>
-              <h3>${escapeHtml(p.name)}</h3>
-              <div class="muted" style="font-size:.72rem;margin-top:2px">${p.teams.length ? `${p.teams.length} 個 Team Leader · 點擊 Team 展開 Sales` : "預設 Partner · 暫時未有 Case"}</div>
+              <div class="page-head" style="margin-top:2px">
+                <h3 style="margin:0">${escapeHtml(p.name)}</h3>
+                <div class="muted page-head-sub">${p.teams.length ? `${p.teams.length} 個 Team Leader · 點擊 Team 展開 Sales` : "預設 Partner · 暫時未有 Case"}</div>
+              </div>
             </div>
             ${partnerMetricPills(p)}
           </div>
@@ -5800,8 +5814,10 @@
         <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
           <div>
             <div class="eyebrow">銷售員 KPI · 全年目標設計</div>
-            <h2 style="margin:2px 0 0;font-size:1.35rem">${escapeHtml(name)}</h2>
-            <p class="muted" style="margin:4px 0 0;font-size:.75rem">Closing 目標可隨時設定；過去月份可人手補入實際 Closing $，由本月起跟系統簽單鎖定</p>
+            <div class="page-head" style="margin-top:2px">
+              <h2 style="font-size:1.35rem">${escapeHtml(name)}</h2>
+              <p class="muted page-head-sub">Closing 目標可隨時設定；過去月份可人手補入實際 Closing $，由本月起跟系統簽單鎖定</p>
+            </div>
           </div>
           <button type="button" class="btn btn-teal btn-sm" id="btnSaveSalesKpi">儲存 KPI</button>
         </div>
@@ -6135,8 +6151,10 @@
         <div class="drawer-head">
           <div>
             <div class="eyebrow">Case · Multi contact</div>
-            <h2>${escapeHtml(c.customerName)}</h2>
-            <div class="muted" style="font-size:.72rem;margin-top:4px">${escapeHtml(c.partner || "")}${c.ricohSales ? " · " + escapeHtml(c.ricohSales) : ""}</div>
+            <div class="page-head" style="margin-top:2px">
+              <h2>${escapeHtml(c.customerName)}</h2>
+              <div class="muted page-head-sub">${escapeHtml(c.partner || "")}${c.ricohSales ? " · " + escapeHtml(c.ricohSales) : ""}</div>
+            </div>
           </div>
           <button class="btn btn-ghost btn-sm" id="drawerClose">關閉</button>
         </div>
