@@ -2884,6 +2884,18 @@
         return d >= from && d <= to;
       }).reduce((s, c) => s + (Number(c.amount) || 0), 0);
     }
+    function salesClosedAmountForMonthKey(name, key) {
+      if (!key) return 0;
+      const manual = getSalesMonthClosingActual(name, key);
+      if (manual != null) return manual;
+      const [y, m] = String(key).split("-").map(Number);
+      if (!y || !m) return 0;
+      return salesClosedAmountFromCases(
+        name,
+        new Date(y, m - 1, 1),
+        endOfDay(new Date(y, m, 0))
+      );
+    }
     function salesClosedAmountInRange(name, from, to) {
       if (!from || !to || from > to) return 0;
       let total = 0;
@@ -2897,8 +2909,10 @@
         const oTo = to < mEnd ? to : mEnd;
         if (oFrom <= oTo) {
           const manual = getSalesMonthClosingActual(name, key);
-          const fullMonth = oFrom.getTime() <= mStart.getTime() && oTo.getTime() >= (mEnd.getTime() - 1);
-          if (manual != null && fullMonth) total += manual;
+          // Compare by calendar day so 23:59:59.000 still counts as covering the month
+          const coversStart = formatLocalDate(oFrom) <= formatLocalDate(mStart);
+          const coversEnd = formatLocalDate(oTo) >= formatLocalDate(mEnd);
+          if (manual != null && coversStart && coversEnd) total += manual;
           else total += salesClosedAmountFromCases(name, oFrom, oTo);
         }
         cursor.setMonth(cursor.getMonth() + 1);
@@ -3628,7 +3642,8 @@
           key,
           label: `${cursor.getFullYear()}年${cursor.getMonth() + 1}月`,
           monthStart: new Date(cursor),
-          monthEnd: new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 23, 59, 59),
+          // Must use endOfDay (.999ms) so salesClosedAmountInRange full-month manual Closing $ matches
+          monthEnd: endOfDay(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0)),
         });
         cursor.setMonth(cursor.getMonth() + 1);
       }
@@ -4132,7 +4147,8 @@
         key: m.key,
         label: `${m.monthStart.getMonth() + 1}月`,
         from: m.monthStart,
-        to: m.monthEnd,
+        to: m.monthEnd || endOfDay(new Date(m.monthStart.getFullYear(), m.monthStart.getMonth() + 1, 0)),
+        monthKey: m.key,
       }));
     }
 
@@ -4346,7 +4362,12 @@
             return d && d >= salesRange.from && d <= salesRange.to;
           })
           .reduce((s, c) => s + (Number(c.amount) || 0) * ((Number(c.successRate) || 0) / 100), 0);
-        const values = timeBuckets.map((b) => salesClosedAmountInRange(name, b.from, b.to));
+        const values = timeBuckets.map((b) => {
+          if (b.monthKey || (b.key && /^\d{4}-\d{2}$/.test(b.key))) {
+            return salesClosedAmountForMonthKey(name, b.monthKey || b.key);
+          }
+          return salesClosedAmountInRange(name, b.from, b.to);
+        });
         return {
           name,
           list,
