@@ -1808,6 +1808,22 @@
       width: 100%; min-width: 110px; border: 1px solid var(--line); border-radius: 10px;
       padding: 7px 8px; font-size: .8rem; font-weight: 700;
     }
+    .month-target-table input[type="number"]:disabled {
+      background: #f3f0f8;
+      color: var(--ink-soft);
+      cursor: not-allowed;
+      opacity: .85;
+    }
+    .month-target-locked {
+      display: inline-block;
+      margin-left: 6px;
+      font-size: .62rem;
+      font-weight: 700;
+      color: #64748b;
+      background: #eef1f6;
+      border-radius: 999px;
+      padding: 2px 7px;
+    }
     .year-plan-toolbar {
       display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
       margin-top: 18px;
@@ -2564,7 +2580,15 @@
       plans[name].kpi = { ...DEFAULT_SALES_KPI, ...kpi };
       saveSalesPlans(plans);
     }
+    function isSalesMonthTargetEditable(ym) {
+      // Past months: allow manual target entry (backfill).
+      // Current month and future: locked.
+      const key = String(ym || "");
+      if (!/^\d{4}-\d{2}$/.test(key)) return false;
+      return key < currentMonthKey();
+    }
     function setSalesMonthClosingTarget(name, ym, amount) {
+      if (!isSalesMonthTargetEditable(ym)) return false;
       const plans = loadSalesPlans();
       plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
       if (amount === "" || amount == null) {
@@ -2579,6 +2603,7 @@
         };
       }
       saveSalesPlans(plans);
+      return true;
     }
     function monthKeyFromDate(d) {
       if (!d || Number.isNaN(d.getTime())) return "";
@@ -2638,31 +2663,50 @@
     function setSalesYearMonthsBulk(name, year, amountByMonth /* array length 12 */) {
       const plans = loadSalesPlans();
       plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+      let changed = 0;
       listYearMonths(year).forEach((m, idx) => {
+        if (!isSalesMonthTargetEditable(m.key)) return;
         const amount = amountByMonth[idx];
-        if (amount === "" || amount == null) delete plans[name].months[m.key];
-        else plans[name].months[m.key] = {
-          ...(plans[name].months[m.key] || {}),
-          closingTarget: Number(amount) || 0,
-        };
+        if (amount === "" || amount == null) {
+          const cur = { ...(plans[name].months[m.key] || {}) };
+          delete cur.closingTarget;
+          if (Object.keys(cur).length) plans[name].months[m.key] = cur;
+          else delete plans[name].months[m.key];
+        } else {
+          plans[name].months[m.key] = {
+            ...(plans[name].months[m.key] || {}),
+            closingTarget: Number(amount) || 0,
+          };
+        }
+        changed += 1;
       });
       saveSalesPlans(plans);
+      return changed;
     }
     function copySalesYearTargets(name, fromYear, toYear) {
       if (fromYear === toYear) return false;
       const plans = loadSalesPlans();
       plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+      let changed = 0;
       listYearMonths(fromYear).forEach((m, idx) => {
-        const src = Number(plans[name].months[m.key]?.closingTarget);
         const dest = listYearMonths(toYear)[idx];
-        if (!src && src !== 0) delete plans[name].months[dest.key];
-        else plans[name].months[dest.key] = {
-          ...(plans[name].months[dest.key] || {}),
-          closingTarget: src || 0,
-        };
+        if (!isSalesMonthTargetEditable(dest.key)) return;
+        const src = Number(plans[name].months[m.key]?.closingTarget);
+        if (!src && src !== 0) {
+          const cur = { ...(plans[name].months[dest.key] || {}) };
+          delete cur.closingTarget;
+          if (Object.keys(cur).length) plans[name].months[dest.key] = cur;
+          else delete plans[name].months[dest.key];
+        } else {
+          plans[name].months[dest.key] = {
+            ...(plans[name].months[dest.key] || {}),
+            closingTarget: src || 0,
+          };
+        }
+        changed += 1;
       });
       saveSalesPlans(plans);
-      return true;
+      return changed > 0;
     }
     function salesClosedAmountInRange(name, from, to) {
       return cases.filter((c) => {
@@ -5435,7 +5479,7 @@
           <div>
             <div class="eyebrow">銷售員 KPI · 全年目標設計</div>
             <h2 style="margin:2px 0 0;font-size:1.35rem">${escapeHtml(name)}</h2>
-            <p class="muted" style="margin:4px 0 0;font-size:.75rem">可規劃未來每年 12 個月 Closing 目標，並對照實際銷售表現</p>
+            <p class="muted" style="margin:4px 0 0;font-size:.75rem">過去月份可人手補入 Closing 目標；由本月起鎖定，唔可以再改</p>
           </div>
           <button type="button" class="btn btn-teal btn-sm" id="btnSaveSalesKpi">儲存 KPI</button>
         </div>
@@ -5515,9 +5559,11 @@
             <tbody>
               ${monthRows.map((r) => {
                 const gap = r.a - r.t;
+                const editable = isSalesMonthTargetEditable(r.key);
+                const lockHint = editable ? "" : ' <span class="month-target-locked">已鎖定</span>';
                 return `<tr>
-                  <td><strong>${escapeHtml(r.label)}</strong>${r.key === cur ? ' <span class="badge" style="color:#5b21b6;background:#efeefe">本月</span>' : ""}${r.start > new Date() && r.key !== cur ? ' <span class="badge" style="color:#0369a1;background:#e0f2fe">未來</span>' : ""}</td>
-                  <td><input type="number" min="0" step="1000" data-ym="${escapeAttr(r.key)}" class="sales-month-target" value="${r.t || ""}" placeholder="0" /></td>
+                  <td><strong>${escapeHtml(r.label)}</strong>${r.key === cur ? ' <span class="badge" style="color:#5b21b6;background:#efeefe">本月</span>' : ""}${!editable && r.key !== cur ? ' <span class="badge" style="color:#0369a1;background:#e0f2fe">未來</span>' : ""}${lockHint}</td>
+                  <td><input type="number" min="0" step="1000" data-ym="${escapeAttr(r.key)}" class="sales-month-target" value="${r.t || ""}" placeholder="${editable ? "0" : "—"}" ${editable ? "" : "disabled"} title="${editable ? "過去月份可人手輸入" : "由本月起不可人手修改"}" /></td>
                   <td><strong>${money(r.a)}</strong></td>
                   <td style="font-weight:800;color:${!r.t ? "var(--muted)" : (r.p >= 100 ? "#15803d" : (r.p < 60 ? "#9f1239" : "var(--ink)"))}">${r.t ? r.p + "%" : "—"}</td>
                   <td>${r.n}</td>
@@ -5539,7 +5585,7 @@
             </tfoot>
           </table>
         </div>
-        <p class="muted" style="margin-top:8px;font-size:.72rem">改完目標會即時儲存 · 可預先設定未來年份 · Dashboard「銷售員目標 vs Closing」會按期間月份合計顯示</p>
+        <p class="muted" style="margin-top:8px;font-size:.72rem">過去月份可人手輸入 Closing 目標；由本月（${escapeHtml(currentMonthKey())}）起已鎖定 · Dashboard 會按期間月份合計顯示</p>
       `;
     }
 
@@ -5560,6 +5606,11 @@
       };
       panel.querySelectorAll(".sales-month-target").forEach((input) => {
         input.onchange = () => {
+          if (input.disabled || !isSalesMonthTargetEditable(input.dataset.ym)) {
+            toast("由本月起唔可以人手修改 Closing 目標");
+            renderSalesMgmt();
+            return;
+          }
           setSalesMonthClosingTarget(name, input.dataset.ym, input.value);
           toast(`已更新 ${name} · ${input.dataset.ym} Closing 目標`);
           renderSalesMgmt();
@@ -5582,6 +5633,7 @@
         localStorage.setItem("crm_sales_kpi_year", String(salesKpiYear));
         renderSalesMgmt();
       };
+      const editableMonthKeys = () => listYearMonths(salesKpiYear).filter((m) => isSalesMonthTargetEditable(m.key));
       const readFillAmount = () => {
         const raw = document.getElementById("salesYearFillAmount").value;
         if (raw === "" || raw == null) {
@@ -5593,19 +5645,34 @@
       document.getElementById("btnFillYearEqual").onclick = () => {
         const total = readFillAmount();
         if (total == null) return;
-        const base = Math.floor(total / 12);
-        const amounts = Array.from({ length: 12 }, () => base);
-        amounts[11] = total - base * 11;
+        const editable = editableMonthKeys();
+        if (!editable.length) {
+          toast("本年已無可編輯嘅過去月份");
+          return;
+        }
+        const base = Math.floor(total / editable.length);
+        const amounts = Array.from({ length: 12 }, () => null);
+        editable.forEach((m, i) => {
+          const idx = m.month - 1;
+          amounts[idx] = i === editable.length - 1 ? total - base * (editable.length - 1) : base;
+        });
         setSalesYearMonthsBulk(name, salesKpiYear, amounts);
-        toast(`已將 ${money(total)} 平均分配到 ${salesKpiYear} 年 12 個月`);
+        toast(`已將 ${money(total)} 平均分配到 ${editable.length} 個可編輯月份`);
         renderSalesMgmt();
         refreshDash();
       };
       document.getElementById("btnFillYearSame").onclick = () => {
         const each = readFillAmount();
         if (each == null) return;
-        setSalesYearMonthsBulk(name, salesKpiYear, Array.from({ length: 12 }, () => each));
-        toast(`已設定 ${salesKpiYear} 年每月 Closing 目標 ${money(each)}`);
+        const editable = editableMonthKeys();
+        if (!editable.length) {
+          toast("本年已無可編輯嘅過去月份");
+          return;
+        }
+        const amounts = Array.from({ length: 12 }, () => null);
+        editable.forEach((m) => { amounts[m.month - 1] = each; });
+        setSalesYearMonthsBulk(name, salesKpiYear, amounts);
+        toast(`已設定 ${editable.length} 個過去月份 Closing 目標 ${money(each)}`);
         renderSalesMgmt();
         refreshDash();
       };
@@ -5616,14 +5683,14 @@
           toast(`${fromY} 年尚未有目標可複製`);
           return;
         }
-        copySalesYearTargets(name, fromY, salesKpiYear);
-        toast(`已複製 ${fromY} → ${salesKpiYear} 年目標`);
+        const ok = copySalesYearTargets(name, fromY, salesKpiYear);
+        toast(ok ? `已複製 ${fromY} → ${salesKpiYear} 年（只寫入可編輯月份）` : "沒有可寫入嘅過去月份");
         renderSalesMgmt();
         refreshDash();
       };
       document.getElementById("btnClearYearTargets").onclick = () => {
-        setSalesYearMonthsBulk(name, salesKpiYear, Array.from({ length: 12 }, () => null));
-        toast(`已清空 ${name} · ${salesKpiYear} 年目標`);
+        const n = setSalesYearMonthsBulk(name, salesKpiYear, Array.from({ length: 12 }, () => null));
+        toast(n ? `已清空 ${n} 個可編輯月份目標` : "沒有可清空嘅過去月份");
         renderSalesMgmt();
         refreshDash();
       };
