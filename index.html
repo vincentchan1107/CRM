@@ -65,11 +65,7 @@
         radial-gradient(circle at 1px 1px, rgba(107, 70, 254, .12) 1px, transparent 0);
       background-size: 22px 22px;
     }
-    @media (min-width: 901px) {
-      body.mode-board {
-        overflow: hidden;
-      }
-    }
+    /* Board uses vertical page scroll for stacked status columns */
     a { color: inherit; text-decoration: none; }
     button, input, select, textarea { font: inherit; }
     .hidden { display: none !important; }
@@ -314,16 +310,13 @@
       min-height: 0;
       overflow: auto;
     }
-    @media (min-width: 901px) {
-      body.mode-board .app-main { overflow: hidden; }
-      body.mode-board .wrap {
-        max-width: none;
-        padding: 14px 16px 12px;
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-        overflow: hidden;
-      }
+    body.mode-board .wrap {
+      max-width: none;
+      padding: 14px 16px 20px;
+      display: block;
+      height: auto;
+      min-height: 0;
+      overflow: visible;
     }
     @media (max-width: 900px) {
       html, body {
@@ -403,12 +396,10 @@
       .app-shell.sidebar-open-mobile .sidebar-backdrop { display: block; }
     }
     #view-board {
-      flex: 1;
-      min-height: 0;
       display: none;
-      flex-direction: column;
+      width: 100%;
     }
-    #view-board:not(.hidden) { display: flex; }
+    #view-board:not(.hidden) { display: block; }
     .board-toolbar {
       display: flex;
       justify-content: space-between;
@@ -416,8 +407,21 @@
       flex-wrap: wrap;
       align-items: end;
       margin-bottom: 10px;
-      flex-shrink: 0;
     }
+    .board-upper {
+      overflow: hidden;
+      transition: max-height .28s ease, opacity .2s ease, margin .2s ease;
+      max-height: 1200px;
+      opacity: 1;
+      margin-bottom: 4px;
+    }
+    #view-board.upper-collapsed .board-upper {
+      max-height: 0;
+      opacity: 0;
+      margin: 0;
+      pointer-events: none;
+    }
+    #btnToggleBoardUpper { white-space: nowrap; }
     .board-toolbar-actions {
       display: flex;
       gap: 8px;
@@ -741,18 +745,10 @@
     .stage-filter label input { accent-color: var(--teal); }
     .kanban-shell {
       position: relative;
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
+      width: 100%;
+      margin-top: 8px;
     }
-    .kanban-nav {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-bottom: 6px;
-      flex-shrink: 0;
-    }
+    .kanban-nav { display: none; }
     .hero-card, .panel {
       background: rgba(255, 255, 255, .92);
       border: 1px solid rgba(235, 230, 244, .95);
@@ -875,39 +871,29 @@
     }
     .kanban {
       display: flex;
+      flex-direction: column;
       gap: 12px;
-      flex: 1;
+      width: 100%;
+      height: auto;
       min-height: 0;
-      overflow-x: auto;
-      overflow-y: hidden;
-      padding: 2px 2px 10px;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: thin;
-      scrollbar-color: #c9c6e8 transparent;
+      overflow: visible;
+      padding: 0 0 16px;
     }
-    .kanban::-webkit-scrollbar { height: 8px; }
-    .kanban::-webkit-scrollbar-thumb {
-      background: #c9c6e8;
-      border-radius: 999px;
-    }
-    .kanban::-webkit-scrollbar-track { background: transparent; }
     .col {
-      /* Exactly ~5 wider columns per viewport; scroll right for the rest */
-      flex: 0 0 calc((100% - 48px) / 5);
-      width: calc((100% - 48px) / 5);
-      min-width: calc((100% - 48px) / 5);
-      max-width: none;
+      flex: none;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
       display: flex;
       flex-direction: column;
+      height: auto;
       min-height: 0;
-      height: 100%;
       background: #fff;
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 12px;
-      scroll-snap-align: start;
       box-shadow: var(--shadow);
+      box-sizing: border-box;
     }
     @media (max-width: 900px) {
       #view-board {
@@ -930,9 +916,10 @@
       .board-toolbar h1 { font-size: 1.2rem; }
       .board-toolbar-actions {
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: 1fr auto auto;
         gap: 8px;
         justify-content: stretch;
+        align-items: center;
         min-width: 0;
         width: 100%;
         max-width: 100%;
@@ -1096,17 +1083,11 @@
       line-height: 1.35;
     }
     .col-items {
-      flex: 1;
+      flex: none;
       min-height: 0;
-      overflow-y: auto;
-      padding-right: 2px;
-      scrollbar-width: thin;
-      scrollbar-color: #d4d1ee transparent;
-    }
-    .col-items::-webkit-scrollbar { width: 6px; }
-    .col-items::-webkit-scrollbar-thumb {
-      background: #d4d1ee;
-      border-radius: 999px;
+      overflow: visible;
+      padding-right: 0;
+      width: 100%;
     }
     .col-empty {
       border: 1px dashed var(--line);
@@ -2129,7 +2110,7 @@
       <div class="board-toolbar">
         <div>
           <h1>Case Management</h1>
-          <p class="muted board-hint-desktop" style="margin:4px 0 0;font-size:.75rem">可拖曳卡片到其他 Status 欄改階段</p>
+          <p class="muted board-hint-desktop" style="margin:4px 0 0;font-size:.75rem">向下捲動各 Status · 可拖曳卡片改階段</p>
           <p class="muted board-hint-mobile" style="margin:4px 0 0;font-size:.75rem">向下捲動睇各階段 · 點卡片開詳情改 Status</p>
         </div>
         <div class="board-toolbar-actions">
@@ -2137,31 +2118,30 @@
             <input id="boardSearch" type="search" placeholder="搜尋公司名／聯絡人…" autocomplete="off" aria-autocomplete="list" aria-controls="boardSuggest" aria-expanded="false" />
             <div id="boardSuggest" class="board-suggest hidden" role="listbox"></div>
           </div>
+          <button class="btn btn-ghost btn-sm" id="btnToggleBoardUpper" type="button" aria-expanded="true" aria-controls="boardUpper">收起上方</button>
           <button class="btn btn-ghost btn-sm" id="btnRefreshBoard">重新整理</button>
         </div>
       </div>
-      <div class="board-filters" id="boardFilters">
-        <label>本公司銷售員
-          <select id="boardSalesFilter"><option value="all">全部</option></select>
-        </label>
-        <label>Partner
-          <select id="boardPartnerFilter"><option value="all">全部</option></select>
-        </label>
-        <label>跟進機會
-          <select id="boardFollowFilter">
-            <option value="all">全部</option>
-            <option value="yes">有跟進機會</option>
-            <option value="no">無跟進機會</option>
-          </select>
-        </label>
-      </div>
-      <div class="board-dash" id="boardDash"></div>
-      <div class="stage-filter" id="stageFilter"></div>
-      <div class="kanban-shell">
-        <div class="kanban-nav">
-          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanLeft" aria-label="向左">←</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanRight" aria-label="向右">→</button>
+      <div class="board-upper" id="boardUpper">
+        <div class="board-filters" id="boardFilters">
+          <label>本公司銷售員
+            <select id="boardSalesFilter"><option value="all">全部</option></select>
+          </label>
+          <label>Partner
+            <select id="boardPartnerFilter"><option value="all">全部</option></select>
+          </label>
+          <label>跟進機會
+            <select id="boardFollowFilter">
+              <option value="all">全部</option>
+              <option value="yes">有跟進機會</option>
+              <option value="no">無跟進機會</option>
+            </select>
+          </label>
         </div>
+        <div class="board-dash" id="boardDash"></div>
+        <div class="stage-filter" id="stageFilter"></div>
+      </div>
+      <div class="kanban-shell">
         <div class="kanban" id="kanban"></div>
       </div>
     </section>
@@ -4018,11 +3998,22 @@
       });
     }
 
+    function applyBoardUpperCollapsed() {
+      const board = document.getElementById("view-board");
+      const btn = document.getElementById("btnToggleBoardUpper");
+      if (!board || !btn) return;
+      const collapsed = localStorage.getItem("crm_board_upper_collapsed") === "1";
+      board.classList.toggle("upper-collapsed", collapsed);
+      btn.textContent = collapsed ? "展開上方" : "收起上方";
+      btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    }
+
     function renderBoard() {
       syncBoardFilterUi();
       renderBoardDash();
       renderStageFilter();
       paintKanbanColumns();
+      applyBoardUpperCollapsed();
     }
 
     function cardHtml(c) {
@@ -5882,6 +5873,13 @@
     };
     document.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => showView(b.dataset.go));
     document.getElementById("btnRefreshBoard").onclick = async () => { await loadCases(); renderBoard(); toast("已重新整理"); };
+    document.getElementById("btnToggleBoardUpper").onclick = () => {
+      const next = localStorage.getItem("crm_board_upper_collapsed") === "1" ? "0" : "1";
+      localStorage.setItem("crm_board_upper_collapsed", next);
+      applyBoardUpperCollapsed();
+      toast(next === "1" ? "已收起上方篩選／統計" : "已展開上方");
+    };
+    applyBoardUpperCollapsed();
     (function setupBoardSearch() {
       const input = document.getElementById("boardSearch");
       const box = document.getElementById("boardSuggest");
@@ -5917,16 +5915,6 @@
         if (!e.target.closest(".board-search-wrap")) hideBoardSuggest();
       });
     })();
-    document.getElementById("btnKanbanLeft").onclick = () => {
-      const el = document.getElementById("kanban");
-      const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 5;
-      el.scrollBy({ left: -(step + 12), behavior: "smooth" });
-    };
-    document.getElementById("btnKanbanRight").onclick = () => {
-      const el = document.getElementById("kanban");
-      const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 5;
-      el.scrollBy({ left: step + 12, behavior: "smooth" });
-    };
     document.getElementById("caseSearch").oninput = () => renderCasesTable();
     document.getElementById("caseStageFilter").innerHTML = `<option value="all">全部階段</option>` + STAGES.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
     document.getElementById("caseStageFilter").onchange = () => renderCasesTable();
