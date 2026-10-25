@@ -2093,6 +2093,11 @@
       border-radius: 12px; padding: 10px; font-size: .72rem; max-height: 180px; overflow: auto;
     }
     .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .agenda-new-lead { padding: 16px 18px; }
+    .agenda-new-lead .field { margin-bottom: 10px; }
+    @media (max-width: 700px) {
+      .agenda-new-lead .row2 { grid-template-columns: 1fr; }
+    }
     .home-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
     .dash-period {
       display: flex;
@@ -2455,7 +2460,7 @@
 
     <!-- AGENDA: meetings + follow-ups -->
     <section id="view-agenda" class="hidden">
-      <div class="dash-period">
+      <div class="dash-period" style="align-items:center">
         <div class="seg" id="agendaPeriodSeg">
           <button type="button" data-agenda-period="today" class="active">當天</button>
           <button type="button" data-agenda-period="week">本星期</button>
@@ -2477,7 +2482,37 @@
           <button type="button" data-agenda-view="week">週曆</button>
           <button type="button" data-agenda-view="month">月曆</button>
         </div>
+        <button type="button" class="btn btn-ink btn-sm" id="btnToggleAgendaNewLead" aria-expanded="false" aria-controls="agendaNewLeadPanel">＋ 新增新 Lead</button>
       </div>
+      <form class="panel agenda-new-lead hidden" id="agendaNewLeadPanel" style="margin-top:10px">
+        <div class="page-head" style="margin-bottom:10px">
+          <h2 style="font-size:1.1rem">新增新 Lead</h2>
+          <p class="muted page-head-sub">會寫入資料庫 · 同步出現喺客戶管理</p>
+        </div>
+        <div class="row2">
+          <label class="field"><span>Customer（客戶）*</span><input id="agendaLeadCustomer" name="customer" required placeholder="公司／客戶名稱" /></label>
+          <label class="field"><span>Partner</span>
+            <select id="agendaLeadPartner" name="partner"></select>
+          </label>
+        </div>
+        <div class="row2">
+          <label class="field"><span>Partner Sales</span><input id="agendaLeadPartnerSales" name="partnerSales" placeholder="Partner 銷售員" /></label>
+          <label class="field"><span>本公司銷售員</span>
+            <select id="agendaLeadCompanySales" name="companySales">
+              <option value="">未指派</option>
+            </select>
+          </label>
+        </div>
+        <label class="field"><span>Customer Address（客戶地址）</span><input id="agendaLeadAddress" name="address" placeholder="地址" /></label>
+        <label class="field"><span>Remark（備註）</span><textarea id="agendaLeadRemark" name="remark" rows="3" placeholder="備註／跟進重點"></textarea></label>
+        <div class="row2">
+          <label class="field"><span>下次跟進日期</span><input id="agendaLeadFollowUp" name="followUp" type="date" /></label>
+          <div class="field" style="display:flex;align-items:end;gap:8px;flex-wrap:wrap">
+            <button type="submit" class="btn btn-teal" id="btnAgendaCreateLead">建立新 Lead</button>
+            <button type="button" class="btn btn-ghost" id="btnAgendaCancelLead">取消</button>
+          </div>
+        </div>
+      </form>
       <div class="webhook-box" id="agendaWebhookBox">
         <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:end">
           <div style="flex:1;min-width:220px">
@@ -6926,6 +6961,108 @@
       const range = getAgendaRange();
       const items = range.incomplete ? [] : buildAgendaItems(range);
       sendAgendaReminder(items);
+    };
+
+    function initAgendaNewLeadForm() {
+      const partnerSel = document.getElementById("agendaLeadPartner");
+      const salesSel = document.getElementById("agendaLeadCompanySales");
+      if (partnerSel && !partnerSel.dataset.ready) {
+        partnerSel.innerHTML = PARTNERS.map((p) => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`).join("");
+        partnerSel.dataset.ready = "1";
+      }
+      if (salesSel && !salesSel.dataset.ready) {
+        salesSel.innerHTML = `<option value="">未指派</option>` +
+          COMPANY_SALES.map((n) => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("");
+        salesSel.dataset.ready = "1";
+      }
+      const follow = document.getElementById("agendaLeadFollowUp");
+      if (follow && !follow.value) follow.value = formatLocalDate(new Date());
+    }
+    function openAgendaNewLeadPanel(open) {
+      const panel = document.getElementById("agendaNewLeadPanel");
+      const btn = document.getElementById("btnToggleAgendaNewLead");
+      if (!panel || !btn) return;
+      const next = open == null ? panel.classList.contains("hidden") : !!open;
+      panel.classList.toggle("hidden", !next);
+      btn.setAttribute("aria-expanded", next ? "true" : "false");
+      btn.textContent = next ? "收起新增" : "＋ 新增新 Lead";
+      if (next) {
+        initAgendaNewLeadForm();
+        document.getElementById("agendaLeadCustomer")?.focus();
+      }
+    }
+    document.getElementById("btnToggleAgendaNewLead").onclick = () => openAgendaNewLeadPanel();
+    document.getElementById("btnAgendaCancelLead").onclick = () => {
+      document.getElementById("agendaNewLeadPanel")?.reset();
+      openAgendaNewLeadPanel(false);
+    };
+    document.getElementById("agendaNewLeadPanel").onsubmit = async (e) => {
+      e.preventDefault();
+      if (!dbReady) return toast("請先完成 Supabase 設定");
+      const customer = String(document.getElementById("agendaLeadCustomer").value || "").trim();
+      const partner = normalizePartner(document.getElementById("agendaLeadPartner").value) || "RICOH";
+      const partnerSales = String(document.getElementById("agendaLeadPartnerSales").value || "").trim();
+      const companySales = normalizeCompanySales(document.getElementById("agendaLeadCompanySales").value) || "";
+      const address = String(document.getElementById("agendaLeadAddress").value || "").trim();
+      const remark = String(document.getElementById("agendaLeadRemark").value || "").trim();
+      const followUp = String(document.getElementById("agendaLeadFollowUp").value || "").trim();
+      if (!customer) return toast("請填 Customer（客戶）");
+      const noteParts = [];
+      if (address) noteParts.push(`地址：${address}`);
+      if (remark) noteParts.push(remark);
+      const item = {
+        id: `lead-${crypto.randomUUID().slice(0, 8)}`,
+        customerName: customer,
+        partner,
+        systems: [],
+        requirements: address ? `地址：${address}` : "",
+        quantity: "",
+        budget: 0,
+        amount: 0,
+        successRate: 20,
+        targetClosingDate: "",
+        stage: "new_lead",
+        closeReason: null,
+        notes: noteParts.join("\n\n"),
+        ricohHouse: "",
+        ricohSales: partnerSales,
+        ricohConsultant: "",
+        companySales,
+        appointmentFlag: false,
+        appointmentAt: "",
+        appointmentConfirmed: false,
+        meetingDone: false,
+        meetingNotes: "",
+        followUpOpportunity: false,
+        nextFollowUpAt: followUp || formatLocalDate(new Date()),
+        leadStatus: "Processing",
+        sourceEvent: "Agenda 新增新 Lead",
+        teamLeader: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      const row = toRow(item);
+      row.created_at = item.createdAt;
+      const { error } = await db.from("crm_cases").insert(row);
+      if (error) return toast("建立失敗：" + error.message);
+      if (remark) {
+        try {
+          await db.from("crm_activity_logs").insert({
+            case_id: item.id,
+            log_type: "remark",
+            content: remark,
+            actor: companySales || "ADMIN",
+            source: "Agenda 新 Lead",
+            created_at: new Date().toISOString(),
+          });
+        } catch (_) {}
+      }
+      toast(`已新增新 Lead：${customer}`);
+      e.target.reset();
+      openAgendaNewLeadPanel(false);
+      await loadCases();
+      renderAgenda();
+      if (!document.getElementById("view-mgmt").classList.contains("hidden")) renderMgmt();
     };
     document.getElementById("btnFindDupCustomers").onclick = () => renderCustomerMergeBox();
 
