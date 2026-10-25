@@ -1086,6 +1086,121 @@
     .chart-legend i {
       width: 8px; height: 8px; border-radius: 50%; display: inline-block;
     }
+    .chart-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 2px;
+    }
+    .chart-head h2 { margin: 0; }
+    .chart-type-seg {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      padding: 3px;
+      background: #f0ecf8;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .chart-type-seg button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: .68rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .chart-type-seg button.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 6px 12px rgba(107, 70, 254, .25);
+    }
+    .vbars {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 160px;
+      margin-top: 14px;
+      padding: 0 4px 0;
+    }
+    .vbar-col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .vbar-track {
+      width: 100%;
+      max-width: 36px;
+      height: 120px;
+      background: #f0ecf8;
+      border-radius: 999px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .vbar-track > i {
+      display: block;
+      width: 100%;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #4aa8ff, #6b46fe, #ff6b9d);
+      min-height: 4px;
+    }
+    .vbar-col .vlbl {
+      font-size: .62rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.2;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .vbar-col .vnum {
+      font-size: .72rem;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .radar-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 8px;
+    }
+    .radar-svg { width: min(100%, 260px); height: auto; display: block; }
+    .compare-list { margin-top: 8px; display: grid; gap: 10px; }
+    .compare-item { }
+    .compare-item .cname {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: .76rem;
+      font-weight: 700;
+      color: var(--ink-soft);
+      margin-bottom: 4px;
+    }
+    .compare-bars {
+      display: grid;
+      gap: 4px;
+    }
+    .compare-bars .chart-bar { height: 9px; }
+    .compare-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: .66rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-top: 3px;
+    }
     .month-row {
       margin-top: 12px;
       padding: 10px 10px 8px;
@@ -2230,17 +2345,209 @@
         };
       });
 
+      renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt });
+    }
+
+    const DASH_CHART_TYPES = [
+      { id: "bar", label: "棒圖" },
+      { id: "radar", label: "雷達圖" },
+      { id: "compare", label: "對比圖" },
+    ];
+    const DASH_CHART_DEFAULTS = { months: "bar", stage: "bar", sales: "bar", funnel: "bar" };
+    function loadDashChartTypes() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("crm_dash_chart_types") || "{}");
+        return { ...DASH_CHART_DEFAULTS, ...raw };
+      } catch {
+        return { ...DASH_CHART_DEFAULTS };
+      }
+    }
+    let dashChartTypes = loadDashChartTypes();
+    function saveDashChartType(key, type) {
+      dashChartTypes[key] = type;
+      localStorage.setItem("crm_dash_chart_types", JSON.stringify(dashChartTypes));
+    }
+
+    function chartTypeSegHtml(chartKey) {
+      const cur = dashChartTypes[chartKey] || "bar";
+      return `<div class="chart-type-seg" data-chart-key="${chartKey}">
+        ${DASH_CHART_TYPES.map((t) =>
+          `<button type="button" data-chart-type="${t.id}" class="${t.id === cur ? "active" : ""}">${t.label}</button>`
+        ).join("")}
+      </div>`;
+    }
+
+    function chartHeadHtml(title, sub, chartKey) {
+      return `<div class="chart-head">
+        <div>
+          <h2>${escapeHtml(title)}</h2>
+          <p class="muted" style="margin:4px 0 0">${escapeHtml(sub)}</p>
+        </div>
+        ${chartTypeSegHtml(chartKey)}
+      </div>`;
+    }
+
+    function bindChartTypeSegs(root) {
+      (root || document).querySelectorAll(".chart-type-seg").forEach((seg) => {
+        seg.onclick = (e) => {
+          const btn = e.target.closest("button[data-chart-type]");
+          if (!btn) return;
+          const key = seg.dataset.chartKey;
+          const type = btn.dataset.chartType;
+          if (!key || !type || dashChartTypes[key] === type) return;
+          saveDashChartType(key, type);
+          renderDashboard();
+        };
+      });
+    }
+
+    function renderRadarSvg(items, { size = 240, valueKey = "value", labelKey = "label", color = "#6b46fe" } = {}) {
+      const n = Math.max(items.length, 3);
+      const cx = size / 2, cy = size / 2, R = size * 0.34;
+      const maxV = Math.max(1, ...items.map((it) => Number(it[valueKey]) || 0));
+      const angleAt = (i) => (-Math.PI / 2) + (i * 2 * Math.PI) / n;
+      const pt = (i, r) => {
+        const a = angleAt(i);
+        return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+      };
+      const rings = [0.33, 0.66, 1].map((t) => {
+        const pts = Array.from({ length: n }, (_, i) => pt(i, R * t).join(",")).join(" ");
+        return `<polygon points="${pts}" fill="none" stroke="#e8e2f5" stroke-width="1"/>`;
+      }).join("");
+      const spokes = Array.from({ length: n }, (_, i) => {
+        const [x, y] = pt(i, R);
+        return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#ebe6f4" stroke-width="1"/>`;
+      }).join("");
+      const dataPts = items.map((it, i) => {
+        const r = ((Number(it[valueKey]) || 0) / maxV) * R;
+        return pt(i, r).join(",");
+      }).join(" ");
+      const labels = items.map((it, i) => {
+        const [x, y] = pt(i, R + 18);
+        return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-size="10" font-weight="700" fill="#5a5470">${escapeHtml(String(it[labelKey] || ""))}</text>`;
+      }).join("");
+      return `<div class="radar-wrap"><svg class="radar-svg" viewBox="0 0 ${size} ${size}" aria-hidden="true">
+        ${rings}${spokes}
+        <polygon points="${dataPts}" fill="${color}" fill-opacity=".22" stroke="${color}" stroke-width="2.2"/>
+        ${items.map((it, i) => {
+          const r = ((Number(it[valueKey]) || 0) / maxV) * R;
+          const [x, y] = pt(i, r);
+          return `<circle cx="${x}" cy="${y}" r="3" fill="${color}"/>`;
+        }).join("")}
+        ${labels}
+      </svg></div>`;
+    }
+
+    function renderVBars(items, { labelKey = "label", valueKey = "value", tone = "" } = {}) {
+      const maxV = Math.max(1, ...items.map((it) => Number(it[valueKey]) || 0));
+      return `<div class="vbars">${items.map((it) => {
+        const v = Number(it[valueKey]) || 0;
+        const h = Math.max(v ? 6 : 0, (v / maxV) * 100);
+        const style = it.color ? `background:linear-gradient(180deg, ${it.bg || it.color}, ${it.color})` : "";
+        return `<div class="vbar-col" title="${escapeHtml(String(it.fullLabel || it[labelKey]))}: ${v}">
+          <div class="vnum">${v}</div>
+          <div class="vbar-track"><i class="${tone}" style="height:${h}%;${style}"></i></div>
+          <div class="vlbl">${escapeHtml(String(it[labelKey]))}</div>
+        </div>`;
+      }).join("")}</div>`;
+    }
+
+    function renderCompareList(items) {
+      const maxA = Math.max(1, ...items.map((it) => Number(it.a) || 0));
+      const maxB = Math.max(1, ...items.map((it) => Number(it.b) || 0));
+      return `<div class="compare-list">
+        <div class="chart-legend">
+          <span><i style="background:#6b46fe"></i>${escapeHtml(items[0]?.aLabel || "指標 A")}</span>
+          <span><i style="background:#27c281"></i>${escapeHtml(items[0]?.bLabel || "指標 B")}</span>
+        </div>
+        ${items.map((it) => {
+          const wa = Math.max((Number(it.a) || 0) ? 4 : 0, ((Number(it.a) || 0) / maxA) * 100);
+          const wb = Math.max((Number(it.b) || 0) ? 4 : 0, ((Number(it.b) || 0) / maxB) * 100);
+          return `<div class="compare-item">
+            <div class="cname"><span>${escapeHtml(it.label)}</span><span>${it.a} / ${it.b}</span></div>
+            <div class="compare-bars">
+              <div class="chart-bar tone-purple"><i style="width:${wa}%"></i></div>
+              <div class="chart-bar tone-mint"><i style="width:${wb}%"></i></div>
+            </div>
+            <div class="compare-meta"><span>${escapeHtml(it.aLabel || "A")}: ${it.a}</span><span>${escapeHtml(it.bLabel || "B")}: ${it.b}</span></div>
+          </div>`;
+        }).join("")}
+      </div>`;
+    }
+
+    function renderHBars(items) {
+      const maxV = Math.max(1, ...items.map((it) => Number(it.value) || 0));
+      return items.map((it) => {
+        const w = Math.max((Number(it.value) || 0) ? 6 : 0, ((Number(it.value) || 0) / maxV) * 100);
+        const style = it.color ? `background:linear-gradient(90deg, ${it.bg || "#efeaff"}, ${it.color})` : "";
+        return `<div class="chart-row" title="${escapeHtml(it.fullLabel || it.label)}：${it.value}">
+          <div class="name">${escapeHtml(it.label)}</div>
+          <div class="chart-bar ${it.tone || ""}"><i style="width:${w}%;${style}"></i></div>
+          <div class="count">${it.value}</div>
+        </div>${it.sub ? `<div class="muted" style="font-size:.68rem;margin:-2px 0 2px 106px">${escapeHtml(it.sub)}</div>` : ""}`;
+      }).join("");
+    }
+
+    function bindMonthRows(root) {
+      root.querySelectorAll(".month-row").forEach((row) => {
+        const toggle = () => {
+          const openRow = row.classList.toggle("open");
+          row.setAttribute("aria-expanded", openRow ? "true" : "false");
+        };
+        row.addEventListener("click", (e) => {
+          if (e.target.closest("[data-case-id]")) {
+            openDrawer(e.target.closest("[data-case-id]").dataset.caseId);
+            return;
+          }
+          if (e.target.closest(".chart-type-seg")) return;
+          toggle();
+        });
+        row.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggle();
+          }
+        });
+      });
+    }
+
+    function renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt }) {
+      // ---- Months closing ----
       const monthsRoot = document.getElementById("dashMonths");
-      monthsRoot.innerHTML = `<h2 style="font-size:1.2rem">${escapeHtml(range.title)}</h2>
-        <p class="muted">依 target closing date（無則用約見日）· 點擊月份展開 breakdown · 跟進機會 ${followN}</p>` +
-        months.map((m) => {
-          const width = Math.max(4, (m.total / maxAmt) * 100);
+      const monthsType = dashChartTypes.months || "bar";
+      const monthItems = months.map((m) => ({
+        label: m.label.replace(/^\d{4}年/, "").replace("月", "月"),
+        fullLabel: m.label,
+        value: m.list.length,
+        a: m.list.length,
+        b: Math.round(m.weighted),
+        aLabel: "宗數",
+        bLabel: "加權金額",
+        total: m.total,
+        weighted: m.weighted,
+        avg: m.avg,
+        month: m,
+      }));
+      let monthsBody = "";
+      if (monthsType === "radar") {
+        monthsBody = renderRadarSvg(monthItems, { labelKey: "label", valueKey: "value", color: "#6b46fe" });
+      } else if (monthsType === "compare") {
+        monthsBody = renderCompareList(monthItems.map((it) => ({
+          label: it.fullLabel,
+          a: it.a,
+          b: it.b,
+          aLabel: "宗數",
+          bLabel: "加權 ($)",
+        })));
+      } else if (monthsType === "bar" && months.length <= 8) {
+        // Keep expandable list for bar (most useful) when few months; also offer vertical bars via compare/radar
+        monthsBody = months.map((m) => {
+          const width = Math.max(4, (m.total / Math.max(maxAmt, 1)) * 100);
           const breakdown = m.list.length
             ? m.list.map((c) => {
                 const s = stageMeta(c.stage);
                 const w = (c.amount || 0) * ((c.successRate || 0) / 100);
                 const fd = caseForecastDate(c);
-                const fdText = formatLocalDate(fd);
                 return `<div class="breakdown-item" data-case-id="${c.id}">
                   <div><strong>${escapeHtml((c.customerName || "").split("\n")[0])}</strong></div>
                   <div><strong>${money(c.amount)}</strong></div>
@@ -2249,7 +2556,7 @@
                     <span>${escapeHtml(c.ricohSales || c.partner || "")}</span>
                     <span>機率 ${pct(c.successRate)}</span>
                     <span>加權 ${money(w)}</span>
-                    <span>日期 ${fdText}</span>
+                    <span>日期 ${formatLocalDate(fd)}</span>
                   </div>
                 </div>`;
               }).join("")
@@ -2267,125 +2574,112 @@
             </div>
           </div>`;
         }).join("");
+      } else {
+        monthsBody = renderVBars(monthItems.map((it) => ({
+          label: it.label,
+          fullLabel: it.fullLabel,
+          value: it.value,
+          color: "#6b46fe",
+          bg: "#c4b5fd",
+        })));
+      }
+      monthsRoot.innerHTML = chartHeadHtml(range.title, `依 target closing date（無則用約見日）· 跟進機會 ${followN}`, "months") + monthsBody;
+      if (monthsType === "bar") bindMonthRows(monthsRoot);
 
-      monthsRoot.querySelectorAll(".month-row").forEach((row) => {
-        const toggle = () => {
-          const openRow = row.classList.toggle("open");
-          row.setAttribute("aria-expanded", openRow ? "true" : "false");
-        };
-        row.addEventListener("click", (e) => {
-          if (e.target.closest("[data-case-id]")) {
-            const id = e.target.closest("[data-case-id]").dataset.caseId;
-            openDrawer(id);
-            return;
-          }
-          toggle();
-        });
-        row.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            toggle();
-          }
-        });
-      });
-
-      renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN });
-    }
-
-    function renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN }) {
-      // 1) Stage pipeline bars
+      // ---- Stage ----
       const stageCounts = STAGES.map((s) => ({
         ...s,
         n: cases.filter((c) => c.stage === s.id).length,
       }));
-      const stageMax = Math.max(1, ...stageCounts.map((s) => s.n));
       const stageTotal = stageCounts.reduce((s, x) => s + x.n, 0) || 1;
-      document.getElementById("dashChartStage").innerHTML = `
-        <h2>Stage Pipeline</h2>
-        <p class="muted">全部案件階段分佈 · 共 ${stageTotal} 宗</p>
-        ${stageCounts.map((s) => {
-          const w = Math.max(s.n ? 6 : 0, (s.n / stageMax) * 100);
-          return `<div class="chart-row" title="${escapeHtml(s.label)}：${s.n}">
-            <div class="name">${escapeHtml(s.short)}</div>
-            <div class="chart-bar"><i style="width:${w}%;background:linear-gradient(90deg, ${s.bg}, ${s.color})"></i></div>
-            <div class="count">${s.n}</div>
-          </div>`;
-        }).join("")}`;
+      const stageType = dashChartTypes.stage || "bar";
+      const stageItems = stageCounts.map((s) => ({
+        label: s.short,
+        fullLabel: s.label,
+        value: s.n,
+        color: s.color,
+        bg: s.bg,
+        a: s.n,
+        b: Math.round((s.n / stageTotal) * 100),
+        aLabel: "宗數",
+        bLabel: "佔比%",
+      }));
+      let stageBody = "";
+      if (stageType === "radar") {
+        stageBody = renderRadarSvg(stageItems.filter((s) => s.value > 0).concat(stageItems.filter((s) => s.value === 0)).slice(0, 8), {
+          labelKey: "label", valueKey: "value", color: "#6b46fe",
+        });
+      } else if (stageType === "compare") {
+        stageBody = renderCompareList(stageItems.map((it) => ({
+          label: it.fullLabel, a: it.a, b: it.b, aLabel: "宗數", bLabel: "佔比%",
+        })));
+      } else {
+        stageBody = renderHBars(stageItems);
+      }
+      document.getElementById("dashChartStage").innerHTML =
+        chartHeadHtml("Stage Pipeline", `全部案件階段分佈 · 共 ${stageTotal} 宗`, "stage") + stageBody;
 
-      // 2) Sales ranking + mini sparkline of weighted pipeline
+      // ---- Sales ----
       const salesRows = COMPANY_SALES.map((name) => {
         const list = cases.filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed");
-        const amt = list.reduce((s, c) => s + (c.amount || 0), 0);
         const weighted = list.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
         const meets = list.filter((c) => c.meetingDone).length;
-        return { name, n: list.length, amt, weighted, meets };
+        return { name, n: list.length, weighted, meets };
       });
-      const salesMax = Math.max(1, ...salesRows.map((r) => r.n));
-      const sparkVals = (range.months || []).map((m) => {
-        const list = open.filter((c) => {
-          const d = caseForecastDate(c);
-          return d && d >= m.monthStart && d <= m.monthEnd;
-        });
-        return list.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
-      });
-      const sparkMax = Math.max(1, ...sparkVals);
-      const sparkW = 220, sparkH = 86, pad = 6;
-      const sparkPts = sparkVals.length
-        ? sparkVals.map((v, i) => {
-            const x = pad + (sparkVals.length === 1 ? sparkW / 2 : (i / (sparkVals.length - 1)) * (sparkW - pad * 2));
-            const y = sparkH - pad - (v / sparkMax) * (sparkH - pad * 2);
-            return [x, y];
-          })
-        : [[pad, sparkH - pad], [sparkW - pad, sparkH - pad]];
-      const poly = sparkPts.map(([x, y]) => `${x},${y}`).join(" ");
-      const area = `${pad},${sparkH - pad} ${poly} ${sparkW - pad},${sparkH - pad}`;
-      document.getElementById("dashChartSales").innerHTML = `
-        <h2>銷售員 Pipeline</h2>
-        <p class="muted">本公司銷售員 open cases · 期間加權走勢</p>
-        <svg class="sparkline" viewBox="0 0 ${sparkW} ${sparkH}" preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#6b46fe" stop-opacity=".28"/>
-              <stop offset="100%" stop-color="#6b46fe" stop-opacity="0"/>
-            </linearGradient>
-            <linearGradient id="sparkStroke" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stop-color="#4aa8ff"/>
-              <stop offset="55%" stop-color="#6b46fe"/>
-              <stop offset="100%" stop-color="#ff6b9d"/>
-            </linearGradient>
-          </defs>
-          <polygon points="${area}" fill="url(#sparkFill)"></polygon>
-          <polyline points="${poly}" fill="none" stroke="url(#sparkStroke)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 4"></polyline>
-          ${sparkPts.map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="2.6" fill="${i === sparkPts.length - 1 ? "#6b46fe" : "#a78bfa"}"></circle>`).join("")}
-        </svg>
-        ${salesRows.map((r, idx) => {
-          const tones = ["purple", "orange", "mint", "sky", "rose"];
-          const w = Math.max(r.n ? 6 : 0, (r.n / salesMax) * 100);
-          return `<div class="chart-row">
-            <div class="name">${escapeHtml(r.name)}</div>
-            <div class="chart-bar tone-${tones[idx % tones.length]}"><i style="width:${w}%"></i></div>
-            <div class="count">${r.n}</div>
-          </div>
-          <div class="muted" style="font-size:.68rem;margin:-2px 0 2px 106px">${money(r.weighted)} 加權 · 會面 ${r.meets}</div>`;
-        }).join("")}`;
+      const salesType = dashChartTypes.sales || "bar";
+      const salesItems = salesRows.map((r, idx) => ({
+        label: r.name,
+        value: r.n,
+        tone: ["purple", "orange", "mint", "sky", "rose"][idx % 5],
+        sub: `${money(r.weighted)} 加權 · 會面 ${r.meets}`,
+        a: r.n,
+        b: r.meets,
+        aLabel: "Open cases",
+        bLabel: "已會面",
+        color: "#6b46fe",
+        bg: "#c4b5fd",
+      }));
+      let salesBody = "";
+      if (salesType === "radar") {
+        salesBody = renderRadarSvg(salesItems, { labelKey: "label", valueKey: "value", color: "#ff8a4c" });
+      } else if (salesType === "compare") {
+        salesBody = renderCompareList(salesItems.map((it) => ({
+          label: it.label, a: it.a, b: it.b, aLabel: "Open cases", bLabel: "已會面",
+        })));
+      } else {
+        salesBody = renderVBars(salesItems);
+      }
+      document.getElementById("dashChartSales").innerHTML =
+        chartHeadHtml("銷售員 Pipeline", "本公司銷售員 open cases · 可切換圖表", "sales") + salesBody;
 
-      // 3) Conversion funnel
+      // ---- Funnel ----
       const allN = cases.length;
       const funnel = [
-        { label: "全部 Lead", n: allN, sub: "資料庫總數", color: "linear-gradient(135deg,#8b6fff,#6b46fe)", width: 100 },
-        { label: "已約／會面", n: Math.max(apptN, meetN), sub: `約見 ${apptN} · 完成 ${meetN}`, color: "linear-gradient(135deg,#7ec4ff,#4aa8ff)", width: 86 },
-        { label: "跟進機會", n: followN, sub: "有機會繼續", color: "linear-gradient(135deg,#ffb086,#ff8a4c)", width: 72 },
-        { label: "報價／最終", n: cases.filter((c) => ["quotation", "follow_up", "final_stage"].includes(c.stage)).length, sub: "接近成交", color: "linear-gradient(135deg,#ff9abc,#ff6b9d)", width: 58 },
-        { label: "確認簽單", n: cases.filter((c) => c.stage === "confirmation" || (c.closeReason === "won")).length, sub: `關閉 ${closed.length}`, color: "linear-gradient(135deg,#5ee4b0,#27c281)", width: 44 },
+        { label: "全部 Lead", short: "Lead", n: allN, sub: "資料庫總數", color: "#6b46fe", bg: "#c4b5fd", width: 100 },
+        { label: "已約／會面", short: "會面", n: Math.max(apptN, meetN), sub: `約見 ${apptN} · 完成 ${meetN}`, color: "#4aa8ff", bg: "#bfdbfe", width: 86 },
+        { label: "跟進機會", short: "跟進", n: followN, sub: "有機會繼續", color: "#ff8a4c", bg: "#fed7aa", width: 72 },
+        { label: "報價／最終", short: "報價", n: cases.filter((c) => ["quotation", "follow_up", "final_stage"].includes(c.stage)).length, sub: "接近成交", color: "#ff6b9d", bg: "#fbcfe8", width: 58 },
+        { label: "確認簽單", short: "簽單", n: cases.filter((c) => c.stage === "confirmation" || c.closeReason === "won").length, sub: `關閉 ${closed.length}`, color: "#27c281", bg: "#a7f3d0", width: 44 },
       ];
       const top = Math.max(1, funnel[0].n);
-      document.getElementById("dashChartFunnel").innerHTML = `
-        <h2>轉換漏斗</h2>
-        <p class="muted">由 Lead 到簽單 · 所選期間 ${inRange.length} 宗</p>
-        <div class="funnel-stack">
+      const funnelType = dashChartTypes.funnel || "bar";
+      let funnelBody = "";
+      if (funnelType === "radar") {
+        funnelBody = renderRadarSvg(funnel.map((f) => ({ label: f.short, value: f.n })), { color: "#27c281" });
+      } else if (funnelType === "compare") {
+        funnelBody = renderCompareList(funnel.map((f) => ({
+          label: f.label,
+          a: f.n,
+          b: Math.round((f.n / top) * 100),
+          aLabel: "宗數",
+          bLabel: "相對頂層%",
+        })));
+      } else {
+        // bar mode: classic funnel blocks
+        funnelBody = `<div class="funnel-stack">
           ${funnel.map((f) => {
             const rate = Math.round((f.n / top) * 100);
-            return `<div class="funnel-step" style="width:${f.width}%;background:${f.color}">
+            return `<div class="funnel-step" style="width:${f.width}%;background:linear-gradient(135deg, ${f.bg}, ${f.color})">
               <div>
                 <div class="flabel">${escapeHtml(f.label)}</div>
                 <div class="fsub">${escapeHtml(f.sub)}</div>
@@ -2404,6 +2698,11 @@
           <span><i style="background:#ff6b9d"></i>報價</span>
           <span><i style="background:#27c281"></i>簽單</span>
         </div>`;
+      }
+      document.getElementById("dashChartFunnel").innerHTML =
+        chartHeadHtml("轉換漏斗", `由 Lead 到簽單 · 所選期間 ${inRange.length} 宗`, "funnel") + funnelBody;
+
+      bindChartTypeSegs(document.getElementById("view-dashboard"));
     }
 
     function renderBoardDash() {
