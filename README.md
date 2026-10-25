@@ -47,6 +47,7 @@ PR / 分支 Preview（無需自己 host）：
 - **列表**：欄位顯示／排序、批量改 stage／指派／跟進日、匯出 CSV／Excel
 - **Dashboard**：Closing 點擊鑽取開 case；銷售員／Partner 篩選；Target $／加權 Forecast／目標額
 - **會議／跟進**：逾期標示、今日約見置頂、完成會面一鍵寫 log＋推 stage、週／月曆、Webhook 提醒
+- **Log History**：自動記錄欄位變更（幾時、邊個、由咩改到咩）；可篩選類型／日期；案件詳情同步顯示
 - **資料庫管理**
   - **客戶管理**：VISIT、最後聯絡渠道、下次跟進、重複公司名合併
   - **Partner 管理**：DQ 率、貢獻金額排行；Team Leader 可編輯寫回 DB
