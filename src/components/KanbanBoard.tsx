@@ -40,7 +40,7 @@ export function KanbanBoard() {
         <div>
           <h1 className="font-display text-3xl font-extrabold text-ink">Case 跟進</h1>
           <p className="mt-1 text-sm text-muted">
-            Notion 式 Kanban：拖曳卡片改 status，由會見到確認／關閉
+            Case Management：拖曳卡片改 status，由會見到確認／關閉
           </p>
         </div>
         <button

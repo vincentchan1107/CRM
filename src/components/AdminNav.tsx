@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/admin", label: "Dashboard", match: "exact" as const },
-  { href: "/admin/board", label: "Kanban", match: "prefix" as const },
+  { href: "/admin/board", label: "Case Management", match: "prefix" as const },
   { href: "/admin/cases", label: "列表", match: "prefix" as const },
 ];
 

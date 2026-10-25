@@ -24,7 +24,7 @@ export default function HomePage() {
             講出嚟，就變案件。
           </h1>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-ink-soft sm:text-lg">
-            手機 Portal 用 AI 語音填表；後台用 Kanban 跟住會見、報價、跟進到確認簽單，並預測未來幾個月成交額。
+            手機 Portal 用 AI 語音填表；後台用 Case Management 跟住會見、報價、跟進到確認簽單，並預測未來幾個月成交額。
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -46,7 +46,7 @@ export default function HomePage() {
         <footer className="animate-rise grid gap-3 sm:grid-cols-3">
           {[
             ["語音建案", "講客戶、partner、系統、需求、數量、budget"],
-            ["Kanban 跟進", "會見 → 報價 → 跟進 → 最終 → 確認／關閉"],
+            ["Case Management", "會見 → 報價 → 跟進 → 最終 → 確認／關閉"],
             ["成交預測", "未來月份簽單額與成功機率"],
           ].map(([title, desc]) => (
             <div

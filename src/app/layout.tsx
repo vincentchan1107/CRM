@@ -23,7 +23,7 @@ const noto = Noto_Sans_TC({
 export const metadata: Metadata = {
   title: "見客通 CaseFlow CRM",
   description:
-    "手機語音建案 Portal + 後台 Kanban／列表／成交預測 Dashboard",
+    "手機語音建案 Portal + 後台 Case Management／列表／成交預測 Dashboard",
 };
 
 export const viewport: Viewport = {

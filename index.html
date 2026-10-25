@@ -1150,7 +1150,7 @@
         <button data-view="home" class="active"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg></span><span class="nav-label">首頁</span></button>
         <button data-view="portal"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/></svg></span><span class="nav-label">手機 Portal</span></button>
         <button data-view="dashboard"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V10M10 19V5M16 19v-7M22 19H2"/></svg></span><span class="nav-label">Dashboard</span></button>
-        <button data-view="board"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="5.5" height="16" rx="1.5"/><rect x="9.25" y="4" width="5.5" height="11" rx="1.5"/><rect x="15.5" y="4" width="5.5" height="14" rx="1.5"/></svg></span><span class="nav-label">Kanban</span></button>
+        <button data-view="board"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="5.5" height="16" rx="1.5"/><rect x="9.25" y="4" width="5.5" height="11" rx="1.5"/><rect x="15.5" y="4" width="5.5" height="14" rx="1.5"/></svg></span><span class="nav-label">Case Management</span></button>
         <button data-view="cases"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span><span class="nav-label">列表</span></button>
         <button data-view="agenda"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></span><span class="nav-label">會議／跟進</span></button>
         <button data-view="mgmt"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><span class="nav-label">資料庫管理</span></button>
@@ -1205,7 +1205,7 @@
         <div class="eyebrow">Achiever · Sales CRM</div>
         <h1 style="font-size:clamp(1.8rem,4vw,2.6rem);margin-top:8px;line-height:1.15;max-width:18ch">講出嚟，就變案件。</h1>
         <p class="muted" style="max-width:520px;margin-top:12px;line-height:1.6">
-          手機 Portal 用語音／文字填表；後台用 Kanban 跟進會見→報價→確認／關閉，並預測未來成交額。
+          手機 Portal 用語音／文字填表；後台用 Case Management 跟進會見→報價→確認／關閉，並預測未來成交額。
         </p>
         <div class="home-actions">
           <button class="btn btn-teal" data-go="portal">開啟手機 Portal</button>
@@ -1257,7 +1257,7 @@
           <p class="muted">可揀當月／未來 3／6／12 個月，或自訂由日期至日期</p>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-ink btn-sm" data-go="board">開 Kanban</button>
+          <button class="btn btn-ink btn-sm" data-go="board">開 Case Management</button>
           <button class="btn btn-ghost btn-sm" data-go="cases">睇列表</button>
         </div>
       </div>
@@ -1286,7 +1286,7 @@
     <section id="view-board" class="hidden">
       <div class="board-toolbar">
         <div>
-          <h1>Case 跟進</h1>
+          <h1>Case Management</h1>
         </div>
         <div class="board-toolbar-actions">
           <div class="board-search-wrap">
@@ -1526,7 +1526,7 @@
       home: "首頁",
       portal: "手機 Portal",
       dashboard: "Dashboard",
-      board: "Kanban · Case 跟進",
+      board: "Case Management · Case 跟進",
       cases: "案件列表",
       agenda: "銷售員會議及 Case 跟進",
       mgmt: "資料庫管理",

@@ -39,7 +39,7 @@ PR / 分支 Preview（無需自己 host）：
 ## 功能
 
 - **手機 Portal**：語音（Web Speech）／文字解析 → 客戶、Partner、系統、需求、數量、Budget
-- **Kanban**：首次會見 → 報價 → 跟進 → 最終階段 → 確認簽單 → 已關閉（DQ／失敗）
+- **Case Management**：首次會見 → 報價 → 跟進 → 最終階段 → 確認簽單 → 已關閉（DQ／失敗）
 - **列表**：details、target closing date、amount
 - **Dashboard**：可揀當月／3／6／12 個月或自訂日期嘅 closing 預測
 - **資料庫管理**
