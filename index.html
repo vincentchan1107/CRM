@@ -1447,6 +1447,59 @@
       width: 100%; min-width: 110px; border: 1px solid var(--line); border-radius: 10px;
       padding: 7px 8px; font-size: .8rem; font-weight: 700;
     }
+    .year-plan-toolbar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
+      margin-top: 18px;
+    }
+    .year-plan-toolbar .left, .year-plan-toolbar .right {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    }
+    .year-plan-toolbar select, .year-plan-toolbar input[type="number"] {
+      border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px;
+      font-size: .8rem; font-weight: 700; background: #fff;
+    }
+    .year-plan-toolbar select { min-width: 110px; }
+    .year-plan-toolbar input[type="number"] { width: 140px; }
+    .year-summary {
+      display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 12px;
+    }
+    @media (max-width: 800px) { .year-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .year-summary .ys {
+      border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: #f7f4fc;
+    }
+    .year-summary .ys .lbl { font-size: .68rem; font-weight: 700; color: var(--muted); }
+    .year-summary .ys .val { font-size: 1.05rem; font-weight: 800; margin-top: 2px; }
+    .year-month-bars {
+      display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px;
+      width: 100%; min-height: 120px; margin-top: 12px; align-items: end;
+    }
+    @media (max-width: 700px) {
+      .year-month-bars { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    }
+    .year-month-bars .ymb {
+      min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 6px 2px; border-radius: 12px; background: rgba(247,244,252,.7);
+    }
+    .year-month-bars .ymb.current { outline: 2px solid #c4b5fd; background: #efeefe; }
+    .year-month-bars .ymb .pair {
+      display: flex; align-items: flex-end; justify-content: center; gap: 3px; height: 72px; width: 100%;
+    }
+    .year-month-bars .ymb .pair > span {
+      flex: 1 1 0; max-width: 14px; min-width: 6px; height: 100%; background: #efe8f8;
+      border-radius: 999px; display: flex; align-items: flex-end; overflow: hidden;
+    }
+    .year-month-bars .ymb .pair > span > i { display: block; width: 100%; min-height: 2px; border-radius: 999px; }
+    .year-month-bars .ymb .pair > span.t > i { background: linear-gradient(180deg, #8b6fff, #6b46fe); }
+    .year-month-bars .ymb .pair > span.a > i { background: linear-gradient(180deg, #5ee4b0, #27c281); }
+    .year-month-bars .ymb .m { font-size: .62rem; font-weight: 800; color: var(--ink-soft); }
+    .year-month-bars .ymb .p { font-size: .58rem; font-weight: 700; color: var(--muted); }
+    .year-fill-box {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-top: 10px;
+      padding: 10px 12px; border: 1px dashed var(--line); border-radius: 14px; background: #faf8ff;
+    }
+    .year-fill-box label { display: grid; gap: 4px; }
+    .year-fill-box label span { font-size: .68rem; font-weight: 700; color: var(--muted); }
     .kpi-attain {
       display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       margin-top: 12px;
@@ -1885,7 +1938,7 @@
 
       <div class="mgmt-panel" id="mgmt-sales">
         <div class="mgmt-stats" id="salesStats"></div>
-        <p class="muted" style="margin-bottom:10px;font-size:.78rem">本公司銷售員：Vincent／Tim／Andrew／Kelly／Sophia · 可設定每人 KPI 同每月 Closing 目標銀碼 · Dashboard 會顯示目標 vs 實際</p>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">本公司銷售員：Vincent／Tim／Andrew／Kelly／Sophia · 可設計每人 KPI，並預先規劃未來每年 12 個月 Closing 目標同表現對照 · Dashboard 會顯示目標 vs 實際</p>
         <div class="sales-kpi-grid">
           <div class="sales-kpi-nav" id="salesKpiNav"></div>
           <div class="sales-kpi-panel" id="salesKpiPanel"></div>
@@ -1893,7 +1946,7 @@
         <div class="eyebrow" style="margin:16px 0 8px">團隊總覽</div>
         <div class="table-wrap"><table>
           <thead><tr>
-            <th>本公司銷售員</th><th>本月 Closing 目標</th><th>本月已 Closing</th><th>達成率</th><th>Pipeline 金額</th><th>加權預測</th><th>轉換率</th><th>近 1 月會面</th><th>成功簽單</th><th>簽單金額</th>
+            <th>本公司銷售員</th><th>本月目標</th><th>本月已 Closing</th><th>本月達成</th><th id="salesYearTargetHead">全年目標</th><th id="salesYearActualHead">全年已 Closing</th><th>Pipeline</th><th>加權預測</th><th>轉換率</th><th>近 1 月會面</th><th>成功簽單</th><th>簽單金額</th>
           </tr></thead>
           <tbody id="salesBody"></tbody>
         </table></div>
@@ -2086,7 +2139,7 @@
       conversionTarget: 25,
     };
     let salesKpiSelected = localStorage.getItem("crm_sales_kpi_selected") || COMPANY_SALES[0];
-    let salesKpiMonthCursor = ""; // YYYY-MM for editor month list start
+    let salesKpiYear = Number(localStorage.getItem("crm_sales_kpi_year")) || new Date().getFullYear();
 
     function loadSalesPlans() {
       try {
@@ -2121,8 +2174,17 @@
     function setSalesMonthClosingTarget(name, ym, amount) {
       const plans = loadSalesPlans();
       plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
-      if (!amount && amount !== 0) delete plans[name].months[ym];
-      else plans[name].months[ym] = { closingTarget: Number(amount) || 0 };
+      if (amount === "" || amount == null) {
+        const cur = { ...(plans[name].months[ym] || {}) };
+        delete cur.closingTarget;
+        if (Object.keys(cur).length) plans[name].months[ym] = cur;
+        else delete plans[name].months[ym];
+      } else {
+        plans[name].months[ym] = {
+          ...(plans[name].months[ym] || {}),
+          closingTarget: Number(amount) || 0,
+        };
+      }
       saveSalesPlans(plans);
     }
     function monthKeyFromDate(d) {
@@ -2145,6 +2207,69 @@
         });
       }
       return out;
+    }
+    function availableSalesYears() {
+      const nowY = new Date().getFullYear();
+      const years = new Set();
+      for (let y = nowY - 1; y <= nowY + 5; y++) years.add(y);
+      if (salesKpiYear) years.add(Number(salesKpiYear));
+      const plans = loadSalesPlans();
+      for (const name of COMPANY_SALES) {
+        Object.keys(plans[name]?.months || {}).forEach((k) => {
+          const y = Number(String(k).slice(0, 4));
+          if (y >= 2000 && y <= 2100) years.add(y);
+        });
+      }
+      return [...years].sort((a, b) => a - b);
+    }
+    function listYearMonths(year) {
+      const y = Number(year) || new Date().getFullYear();
+      return Array.from({ length: 12 }, (_, i) => {
+        const start = new Date(y, i, 1);
+        return {
+          key: monthKeyFromDate(start),
+          month: i + 1,
+          short: `${i + 1}月`,
+          label: `${y}年${i + 1}月`,
+          start,
+          end: endOfDay(new Date(y, i + 1, 0)),
+        };
+      });
+    }
+    function salesYearClosingTargetSum(name, year) {
+      return listYearMonths(year).reduce((s, m) => s + (Number(getSalesPlan(name).months[m.key]?.closingTarget) || 0), 0);
+    }
+    function salesYearClosedAmount(name, year) {
+      return listYearMonths(year).reduce((s, m) => s + salesClosedAmountInRange(name, m.start, m.end), 0);
+    }
+    function setSalesYearMonthsBulk(name, year, amountByMonth /* array length 12 */) {
+      const plans = loadSalesPlans();
+      plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+      listYearMonths(year).forEach((m, idx) => {
+        const amount = amountByMonth[idx];
+        if (amount === "" || amount == null) delete plans[name].months[m.key];
+        else plans[name].months[m.key] = {
+          ...(plans[name].months[m.key] || {}),
+          closingTarget: Number(amount) || 0,
+        };
+      });
+      saveSalesPlans(plans);
+    }
+    function copySalesYearTargets(name, fromYear, toYear) {
+      if (fromYear === toYear) return false;
+      const plans = loadSalesPlans();
+      plans[name] = plans[name] || { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+      listYearMonths(fromYear).forEach((m, idx) => {
+        const src = Number(plans[name].months[m.key]?.closingTarget);
+        const dest = listYearMonths(toYear)[idx];
+        if (!src && src !== 0) delete plans[name].months[dest.key];
+        else plans[name].months[dest.key] = {
+          ...(plans[name].months[dest.key] || {}),
+          closingTarget: src || 0,
+        };
+      });
+      saveSalesPlans(plans);
+      return true;
     }
     function salesClosedAmountInRange(name, from, to) {
       return cases.filter((c) => {
@@ -4626,22 +4751,36 @@
     function renderSalesKpiEditor(name) {
       const plan = getSalesPlan(name);
       const kpi = plan.kpi;
-      if (!salesKpiMonthCursor) salesKpiMonthCursor = currentMonthKey();
-      const months = listMonthKeys(salesKpiMonthCursor, 6);
+      const year = Number(salesKpiYear) || new Date().getFullYear();
+      salesKpiYear = year;
+      const years = availableSalesYears();
+      const months = listYearMonths(year);
       const cur = currentMonthKey();
-      const curMonth = months.find((m) => m.key === cur) || {
-        key: cur,
-        start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-        end: endOfDay(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)),
-        label: `${new Date().getFullYear()}年${new Date().getMonth() + 1}月`,
-      };
-      const closedAmt = salesClosedAmountInRange(name, curMonth.start, curMonth.end);
-      const closedN = salesClosedCountInRange(name, curMonth.start, curMonth.end);
-      const meetN = salesMeetCountInRange(name, curMonth.start, curMonth.end);
-      const qualN = salesQualifyCountInRange(name, curMonth.start, curMonth.end);
+      const nowY = new Date().getFullYear();
+      const curMonthMeta = listYearMonths(nowY).find((m) => m.key === cur) || months[new Date().getMonth()];
+      const closedAmt = salesClosedAmountInRange(name, curMonthMeta.start, curMonthMeta.end);
+      const closedN = salesClosedCountInRange(name, curMonthMeta.start, curMonthMeta.end);
+      const meetN = salesMeetCountInRange(name, curMonthMeta.start, curMonthMeta.end);
+      const qualN = salesQualifyCountInRange(name, curMonthMeta.start, curMonthMeta.end);
       const monthTarget = Number(plan.months[cur]?.closingTarget) || 0;
       const row = buildSalesRows().find((r) => r.name === name);
       const conv = row && row.caseIds.size ? Math.round((row.wonN / row.caseIds.size) * 100) : 0;
+
+      const monthRows = months.map((m) => {
+        const t = Number(plan.months[m.key]?.closingTarget) || 0;
+        const a = salesClosedAmountInRange(name, m.start, m.end);
+        const n = salesClosedCountInRange(name, m.start, m.end);
+        const meet = salesMeetCountInRange(name, m.start, m.end);
+        const p = attainPct(a, t);
+        return { ...m, t, a, n, meet, p };
+      });
+      const yearTarget = monthRows.reduce((s, r) => s + r.t, 0);
+      const yearActual = monthRows.reduce((s, r) => s + r.a, 0);
+      const yearClosedN = monthRows.reduce((s, r) => s + r.n, 0);
+      const yearMeetN = monthRows.reduce((s, r) => s + r.meet, 0);
+      const yearPct = attainPct(yearActual, yearTarget);
+      const maxBar = Math.max(1, ...monthRows.flatMap((r) => [r.t, r.a]));
+      const filledMonths = monthRows.filter((r) => r.t > 0).length;
 
       const attainCard = (label, actual, target, format = (v) => v) => {
         const p = attainPct(actual, target);
@@ -4655,12 +4794,16 @@
         </div>`;
       };
 
+      const yearOptions = years.map((y) =>
+        `<option value="${y}" ${y === year ? "selected" : ""}>${y}年${y === nowY ? "（今年）" : (y > nowY ? "（未來）" : "")}</option>`
+      ).join("");
+
       return `
         <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
           <div>
-            <div class="eyebrow">銷售員 KPI · Closing 目標</div>
+            <div class="eyebrow">銷售員 KPI · 全年目標設計</div>
             <h2 style="margin:2px 0 0;font-size:1.35rem">${escapeHtml(name)}</h2>
-            <p class="muted" style="margin:4px 0 0;font-size:.75rem">本月 ${escapeHtml(curMonth.label)} 達成情況會即時對照目標</p>
+            <p class="muted" style="margin:4px 0 0;font-size:.75rem">可規劃未來每年 12 個月 Closing 目標，並對照實際銷售表現</p>
           </div>
           <button type="button" class="btn btn-teal btn-sm" id="btnSaveSalesKpi">儲存 KPI</button>
         </div>
@@ -4678,39 +4821,101 @@
           <label><span>簽單宗數目標（宗／月）</span><input type="number" min="0" data-kpi="closeCountTarget" value="${kpi.closeCountTarget || 0}" /></label>
           <label><span>轉換率目標（%）</span><input type="number" min="0" max="100" data-kpi="conversionTarget" value="${kpi.conversionTarget || 0}" /></label>
         </div>
-        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;margin-top:18px">
-          <div class="eyebrow" style="margin:0">每月 Closing 目標銀碼（HKD）</div>
-          <div style="display:flex;gap:6px">
-            <button type="button" class="btn btn-ghost btn-sm" id="btnSalesMonthPrev">← 較早</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="btnSalesMonthNext">較後 →</button>
+
+        <div class="year-plan-toolbar">
+          <div class="left">
+            <div class="eyebrow" style="margin:0">全年 12 個月 Closing 目標</div>
+            <select id="salesKpiYearSelect" aria-label="選擇年份">${yearOptions}</select>
+          </div>
+          <div class="right">
+            <button type="button" class="btn btn-ghost btn-sm" id="btnSalesYearPrev">← 上一年</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnSalesYearNext">下一年 →</button>
           </div>
         </div>
-        <div class="table-wrap" style="margin-top:8px">
+
+        <div class="year-summary">
+          <div class="ys"><div class="lbl">${year} 年 Closing 目標</div><div class="val">${money(yearTarget)}</div><div class="muted" style="font-size:.68rem">${filledMonths}/12 個月已設</div></div>
+          <div class="ys"><div class="lbl">${year} 年實際 Closing</div><div class="val">${money(yearActual)}</div><div class="muted" style="font-size:.68rem">簽單 ${yearClosedN} 宗</div></div>
+          <div class="ys"><div class="lbl">全年達成率</div><div class="val" style="color:${!yearTarget ? "var(--muted)" : (yearPct >= 100 ? "#15803d" : (yearPct < 60 ? "#9f1239" : "var(--ink)"))}">${yearTarget ? yearPct + "%" : "—"}</div><div class="muted" style="font-size:.68rem">差距 ${yearTarget ? ((yearActual - yearTarget >= 0 ? "+" : "") + money(yearActual - yearTarget)) : "—"}</div></div>
+          <div class="ys"><div class="lbl">全年會面</div><div class="val">${yearMeetN}</div><div class="muted" style="font-size:.68rem">目標 ${ (kpi.meetTarget || 0) * 12 } 宗／年</div></div>
+        </div>
+
+        <div class="chart-legend" style="margin-top:10px">
+          <span><i style="background:#6b46fe"></i>Closing 目標 $</span>
+          <span><i style="background:#27c281"></i>實際 Closing $</span>
+        </div>
+        <div class="year-month-bars">
+          ${monthRows.map((r) => {
+            const tH = Math.max(r.t ? 4 : 0, (r.t / maxBar) * 100);
+            const aH = Math.max(r.a ? 4 : 0, (r.a / maxBar) * 100);
+            return `<div class="ymb${r.key === cur ? " current" : ""}" title="${escapeAttr(r.label)} · 目標 ${money(r.t)} · 實際 ${money(r.a)}">
+              <div class="p">${r.t ? r.p + "%" : "—"}</div>
+              <div class="pair">
+                <span class="t"><i style="height:${tH}%"></i></span>
+                <span class="a"><i style="height:${aH}%"></i></span>
+              </div>
+              <div class="m">${r.month}月</div>
+            </div>`;
+          }).join("")}
+        </div>
+
+        <div class="year-fill-box">
+          <label><span>快速填入全年／每月目標（HKD）</span><input type="number" min="0" step="1000" id="salesYearFillAmount" placeholder="例如 1200000" /></label>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnFillYearEqual">平均分配到 12 個月</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnFillYearSame">每月同一金額</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnCopyPrevYear">複製上一年目標</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnClearYearTargets">清空本年目標</button>
+        </div>
+
+        <div class="table-wrap" style="margin-top:12px">
           <table class="month-target-table">
-            <thead><tr><th>月份</th><th>Closing 目標 $</th><th>實際 Closing $</th><th>達成率</th><th>實際簽單宗數</th></tr></thead>
+            <thead>
+              <tr>
+                <th>月份</th>
+                <th>Closing 目標 $</th>
+                <th>實際 Closing $</th>
+                <th>達成率</th>
+                <th>簽單宗數</th>
+                <th>會面數</th>
+                <th>差距</th>
+              </tr>
+            </thead>
             <tbody>
-              ${months.map((m) => {
-                const t = Number(plan.months[m.key]?.closingTarget) || 0;
-                const a = salesClosedAmountInRange(name, m.start, m.end);
-                const n = salesClosedCountInRange(name, m.start, m.end);
-                const p = attainPct(a, t);
+              ${monthRows.map((r) => {
+                const gap = r.a - r.t;
                 return `<tr>
-                  <td><strong>${escapeHtml(m.label)}</strong>${m.key === cur ? ' <span class="badge" style="color:#5b21b6;background:#efeefe">本月</span>' : ""}</td>
-                  <td><input type="number" min="0" step="1000" data-ym="${escapeAttr(m.key)}" class="sales-month-target" value="${t || ""}" placeholder="0" /></td>
-                  <td><strong>${money(a)}</strong></td>
-                  <td style="font-weight:800;color:${!t ? "var(--muted)" : (p >= 100 ? "#15803d" : (p < 60 ? "#9f1239" : "var(--ink)"))}">${t ? p + "%" : "—"}</td>
-                  <td>${n}</td>
+                  <td><strong>${escapeHtml(r.label)}</strong>${r.key === cur ? ' <span class="badge" style="color:#5b21b6;background:#efeefe">本月</span>' : ""}${r.start > new Date() && r.key !== cur ? ' <span class="badge" style="color:#0369a1;background:#e0f2fe">未來</span>' : ""}</td>
+                  <td><input type="number" min="0" step="1000" data-ym="${escapeAttr(r.key)}" class="sales-month-target" value="${r.t || ""}" placeholder="0" /></td>
+                  <td><strong>${money(r.a)}</strong></td>
+                  <td style="font-weight:800;color:${!r.t ? "var(--muted)" : (r.p >= 100 ? "#15803d" : (r.p < 60 ? "#9f1239" : "var(--ink)"))}">${r.t ? r.p + "%" : "—"}</td>
+                  <td>${r.n}</td>
+                  <td>${r.meet}</td>
+                  <td style="font-weight:700;color:${!r.t ? "var(--muted)" : (gap >= 0 ? "#15803d" : "#9f1239")}">${r.t ? ((gap >= 0 ? "+" : "") + money(gap)) : "—"}</td>
                 </tr>`;
               }).join("")}
             </tbody>
+            <tfoot>
+              <tr>
+                <td><strong>${year} 年合計</strong></td>
+                <td><strong>${money(yearTarget)}</strong></td>
+                <td><strong>${money(yearActual)}</strong></td>
+                <td style="font-weight:800;color:${!yearTarget ? "var(--muted)" : (yearPct >= 100 ? "#15803d" : (yearPct < 60 ? "#9f1239" : "var(--ink)"))}">${yearTarget ? yearPct + "%" : "—"}</td>
+                <td><strong>${yearClosedN}</strong></td>
+                <td><strong>${yearMeetN}</strong></td>
+                <td style="font-weight:700;color:${!yearTarget ? "var(--muted)" : (yearActual - yearTarget >= 0 ? "#15803d" : "#9f1239")}">${yearTarget ? (((yearActual - yearTarget) >= 0 ? "+" : "") + money(yearActual - yearTarget)) : "—"}</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
-        <p class="muted" style="margin-top:8px;font-size:.72rem">改完目標會即時儲存 · Dashboard「銷售員目標 vs Closing」會同步顯示</p>
+        <p class="muted" style="margin-top:8px;font-size:.72rem">改完目標會即時儲存 · 可預先設定未來年份 · Dashboard「銷售員目標 vs Closing」會按期間月份合計顯示</p>
       `;
     }
 
     function bindSalesKpiEditor(name) {
       const panel = document.getElementById("salesKpiPanel");
+      const refreshDash = () => {
+        if (!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashboard();
+      };
       document.getElementById("btnSaveSalesKpi").onclick = () => {
         const kpi = {};
         panel.querySelectorAll("#salesKpiForm [data-kpi]").forEach((input) => {
@@ -4719,27 +4924,76 @@
         setSalesKpi(name, kpi);
         toast(`已儲存 ${name} 的 KPI`);
         renderSalesMgmt();
-        if (!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashboard();
+        refreshDash();
       };
       panel.querySelectorAll(".sales-month-target").forEach((input) => {
         input.onchange = () => {
           setSalesMonthClosingTarget(name, input.dataset.ym, input.value);
           toast(`已更新 ${name} · ${input.dataset.ym} Closing 目標`);
           renderSalesMgmt();
-          if (!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashboard();
+          refreshDash();
         };
       });
-      document.getElementById("btnSalesMonthPrev").onclick = () => {
-        const [y, m] = salesKpiMonthCursor.split("-").map(Number);
-        const d = new Date(y, m - 2, 1);
-        salesKpiMonthCursor = monthKeyFromDate(d);
+      const yearSelect = document.getElementById("salesKpiYearSelect");
+      yearSelect.onchange = () => {
+        salesKpiYear = Number(yearSelect.value) || new Date().getFullYear();
+        localStorage.setItem("crm_sales_kpi_year", String(salesKpiYear));
         renderSalesMgmt();
       };
-      document.getElementById("btnSalesMonthNext").onclick = () => {
-        const [y, m] = salesKpiMonthCursor.split("-").map(Number);
-        const d = new Date(y, m, 1);
-        salesKpiMonthCursor = monthKeyFromDate(d);
+      document.getElementById("btnSalesYearPrev").onclick = () => {
+        salesKpiYear -= 1;
+        localStorage.setItem("crm_sales_kpi_year", String(salesKpiYear));
         renderSalesMgmt();
+      };
+      document.getElementById("btnSalesYearNext").onclick = () => {
+        salesKpiYear += 1;
+        localStorage.setItem("crm_sales_kpi_year", String(salesKpiYear));
+        renderSalesMgmt();
+      };
+      const readFillAmount = () => {
+        const raw = document.getElementById("salesYearFillAmount").value;
+        if (raw === "" || raw == null) {
+          toast("請先輸入金額");
+          return null;
+        }
+        return Math.max(0, Number(raw) || 0);
+      };
+      document.getElementById("btnFillYearEqual").onclick = () => {
+        const total = readFillAmount();
+        if (total == null) return;
+        const base = Math.floor(total / 12);
+        const amounts = Array.from({ length: 12 }, () => base);
+        amounts[11] = total - base * 11;
+        setSalesYearMonthsBulk(name, salesKpiYear, amounts);
+        toast(`已將 ${money(total)} 平均分配到 ${salesKpiYear} 年 12 個月`);
+        renderSalesMgmt();
+        refreshDash();
+      };
+      document.getElementById("btnFillYearSame").onclick = () => {
+        const each = readFillAmount();
+        if (each == null) return;
+        setSalesYearMonthsBulk(name, salesKpiYear, Array.from({ length: 12 }, () => each));
+        toast(`已設定 ${salesKpiYear} 年每月 Closing 目標 ${money(each)}`);
+        renderSalesMgmt();
+        refreshDash();
+      };
+      document.getElementById("btnCopyPrevYear").onclick = () => {
+        const fromY = salesKpiYear - 1;
+        const has = listYearMonths(fromY).some((m) => Number(getSalesPlan(name).months[m.key]?.closingTarget));
+        if (!has) {
+          toast(`${fromY} 年尚未有目標可複製`);
+          return;
+        }
+        copySalesYearTargets(name, fromY, salesKpiYear);
+        toast(`已複製 ${fromY} → ${salesKpiYear} 年目標`);
+        renderSalesMgmt();
+        refreshDash();
+      };
+      document.getElementById("btnClearYearTargets").onclick = () => {
+        setSalesYearMonthsBulk(name, salesKpiYear, Array.from({ length: 12 }, () => null));
+        toast(`已清空 ${name} · ${salesKpiYear} 年目標`);
+        renderSalesMgmt();
+        refreshDash();
       };
     }
 
@@ -4754,11 +5008,15 @@
       const teamTarget = COMPANY_SALES.reduce((s, n) => s + (Number(getSalesPlan(n).months[cur]?.closingTarget) || 0), 0);
       const teamClosed = COMPANY_SALES.reduce((s, n) => s + salesClosedAmountInRange(n, curStart, curEnd), 0);
       const teamPct = attainPct(teamClosed, teamTarget);
+      const planYear = salesKpiYear || new Date().getFullYear();
+      const teamYearTarget = COMPANY_SALES.reduce((s, n) => s + salesYearClosingTargetSum(n, planYear), 0);
+      const teamYearClosed = COMPANY_SALES.reduce((s, n) => s + salesYearClosedAmount(n, planYear), 0);
+      const teamYearPct = attainPct(teamYearClosed, teamYearTarget);
 
       document.getElementById("salesStats").innerHTML = [
         renderStatCard({ label: "本公司銷售員", value: COMPANY_SALES.length, sub: COMPANY_SALES.join(" · "), tone: "purple", icon: "people" }),
-        renderStatCard({ label: "本月團隊 Closing 目標", value: money(teamTarget), sub: `已完成 ${money(teamClosed)}`, tone: "sky", icon: "money", valueStyle: "font-size:1.05rem" }),
-        renderStatCard({ label: "本月達成率", value: teamTarget ? `${teamPct}%` : "—", sub: teamTarget ? (teamPct >= 100 ? "已達標" : "進行中") : "尚未設定目標", tone: teamPct >= 100 ? "mint" : "orange", icon: "chart" }),
+        renderStatCard({ label: "本月團隊 Closing 目標", value: money(teamTarget), sub: `已完成 ${money(teamClosed)} · 達成 ${teamTarget ? teamPct + "%" : "—"}`, tone: "sky", icon: "money", valueStyle: "font-size:1.05rem" }),
+        renderStatCard({ label: `${planYear} 年團隊目標`, value: money(teamYearTarget), sub: `全年已完成 ${money(teamYearClosed)} · ${teamYearTarget ? teamYearPct + "%" : "未設"}`, tone: teamYearPct >= 100 ? "mint" : "orange", icon: "chart", valueStyle: "font-size:1.05rem" }),
         renderStatCard({ label: "已指派 Case", value: `${assigned} / ${cases.length}`, sub: unassigned ? `${unassigned} 宗未指派` : "全部已指派", tone: "mint", icon: "cases", valueStyle: "font-size:1.2rem" }),
       ].join("");
 
@@ -4766,9 +5024,10 @@
         const t = Number(getSalesPlan(n).months[cur]?.closingTarget) || 0;
         const a = salesClosedAmountInRange(n, curStart, curEnd);
         const p = attainPct(a, t);
+        const yt = salesYearClosingTargetSum(n, planYear);
         return `<button type="button" data-sales-kpi="${escapeAttr(n)}" class="${n === salesKpiSelected ? "active" : ""}">
           ${escapeHtml(n)}
-          <span class="sub">${t ? `本月 ${p}% · ${money(t)}` : "未設本月目標"}</span>
+          <span class="sub">${yt ? `${planYear}年 ${money(yt)}` : (t ? `本月 ${p}% · ${money(t)}` : "未設全年目標")}</span>
         </button>`;
       }).join("");
       document.querySelectorAll("#salesKpiNav [data-sales-kpi]").forEach((btn) => {
@@ -4782,16 +5041,25 @@
       document.getElementById("salesKpiPanel").innerHTML = renderSalesKpiEditor(salesKpiSelected);
       bindSalesKpiEditor(salesKpiSelected);
 
+      const yearHeadT = document.getElementById("salesYearTargetHead");
+      const yearHeadA = document.getElementById("salesYearActualHead");
+      if (yearHeadT) yearHeadT.textContent = `${planYear}年目標`;
+      if (yearHeadA) yearHeadA.textContent = `${planYear}年已 Closing`;
       document.getElementById("salesBody").innerHTML = rows.map((r) => {
         const conv = r.caseIds.size ? Math.round((r.wonN / r.caseIds.size) * 100) : 0;
         const t = Number(getSalesPlan(r.name).months[cur]?.closingTarget) || 0;
         const a = salesClosedAmountInRange(r.name, curStart, curEnd);
         const p = attainPct(a, t);
+        const yt = salesYearClosingTargetSum(r.name, planYear);
+        const ya = salesYearClosedAmount(r.name, planYear);
+        const yp = attainPct(ya, yt);
         return `<tr>
         <td><strong>${escapeHtml(r.name)}</strong><div class="muted" style="font-size:.68rem">open ${r.openN}</div></td>
         <td><strong>${t ? money(t) : "—"}</strong></td>
         <td><strong>${money(a)}</strong></td>
         <td style="font-weight:800;color:${!t ? "var(--muted)" : (p >= 100 ? "#15803d" : (p < 60 ? "#9f1239" : "var(--ink)"))}">${t ? p + "%" : "—"}</td>
+        <td><strong>${yt ? money(yt) : "—"}</strong><div class="muted" style="font-size:.68rem">${yt ? yp + "%" : "未設"}</div></td>
+        <td><strong>${money(ya)}</strong></td>
         <td><strong>${money(r.pipelineAmt)}</strong></td>
         <td><strong>${money(r.weightedAmt)}</strong></td>
         <td><strong>${conv}%</strong></td>
