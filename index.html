@@ -65,7 +65,6 @@
         radial-gradient(circle at 1px 1px, rgba(107, 70, 254, .12) 1px, transparent 0);
       background-size: 22px 22px;
     }
-    /* Board uses vertical page scroll for stacked status columns */
     a { color: inherit; text-decoration: none; }
     button, input, select, textarea { font: inherit; }
     .hidden { display: none !important; }
@@ -310,18 +309,28 @@
       min-height: 0;
       overflow: auto;
     }
+    body.mode-board {
+      overflow: hidden;
+    }
+    body.mode-board .app-main {
+      overflow: hidden;
+      min-height: 0;
+    }
     body.mode-board .wrap {
       max-width: none;
-      padding: 14px 16px 20px;
-      display: block;
+      padding: 12px 14px 10px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
       height: auto;
       min-height: 0;
-      overflow: visible;
+      overflow: hidden;
+      box-sizing: border-box;
     }
     @media (max-width: 900px) {
       html, body {
         max-width: 100%;
-        overflow-x: hidden;
+        height: 100%;
       }
       .app-shell,
       .app-main,
@@ -330,30 +339,20 @@
         max-width: 100%;
         min-width: 0;
       }
-      .wrap {
-        padding: 10px 10px calc(24px + env(safe-area-inset-bottom, 0px));
-      }
       body.mode-board,
+      body.mode-board .app-shell,
       body.mode-board .app-main {
-        overflow-x: hidden;
-        overflow-y: visible;
-        height: auto;
-        min-height: 100%;
-      }
-      body.mode-board .app-shell {
-        height: auto;
-        min-height: 100%;
-        width: 100%;
+        height: 100%;
+        max-height: 100dvh;
+        overflow: hidden;
       }
       body.mode-board .wrap {
         max-width: 100%;
         width: 100%;
-        padding: 8px 8px calc(24px + env(safe-area-inset-bottom, 0px));
-        display: block;
-        height: auto;
+        padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+        height: 100%;
         min-height: 0;
-        overflow-x: hidden;
-        overflow-y: visible;
+        overflow: hidden;
         box-sizing: border-box;
       }
       #view-board {
@@ -398,15 +397,23 @@
     #view-board {
       display: none;
       width: 100%;
+      min-height: 0;
     }
-    #view-board:not(.hidden) { display: block; }
+    #view-board:not(.hidden) {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      height: 100%;
+    }
     .board-toolbar {
       display: flex;
       justify-content: space-between;
       gap: 10px;
       flex-wrap: wrap;
       align-items: end;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
+      flex-shrink: 0;
     }
     .board-upper {
       overflow: hidden;
@@ -414,6 +421,7 @@
       max-height: 1200px;
       opacity: 1;
       margin-bottom: 4px;
+      flex-shrink: 0;
     }
     #view-board.upper-collapsed .board-upper {
       max-height: 0;
@@ -746,9 +754,19 @@
     .kanban-shell {
       position: relative;
       width: 100%;
-      margin-top: 8px;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      margin-top: 6px;
     }
-    .kanban-nav { display: none; }
+    .kanban-nav {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 6px;
+      flex-shrink: 0;
+    }
     .hero-card, .panel {
       background: rgba(255, 255, 255, .92);
       border: 1px solid rgba(235, 230, 244, .95);
@@ -871,22 +889,35 @@
     }
     .kanban {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
+      align-items: stretch;
       gap: 12px;
+      flex: 1;
       width: 100%;
-      height: auto;
       min-height: 0;
-      overflow: visible;
-      padding: 0 0 16px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 2px 2px 8px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: #c9c6e8 transparent;
+      overscroll-behavior-x: contain;
     }
+    .kanban::-webkit-scrollbar { height: 8px; }
+    .kanban::-webkit-scrollbar-thumb {
+      background: #c9c6e8;
+      border-radius: 999px;
+    }
+    .kanban::-webkit-scrollbar-track { background: transparent; }
     .col {
-      flex: none;
-      width: 100%;
-      min-width: 0;
-      max-width: 100%;
+      flex: 0 0 calc((100% - 48px) / 5);
+      width: calc((100% - 48px) / 5);
+      min-width: calc((100% - 48px) / 5);
+      max-width: none;
       display: flex;
       flex-direction: column;
-      height: auto;
+      height: 100%;
       min-height: 0;
       background: #fff;
       border: 1px solid var(--line);
@@ -894,17 +925,29 @@
       padding: 12px;
       box-shadow: var(--shadow);
       box-sizing: border-box;
+      scroll-snap-align: start;
+    }
+    @media (max-width: 1100px) and (min-width: 901px) {
+      .col {
+        flex-basis: calc((100% - 36px) / 3.2);
+        width: calc((100% - 36px) / 3.2);
+        min-width: calc((100% - 36px) / 3.2);
+      }
     }
     @media (max-width: 900px) {
       #view-board {
-        flex: none;
+        flex: 1;
         height: auto;
         min-height: 0;
         display: none;
         width: 100%;
         max-width: 100%;
       }
-      #view-board:not(.hidden) { display: block; }
+      #view-board:not(.hidden) {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
       .board-toolbar {
         flex-direction: column;
         align-items: stretch;
@@ -1009,7 +1052,7 @@
         white-space: normal;
       }
       .kanban-shell {
-        flex: none;
+        flex: 1;
         min-height: 0;
         height: auto;
         width: 100%;
@@ -1017,38 +1060,41 @@
       }
       .kanban-nav { display: none; }
       .kanban {
-        flex: none;
-        flex-direction: column;
-        overflow-x: hidden;
-        overflow-y: visible;
+        flex: 1;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
         height: auto;
         min-height: 0;
         width: 100%;
         max-width: 100%;
         gap: 10px;
-        padding: 0;
-        scroll-snap-type: none;
+        padding: 2px 2px 6px;
+        scroll-snap-type: x mandatory;
         box-sizing: border-box;
+        -webkit-overflow-scrolling: touch;
       }
       .col {
-        flex: none;
-        flex-basis: auto;
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-        height: auto;
+        flex: 0 0 min(78vw, 300px);
+        width: min(78vw, 300px);
+        min-width: min(78vw, 300px);
+        max-width: none;
+        height: 100%;
         min-height: 0;
-        scroll-snap-align: none;
+        scroll-snap-align: start;
         padding: 10px;
         box-sizing: border-box;
       }
       .col-items {
-        flex: none;
-        overflow: visible;
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
         max-height: none;
         min-height: 0;
-        padding-right: 0;
+        padding-right: 2px;
         width: 100%;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
       }
       .col-empty {
         height: auto;
@@ -1057,7 +1103,7 @@
       }
       .card-case {
         cursor: pointer;
-        touch-action: manipulation;
+        touch-action: pan-y;
         -webkit-user-select: none;
         user-select: none;
         width: 100%;
@@ -1083,11 +1129,21 @@
       line-height: 1.35;
     }
     .col-items {
-      flex: none;
+      flex: 1;
       min-height: 0;
-      overflow: visible;
-      padding-right: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding-right: 2px;
       width: 100%;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: #d4d1ee transparent;
+      overscroll-behavior: contain;
+    }
+    .col-items::-webkit-scrollbar { width: 6px; }
+    .col-items::-webkit-scrollbar-thumb {
+      background: #d4d1ee;
+      border-radius: 999px;
     }
     .col-empty {
       border: 1px dashed var(--line);
@@ -1096,8 +1152,8 @@
       text-align: center;
       font-size: .72rem;
       color: var(--muted);
-      height: auto;
-      min-height: 72px;
+      height: 100%;
+      min-height: 88px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2138,8 +2194,8 @@
       <div class="board-toolbar">
         <div>
           <h1>Case Management</h1>
-          <p class="muted board-hint-desktop" style="margin:4px 0 0;font-size:.75rem">向下捲動各 Status · 可拖曳卡片改階段</p>
-          <p class="muted board-hint-mobile" style="margin:4px 0 0;font-size:.75rem">向下捲動睇各階段 · 點卡片開詳情改 Status</p>
+          <p class="muted board-hint-desktop" style="margin:4px 0 0;font-size:.75rem">左右拉睇更多 Status · 欄內上下拉睇所有 Case · 可拖曳改階段</p>
+          <p class="muted board-hint-mobile" style="margin:4px 0 0;font-size:.75rem">左右滑睇更多狀態 · 欄內上下拉睇所有 Case · 點卡片改詳情</p>
         </div>
         <div class="board-toolbar-actions">
           <div class="board-search-wrap">
@@ -2170,6 +2226,10 @@
         <div class="stage-filter" id="stageFilter"></div>
       </div>
       <div class="kanban-shell">
+        <div class="kanban-nav">
+          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanLeft" aria-label="向左">← 較早狀態</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnKanbanRight" aria-label="向右">更多狀態 →</button>
+        </div>
         <div class="kanban" id="kanban"></div>
       </div>
     </section>
@@ -6130,6 +6190,16 @@
       toast(next === "1" ? "已收起上方篩選／統計" : "已展開上方");
     };
     applyBoardUpperCollapsed();
+    document.getElementById("btnKanbanLeft").onclick = () => {
+      const el = document.getElementById("kanban");
+      const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 3;
+      el.scrollBy({ left: -(step + 12), behavior: "smooth" });
+    };
+    document.getElementById("btnKanbanRight").onclick = () => {
+      const el = document.getElementById("kanban");
+      const step = el.querySelector(".col")?.getBoundingClientRect().width || el.clientWidth / 3;
+      el.scrollBy({ left: step + 12, behavior: "smooth" });
+    };
     (function setupBoardSearch() {
       const input = document.getElementById("boardSearch");
       const box = document.getElementById("boardSuggest");
