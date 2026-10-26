@@ -3278,6 +3278,28 @@
         (logsByCase[l.case_id] ||= []).push(l);
       });
       casesLoading = false;
+      await assignUnassignedCasesToVincent();
+    }
+
+    /** 現時客戶由 Vincent 跟進：未指派本公司銷售員嘅 Case 預設寫入 Vincent */
+    async function assignUnassignedCasesToVincent() {
+      if (!db || !mgmtColsReady) return;
+      const need = cases.filter((c) => !normalizeCompanySales(c.companySales));
+      if (!need.length) return;
+      const now = new Date().toISOString();
+      const ids = need.map((c) => c.id);
+      for (let i = 0; i < ids.length; i += 80) {
+        const chunk = ids.slice(i, i + 80);
+        const { error } = await db
+          .from("crm_cases")
+          .update({ company_sales: "Vincent", updated_at: now })
+          .in("id", chunk);
+        if (error) {
+          console.warn("assign Vincent failed", error.message);
+          return;
+        }
+      }
+      need.forEach((c) => { c.companySales = "Vincent"; });
     }
 
     function fromRow(r) {
@@ -6648,7 +6670,7 @@
             <div class="eyebrow">Case · Multi contact</div>
             <div class="page-head" style="margin-top:2px">
               <h2>${escapeHtml(c.customerName)}</h2>
-              <div class="muted page-head-sub">${escapeHtml(c.partner || "")}${c.ricohSales ? " · " + escapeHtml(c.ricohSales) : ""}</div>
+              <div class="muted page-head-sub">${escapeHtml(c.partner || "")} · Sales：${escapeHtml(normalizeCompanySales(c.companySales) || "Vincent")}</div>
             </div>
           </div>
           <button class="btn btn-ghost btn-sm" id="drawerClose">關閉</button>
@@ -6660,7 +6682,7 @@
             <label class="field"><span>負責銷售員（Vincent／Tim／Andrew／Kelly／Sophia）</span>
               <select id="d_companySales">
                 <option value="">未指派</option>
-                ${COMPANY_SALES.map((n) => `<option value="${n}" ${c.companySales === n ? "selected" : ""}>${n}</option>`).join("")}
+                ${COMPANY_SALES.map((n) => `<option value="${n}" ${(c.companySales || "Vincent") === n ? "selected" : ""}>${n}</option>`).join("")}
               </select>
             </label>
 
@@ -6784,7 +6806,7 @@
         const amountRaw = document.getElementById("d_amount").value;
         const targetClosing = document.getElementById("d_targetClosing").value || "";
         await updateCase(c.id, {
-          companySales: document.getElementById("d_companySales").value || "",
+          companySales: document.getElementById("d_companySales").value || "Vincent",
           ricohHouse: document.getElementById("d_house").value.trim(),
           ricohSales: document.getElementById("d_sales").value.trim(),
           ricohConsultant: document.getElementById("d_consultant").value.trim(),
