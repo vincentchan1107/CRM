@@ -12,6 +12,10 @@ alter table public.crm_cases
 alter table public.crm_cases
   add column if not exists company_sales text not null default '';
 
+-- 公司地址（Customer Address）
+alter table public.crm_cases
+  add column if not exists customer_address text not null default '';
+
 -- 允許成功簽單 close_reason = won
 alter table public.crm_cases drop constraint if exists crm_cases_close_reason_check;
 alter table public.crm_cases
