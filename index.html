@@ -4268,7 +4268,7 @@
         const amount = el.dataset.tipAmount || "";
         const date = el.dataset.tipDate || "";
         const color = el.dataset.tipColor || "#1d4ed8";
-        const vbW = Number(el.dataset.tipVbW) || 560;
+        const vbW = Number(el.dataset.tipVbW) || 720;
         const x = Number(el.dataset.tipX) || 0;
         const y = Number(el.dataset.tipY) || 0;
         const rect = svg.getBoundingClientRect();
@@ -6407,6 +6407,18 @@
                 <input id="d_nextFollow" type="date" value="${escapeAttr(c.nextFollowUpAt || "")}" />
               </label>
             </div>
+            <div class="eyebrow" style="margin-top:8px">Closing／Budget</div>
+            <div class="row3">
+              <label class="field"><span>Target Closing Date</span>
+                <input id="d_targetClosing" type="date" value="${escapeAttr((c.targetClosingDate || "").slice(0, 10))}" />
+              </label>
+              <label class="field"><span>Client Budget (HKD)</span>
+                <input id="d_budget" type="number" min="0" step="1000" placeholder="0" value="${c.budget ? escapeAttr(String(c.budget)) : ""}" />
+              </label>
+              <label class="field"><span>Contract Amount (HKD)</span>
+                <input id="d_amount" type="number" min="0" step="1000" placeholder="0" value="${c.amount ? escapeAttr(String(c.amount)) : ""}" />
+              </label>
+            </div>
             <div class="check-row">
               <label><input type="checkbox" id="d_apptConf" ${c.appointmentConfirmed?"checked":""}/> 客人已確認會面</label>
               <label><input type="checkbox" id="d_meetDone" ${c.meetingDone?"checked":""}/> 會面已完成</label>
@@ -6470,6 +6482,9 @@
         const nextFollow = document.getElementById("d_nextFollow").value || "";
         localFollowUpSet(c.id, nextFollow);
         const won = closeVal === "won" || stage === "confirmation";
+        const budgetRaw = document.getElementById("d_budget").value;
+        const amountRaw = document.getElementById("d_amount").value;
+        const targetClosing = document.getElementById("d_targetClosing").value || "";
         await updateCase(c.id, {
           companySales: document.getElementById("d_companySales").value || "",
           ricohHouse: document.getElementById("d_house").value.trim(),
@@ -6489,6 +6504,9 @@
           meetingNotes: document.getElementById("d_meetNotes").value,
           followUpOpportunity: document.getElementById("d_follow").checked,
           nextFollowUpAt: nextFollow,
+          targetClosingDate: targetClosing,
+          budget: budgetRaw === "" ? 0 : Number(budgetRaw) || 0,
+          amount: amountRaw === "" ? 0 : Number(amountRaw) || 0,
         }, { source: "案件詳情" });
         openDrawer(c.id);
       };
@@ -6533,10 +6551,10 @@
       { key: "ricohSales", label: "Partner Sales", fmt: (v) => v || "—" },
       { key: "ricohHouse", label: "Partner House", fmt: (v) => v || "—" },
       { key: "ricohConsultant", label: "Partner Consultant", fmt: (v) => v || "—" },
-      { key: "amount", label: "金額", fmt: (v) => money(Number(v) || 0) },
-      { key: "budget", label: "Budget", fmt: (v) => money(Number(v) || 0) },
+      { key: "amount", label: "Contract Amount", fmt: (v) => money(Number(v) || 0) },
+      { key: "budget", label: "Client Budget", fmt: (v) => money(Number(v) || 0) },
       { key: "successRate", label: "成功機率", fmt: (v) => pct(Number(v) || 0) },
-      { key: "targetClosingDate", label: "Target Closing", fmt: (v) => v || "—" },
+      { key: "targetClosingDate", label: "Target Closing Date", fmt: (v) => v || "—" },
       { key: "nextFollowUpAt", label: "下次跟進", fmt: (v) => v || "—" },
       { key: "appointmentAt", label: "約見時間", fmt: (v) => v ? new Date(v).toLocaleString("zh-HK") : "—" },
       { key: "appointmentFlag", label: "已約會面", fmt: (v) => v ? "是" : "否" },
