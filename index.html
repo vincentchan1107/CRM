@@ -2340,17 +2340,68 @@
       font-weight: 700;
       color: var(--teal-deep);
       white-space: nowrap;
+      text-align: right;
     }
-    .portal-appt textarea {
+    .portal-appt .appt-meta {
+      display: grid;
+      gap: 6px;
+      margin: 0 0 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+      font-size: .78rem;
+    }
+    .portal-appt .appt-meta .row {
+      display: grid;
+      grid-template-columns: 52px 1fr;
+      gap: 6px;
+      align-items: start;
+    }
+    .portal-appt .appt-meta .lbl {
+      color: var(--muted);
+      font-weight: 700;
+      font-size: .68rem;
+      padding-top: 1px;
+    }
+    .portal-appt .appt-meta .val {
+      color: var(--ink);
+      line-height: 1.45;
+      word-break: break-word;
+    }
+    .portal-appt .appt-contact {
+      padding: 2px 0;
+    }
+    .portal-appt .appt-contact + .appt-contact {
+      border-top: 1px dashed #ebe6f4;
+      margin-top: 4px;
+      padding-top: 4px;
+    }
+    .portal-appt .appt-contact a {
+      color: var(--teal-deep);
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .portal-appt textarea,
+    .portal-appt input[type="text"],
+    .portal-appt input[type="datetime-local"] {
       width: 100%;
-      min-height: 72px;
       border: 1px solid var(--line);
       border-radius: 10px;
       padding: 8px 10px;
       font: inherit;
-      resize: vertical;
       background: #fff;
     }
+    .portal-appt textarea {
+      min-height: 64px;
+      resize: vertical;
+    }
+    .portal-appt .appt-edit {
+      display: grid;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .portal-appt .appt-edit.collapsed { display: none; }
     .portal-appt .appt-actions {
       display: flex;
       gap: 8px;
@@ -3912,6 +3963,29 @@
         .sort((a, b) => new Date(a.appointmentAt) - new Date(b.appointmentAt));
     }
 
+    function portalCaseRemarkText(c) {
+      const notes = String(c.notes || "").trim();
+      // strip synced address line so Remark 唔重複顯示地址
+      const cleaned = notes
+        .split("\n")
+        .filter((l) => !/^地址：/.test(l.trim()) && !/^語音原文：/.test(l.trim()))
+        .join("\n")
+        .trim();
+      if (cleaned) return cleaned;
+      const last = lastCaseComment(c);
+      if (last?.text && last.typeLabel !== "會後 Comment") return last.text;
+      return "";
+    }
+
+    function portalContactPhoneHtml(p) {
+      const mobile = String(p.mobile || "").trim();
+      const tel = String(p.tel || "").trim();
+      const bits = [];
+      if (mobile) bits.push(`手提 <a href="tel:${escapeAttr(mobile.replace(/[^\d+]/g, ""))}">${escapeHtml(mobile)}</a>`);
+      if (tel) bits.push(`電話 <a href="tel:${escapeAttr(tel.replace(/[^\d+]/g, ""))}">${escapeHtml(tel)}</a>`);
+      return bits.join(" · ") || `<span class="muted">未有電話</span>`;
+    }
+
     function renderPortalToday() {
       const list = document.getElementById("portalTodayList");
       const sub = document.getElementById("portalTodaySub");
@@ -3927,41 +4001,104 @@
       list.innerHTML = items.map((c) => {
         const t = new Date(c.appointmentAt);
         const timeStr = t.toLocaleTimeString("zh-HK", { hour: "2-digit", minute: "2-digit" });
-        const contacts = (contactsByCase[c.id] || []).slice(0, 2);
-        const contactLine = contacts.map((p) => {
-          const bits = [p.name, p.mobile || p.tel].filter(Boolean);
-          return bits.join(" · ");
-        }).join(" ｜ ");
+        const apptLocal = !Number.isNaN(t.getTime())
+          ? new Date(t.getTime() - t.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+          : "";
+        const contacts = contactsByCase[c.id] || [];
+        const address = String(c.customerAddress || "").trim();
+        const remark = portalCaseRemarkText(c);
+        const contactHtml = contacts.length
+          ? contacts.map((p) => `
+              <div class="appt-contact">
+                <strong>${escapeHtml(p.name || "—")}</strong>${p.title ? `<span class="muted"> · ${escapeHtml(p.title)}</span>` : ""}
+                <div>${portalContactPhoneHtml(p)}</div>
+                ${p.email ? `<div class="muted" style="font-size:.68rem">${escapeHtml(p.email)}</div>` : ""}
+              </div>`).join("")
+          : `<span class="muted">未有聯絡人</span>`;
         return `<article class="portal-appt" data-case-id="${escapeAttr(c.id)}">
           <div class="appt-head">
             <div>
               <strong>${escapeHtml(companyKey(c))}</strong>
               <div class="muted" style="font-size:.72rem;margin-top:2px">${escapeHtml(c.partner || "")}${c.stage ? " · " + escapeHtml(stageMeta(c.stage).short || c.stage) : ""}</div>
-              ${contactLine ? `<div class="muted" style="font-size:.72rem;margin-top:2px">${escapeHtml(contactLine)}</div>` : ""}
             </div>
-            <div class="appt-time">${escapeHtml(timeStr)}${c.meetingDone ? "<br><span class=\"tag-ok\">已會面</span>" : ""}</div>
+            <div class="appt-time">${escapeHtml(timeStr)}${c.meetingDone ? "<br><span class=\"tag-ok\">已會面</span>" : "<br><span class=\"muted\" style=\"font-size:.68rem\">待會面</span>"}</div>
           </div>
-          <label class="field" style="margin:0"><span>會議記錄</span>
-            <textarea data-meet-notes placeholder="會面重點、跟進事項…">${escapeHtml(c.meetingNotes || "")}</textarea>
-          </label>
+          <div class="appt-meta">
+            <div class="row"><div class="lbl">地址</div><div class="val">${address ? escapeHtml(address) : "<span class=\"muted\">未有地址</span>"}</div></div>
+            <div class="row"><div class="lbl">聯絡人</div><div class="val">${contactHtml}</div></div>
+            <div class="row"><div class="lbl">Remark</div><div class="val">${remark ? escapeHtml(remark) : "<span class=\"muted\">—</span>"}</div></div>
+            <div class="row"><div class="lbl">會議</div><div class="val">${c.meetingNotes ? escapeHtml(c.meetingNotes) : "<span class=\"muted\">未有會議記錄</span>"}</div></div>
+          </div>
           <div class="appt-actions">
-            <button type="button" class="btn btn-teal btn-sm" data-save-notes>儲存會議記錄</button>
+            <button type="button" class="btn btn-teal btn-sm" data-toggle-edit>更新會議內容</button>
             <button type="button" class="btn btn-ghost btn-sm" data-open-case>詳情</button>
             <button type="button" class="btn btn-ghost btn-sm" data-scan-card>掃名片</button>
           </div>
+          <div class="appt-edit collapsed" data-edit-panel>
+            <label class="field" style="margin:0"><span>約見時間</span>
+              <input type="datetime-local" data-appt-at value="${escapeAttr(apptLocal)}" />
+            </label>
+            <label class="field" style="margin:0"><span>地址</span>
+              <input type="text" data-address value="${escapeAttr(address)}" placeholder="公司地址" />
+            </label>
+            <label class="field" style="margin:0"><span>Remark</span>
+              <textarea data-remark rows="2" placeholder="案件 Remark／備註…">${escapeHtml(remark)}</textarea>
+            </label>
+            <label class="field" style="margin:0"><span>會議記錄</span>
+              <textarea data-meet-notes rows="3" placeholder="會面重點、跟進事項…">${escapeHtml(c.meetingNotes || "")}</textarea>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:700">
+              <input type="checkbox" data-meet-done ${c.meetingDone ? "checked" : ""} /> 會面已完成
+            </label>
+            <div class="appt-actions" style="margin-top:0">
+              <button type="button" class="btn btn-teal btn-sm" data-save-meeting>儲存更新</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-cancel-edit>取消</button>
+            </div>
+          </div>
         </article>`;
       }).join("");
-      list.querySelectorAll("[data-save-notes]").forEach((btn) => {
+
+      list.querySelectorAll("[data-toggle-edit]").forEach((btn) => {
+        btn.onclick = () => {
+          const art = btn.closest(".portal-appt");
+          const panel = art?.querySelector("[data-edit-panel]");
+          if (!panel) return;
+          const open = panel.classList.contains("collapsed");
+          panel.classList.toggle("collapsed", !open);
+          btn.textContent = open ? "收起更新" : "更新會議內容";
+          if (open) panel.querySelector("[data-meet-notes]")?.focus();
+        };
+      });
+      list.querySelectorAll("[data-cancel-edit]").forEach((btn) => {
+        btn.onclick = () => {
+          const art = btn.closest(".portal-appt");
+          art?.querySelector("[data-edit-panel]")?.classList.add("collapsed");
+          const toggle = art?.querySelector("[data-toggle-edit]");
+          if (toggle) toggle.textContent = "更新會議內容";
+        };
+      });
+      list.querySelectorAll("[data-save-meeting]").forEach((btn) => {
         btn.onclick = async () => {
           const art = btn.closest(".portal-appt");
           const id = art?.dataset.caseId;
-          const note = art?.querySelector("[data-meet-notes]")?.value || "";
           if (!id) return;
+          const c = cases.find((x) => x.id === id);
+          const apptVal = art.querySelector("[data-appt-at]")?.value || "";
+          const address = art.querySelector("[data-address]")?.value.trim() || "";
+          const remark = art.querySelector("[data-remark]")?.value || "";
+          const meetNotes = art.querySelector("[data-meet-notes]")?.value || "";
+          const meetDone = !!art.querySelector("[data-meet-done]")?.checked;
+          // keep non-remark note lines (e.g. 語音原文) when rewriting notes
+          const keepLines = String(c?.notes || "").split("\n").filter((l) => /^語音原文：/.test(l.trim()));
+          const nextNotes = [remark.trim(), ...keepLines].filter(Boolean).join("\n");
           await updateCase(id, {
-            meetingNotes: note,
-            meetingDone: true,
+            customerAddress: address,
+            notes: nextNotes,
+            meetingNotes: meetNotes,
+            meetingDone: meetDone,
             appointmentFlag: true,
-          }, { source: "Portal 會議記錄" });
+            appointmentAt: apptVal ? new Date(apptVal).toISOString() : (c?.appointmentAt || null),
+          }, { source: "Portal 更新會議" });
           renderPortalToday();
         };
       });
