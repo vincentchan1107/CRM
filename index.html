@@ -1361,11 +1361,33 @@
     }
     .modal-actions .btn { min-width: 120px; }
     .modal-log-list {
-      max-height: 180px;
+      max-height: 220px;
       overflow: auto;
       margin: 8px 0 10px;
       padding-right: 4px;
     }
+    .drawer-hist-tabs {
+      display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px;
+    }
+    .drawer-hist-tabs button {
+      border: 1px solid var(--line); background: #fff; border-radius: 999px;
+      padding: 5px 10px; font-size: .72rem; font-weight: 750; color: var(--ink-soft); cursor: pointer;
+    }
+    .drawer-hist-tabs button.active {
+      background: #efeefe; border-color: #d8d4fb; color: var(--accent);
+    }
+    .drawer-hist-item .hist-title {
+      display: flex; justify-content: space-between; gap: 8px; align-items: baseline;
+    }
+    .drawer-hist-item .hist-title strong { font-size: .8rem; }
+    .drawer-hist-summary {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 10px;
+    }
+    .drawer-hist-summary .hs {
+      background: #f7f4fc; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px;
+    }
+    .drawer-hist-summary .hs .lbl { font-size: .65rem; font-weight: 700; color: var(--muted); }
+    .drawer-hist-summary .hs .val { font-size: .78rem; font-weight: 800; margin-top: 2px; color: var(--ink); }
     .contact-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -6811,6 +6833,204 @@
       });
     }
 
+    function logWhen(l) {
+      const raw = l.happened_at || l.created_at;
+      if (!raw) return null;
+      const d = new Date(raw);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    function buildCaseAppointmentHistory(c, logs) {
+      const items = [];
+      const APPT_TYPES = new Set(["appointment", "appointment_confirmed", "meeting_done"]);
+      for (const l of logs || []) {
+        if (!APPT_TYPES.has(l.log_type)) continue;
+        const when = logWhen(l);
+        const typeLabel = (LOG_TYPES.find((t) => t.id === l.log_type) || { label: l.log_type }).label;
+        items.push({
+          sort: when ? when.getTime() : 0,
+          when,
+          title: typeLabel,
+          detail: String(l.content || "").trim(),
+          source: "log",
+        });
+      }
+      // Current appointment snapshot (if not already covered by a recent log)
+      if (c.appointmentAt) {
+        const d = new Date(c.appointmentAt);
+        if (!Number.isNaN(d.getTime())) {
+          const status = c.meetingDone
+            ? "現況：會面已完成"
+            : (c.appointmentConfirmed ? "現況：已確認會面" : "現況：已約會面");
+          items.push({
+            sort: d.getTime() + 1,
+            when: d,
+            title: status,
+            detail: c.meetingNotes ? String(c.meetingNotes).trim() : (c.appointmentFlag ? "有約見記錄" : ""),
+            source: "case",
+          });
+        }
+      } else if (c.meetingDone || c.appointmentFlag) {
+        const d = c.updatedAt ? new Date(c.updatedAt) : new Date();
+        items.push({
+          sort: d.getTime(),
+          when: Number.isNaN(d.getTime()) ? null : d,
+          title: c.meetingDone ? "現況：會面已完成" : "現況：已約會面（未有時間）",
+          detail: c.meetingNotes ? String(c.meetingNotes).trim() : "",
+          source: "case",
+        });
+      }
+      // Field-change lines about appointment
+      for (const l of logs || []) {
+        if (l.log_type !== "field_change") continue;
+        const content = String(l.content || "");
+        if (!/約見時間|會面已確認|會面已完成|已約會面/.test(content)) continue;
+        const when = logWhen(l);
+        const lines = content.split("\n").filter((line) => /約見時間|會面已確認|會面已完成|已約會面/.test(line));
+        items.push({
+          sort: when ? when.getTime() : 0,
+          when,
+          title: "約見欄位變更",
+          detail: lines.join("\n") || content,
+          source: "change",
+        });
+      }
+      return items.sort((a, b) => b.sort - a.sort);
+    }
+
+    function buildCaseFollowUpHistory(c, logs) {
+      const items = [];
+      for (const l of logs || []) {
+        if (l.log_type === "follow_up") {
+          const when = logWhen(l);
+          items.push({
+            sort: when ? when.getTime() : 0,
+            when,
+            title: "跟進機會／跟進記錄",
+            detail: String(l.content || "").trim(),
+            source: "log",
+            overdue: false,
+          });
+        } else if (["call_attempt", "call_no_answer", "remark", "ricoh_remark", "status"].includes(l.log_type)) {
+          const when = logWhen(l);
+          const typeLabel = (LOG_TYPES.find((t) => t.id === l.log_type) || { label: l.log_type }).label;
+          items.push({
+            sort: when ? when.getTime() : 0,
+            when,
+            title: typeLabel,
+            detail: String(l.content || "").trim(),
+            source: "log",
+            overdue: false,
+          });
+        } else if (l.log_type === "field_change") {
+          const content = String(l.content || "");
+          if (!/下次跟進|跟進機會|Stage/.test(content)) continue;
+          const when = logWhen(l);
+          const lines = content.split("\n").filter((line) => /下次跟進|跟進機會|Stage/.test(line));
+          items.push({
+            sort: when ? when.getTime() : 0,
+            when,
+            title: "跟進欄位變更",
+            detail: lines.join("\n") || content,
+            source: "change",
+            overdue: false,
+          });
+        }
+      }
+      if (c.nextFollowUpAt) {
+        const d = parseLocalDate(c.nextFollowUpAt);
+        items.push({
+          sort: d ? d.getTime() + 2 : Date.now(),
+          when: d,
+          title: isFollowUpOverdue(c) ? "下次跟進（已逾期）" : "下次跟進日期",
+          detail: formatLocalDate(d) + (c.followUpOpportunity ? " · 有機會跟進" : ""),
+          source: "case",
+          overdue: isFollowUpOverdue(c),
+        });
+      } else if (c.followUpOpportunity) {
+        items.push({
+          sort: Date.now(),
+          when: null,
+          title: "現況：有機會跟進",
+          detail: "尚未設定下次跟進日期",
+          source: "case",
+          overdue: false,
+        });
+      }
+      return items.sort((a, b) => b.sort - a.sort);
+    }
+
+    function renderHistoryItemList(items, emptyText) {
+      if (!items.length) return `<div class="breakdown-empty">${escapeHtml(emptyText)}</div>`;
+      return items.map((it) => {
+        const whenText = it.when ? it.when.toLocaleString("zh-HK") : "";
+        const detail = String(it.detail || "").trim();
+        const isChange = it.source === "change";
+        const body = isChange
+          ? `<div class="log-change-lines">${detail.split("\n").map((line) => {
+              const m = line.match(/^·\s*(.+?):\s*(.*?)\s*→\s*(.*)$/);
+              if (m) return `<div class="ch">· <b>${escapeHtml(m[1])}</b>: ${escapeHtml(m[2])} → <b>${escapeHtml(m[3])}</b></div>`;
+              return `<div class="ch">${escapeHtml(line)}</div>`;
+            }).join("")}</div>`
+          : (detail ? `<div class="breakdown-meta">${escapeHtml(detail)}</div>` : "");
+        return `<div class="breakdown-item drawer-hist-item${isChange ? " log-item change" : ""}">
+          <div class="hist-title">
+            <strong>${escapeHtml(it.title)}${it.overdue ? '<span class="tag-overdue">已逾期</span>' : ""}</strong>
+            <div class="muted" style="font-size:.68rem">${escapeHtml(whenText)}</div>
+          </div>
+          ${body}
+        </div>`;
+      }).join("");
+    }
+
+    function renderAllLogsList(logs) {
+      if (!logs.length) return `<div class="breakdown-empty">未有 log</div>`;
+      return logs.map((l) => {
+        const typeLabel = (LOG_TYPES.find((t) => t.id === l.log_type) || { label: l.log_type }).label;
+        const when = l.happened_at || l.created_at;
+        const isChange = l.log_type === "field_change";
+        const body = isChange
+          ? `<div class="log-change-lines">${String(l.content || "").split("\n").map((line, idx) => {
+              if (idx === 0) return `<div class="log-actor">${escapeHtml(line)}</div>`;
+              const m = line.match(/^·\s*(.+?):\s*(.*?)\s*→\s*(.*)$/);
+              if (m) return `<div class="ch">· <b>${escapeHtml(m[1])}</b>: ${escapeHtml(m[2])} → <b>${escapeHtml(m[3])}</b></div>`;
+              return `<div class="ch">${escapeHtml(line)}</div>`;
+            }).join("")}</div>`
+          : `<div class="breakdown-meta">${escapeHtml(l.content || "")}</div>`;
+        return `<div class="breakdown-item${isChange ? " log-item change" : ""}">
+          <div><strong>${escapeHtml(typeLabel)}</strong></div>
+          <div class="muted" style="font-size:.68rem">${when ? new Date(when).toLocaleString("zh-HK") : ""}</div>
+          ${body}
+        </div>`;
+      }).join("");
+    }
+
+    function renderCaseHistoryPanels(c, logs) {
+      const apptItems = buildCaseAppointmentHistory(c, logs);
+      const followItems = buildCaseFollowUpHistory(c, logs);
+      const apptNow = c.appointmentAt
+        ? new Date(c.appointmentAt).toLocaleString("zh-HK")
+        : (c.meetingDone ? "已會面（無時間）" : (c.appointmentFlag ? "已約（無時間）" : "未約"));
+      const followNow = c.nextFollowUpAt
+        ? `${c.nextFollowUpAt}${isFollowUpOverdue(c) ? " · 已逾期" : ""}`
+        : (c.followUpOpportunity ? "有機會 · 未設日期" : "未設");
+      return `
+        <div class="eyebrow">Appointment / 跟進 History</div>
+        <div class="drawer-hist-summary">
+          <div class="hs"><div class="lbl">約見時間</div><div class="val">${escapeHtml(apptNow)}</div></div>
+          <div class="hs"><div class="lbl">下次跟進</div><div class="val">${escapeHtml(followNow)}</div></div>
+        </div>
+        <div class="drawer-hist-tabs" id="drawerHistTabs">
+          <button type="button" data-drawer-hist="appt" class="active">Appointment History（${apptItems.length}）</button>
+          <button type="button" data-drawer-hist="follow">Case 跟進 History（${followItems.length}）</button>
+          <button type="button" data-drawer-hist="all">全部 Log（${logs.length}）</button>
+        </div>
+        <div class="modal-log-list" data-drawer-hist-panel="appt">${renderHistoryItemList(apptItems, "未有 appointment history")}</div>
+        <div class="modal-log-list hidden" data-drawer-hist-panel="follow">${renderHistoryItemList(followItems, "未有 case 跟進 history")}</div>
+        <div class="modal-log-list hidden" data-drawer-hist-panel="all">${renderAllLogsList(logs)}</div>
+      `;
+    }
+
     function openDrawer(id) {
       const c = cases.find((x) => x.id === id);
       if (!c) return;
@@ -6910,26 +7130,7 @@
           </div>
 
           <div class="modal-col">
-            <div class="eyebrow">Log History（聯絡 + 欄位變更）</div>
-            <div class="modal-log-list">${logs.map((l) => {
-              const typeLabel = (LOG_TYPES.find((t) => t.id === l.log_type) || { label: l.log_type }).label;
-              const when = l.happened_at || l.created_at;
-              const isChange = l.log_type === "field_change";
-              const body = isChange
-                ? `<div class="log-change-lines">${String(l.content || "").split("\n").map((line, idx) => {
-                    if (idx === 0) return `<div class="log-actor">${escapeHtml(line)}</div>`;
-                    const m = line.match(/^·\s*(.+?):\s*(.*?)\s*→\s*(.*)$/);
-                    if (m) return `<div class="ch">· <b>${escapeHtml(m[1])}</b>: ${escapeHtml(m[2])} → <b>${escapeHtml(m[3])}</b></div>`;
-                    return `<div class="ch">${escapeHtml(line)}</div>`;
-                  }).join("")}</div>`
-                : `<div class="breakdown-meta">${escapeHtml(l.content || "")}</div>`;
-              return `<div class="breakdown-item${isChange ? " log-item change" : ""}">
-                <div><strong>${escapeHtml(typeLabel)}</strong></div>
-                <div class="muted" style="font-size:.68rem">${when ? new Date(when).toLocaleString("zh-HK") : ""}</div>
-                ${body}
-              </div>`;
-            }).join("") || `<div class="breakdown-empty">未有 log</div>`}</div>
-
+            ${renderCaseHistoryPanels(c, logs)}
             <div class="row2">
               <label class="field"><span>新增 Log 類型</span>
                 <select id="d_logType">${LOG_TYPES.filter((t) => t.id !== "field_change").map((t) => `<option value="${t.id}">${t.label}</option>`).join("")}</select>
@@ -6952,6 +7153,23 @@
       root.querySelector(".drawer-bg").onclick = (e) => { if (e.target.classList.contains("drawer-bg")) closeModal(); };
       document.getElementById("drawerClose").onclick = closeModal;
       document.getElementById("drawerCancel").onclick = closeModal;
+      root.querySelectorAll("#drawerHistTabs [data-drawer-hist]").forEach((btn) => {
+        btn.onclick = () => {
+          const key = btn.dataset.drawerHist;
+          root.querySelectorAll("#drawerHistTabs [data-drawer-hist]").forEach((b) => {
+            b.classList.toggle("active", b.dataset.drawerHist === key);
+          });
+          root.querySelectorAll("[data-drawer-hist-panel]").forEach((p) => {
+            p.classList.toggle("hidden", p.dataset.drawerHistPanel !== key);
+          });
+          // Prefill log type for faster entry
+          const logType = document.getElementById("d_logType");
+          if (logType) {
+            if (key === "appt" && [...logType.options].some((o) => o.value === "appointment")) logType.value = "appointment";
+            if (key === "follow" && [...logType.options].some((o) => o.value === "follow_up")) logType.value = "follow_up";
+          }
+        };
+      });
       document.getElementById("drawerSave").onclick = async () => {
         const stage = document.getElementById("d_stage").value;
         const appt = document.getElementById("d_appt").value;
