@@ -2400,8 +2400,43 @@
       display: grid;
       gap: 8px;
       margin-top: 4px;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid #ddd6f8;
+      background: #fff;
     }
     .portal-appt .appt-edit.collapsed { display: none; }
+    .portal-appt .appt-edit .edit-title {
+      font-size: .82rem;
+      font-weight: 800;
+      color: var(--teal-deep);
+      margin: 0;
+    }
+    .portal-appt .appt-edit .edit-sub {
+      font-size: .7rem;
+      color: var(--muted);
+      margin: -4px 0 2px;
+    }
+    .portal-appt .sys-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .portal-appt .sys-tags .tag {
+      border: 1px solid var(--line);
+      background: #f6f3fb;
+      color: var(--ink-soft);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: .7rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .portal-appt .sys-tags .tag.on {
+      background: var(--accent-soft);
+      border-color: #cfc4f8;
+      color: var(--teal-deep);
+    }
     .portal-appt .appt-actions {
       display: flex;
       gap: 8px;
@@ -3968,7 +4003,7 @@
       // strip synced address line so Remark 唔重複顯示地址
       const cleaned = notes
         .split("\n")
-        .filter((l) => !/^地址：/.test(l.trim()) && !/^語音原文：/.test(l.trim()))
+        .filter((l) => !/^地址：/.test(l.trim()) && !/^語音原文：/.test(l.trim()) && !/^現有系統公司：/.test(l.trim()) && !/^實行時間：/.test(l.trim()))
         .join("\n")
         .trim();
       if (cleaned) return cleaned;
@@ -3986,6 +4021,79 @@
       return bits.join(" · ") || `<span class="muted">未有電話</span>`;
     }
 
+    function extractLabeledLine(text, label) {
+      const re = new RegExp(`(?:^|\\n)${label}[:：]\\s*(.+?)(?=\\n|$)`);
+      const m = String(text || "").match(re);
+      return m ? m[1].trim() : "";
+    }
+
+    function parsePortalSalesComment(c) {
+      const raw = String(c.meetingNotes || "");
+      const salesComment = (() => {
+        const m = raw.match(/【Sales Comment】\s*([\s\S]*?)(?=\n【|$)/);
+        if (m) return m[1].trim();
+        // legacy: whole notes without structure
+        if (!/【會議內容】/.test(raw) && !/興趣系統：/.test(raw)) return "";
+        return "";
+      })();
+      const meetingContent = (() => {
+        const m = raw.match(/【會議內容】\s*([\s\S]*?)$/);
+        if (m) return m[1].trim();
+        if (!/【Sales Comment】/.test(raw) && !/興趣系統：/.test(raw)) return raw.trim();
+        return "";
+      })();
+      const implementWhen = extractLabeledLine(raw, "實行時間")
+        || extractLabeledLine(c.notes, "實行時間")
+        || (c.targetClosingDate ? String(c.targetClosingDate).slice(0, 10) : "");
+      const currentVendor = extractLabeledLine(raw, "現有系統公司")
+        || extractLabeledLine(c.notes, "現有系統公司")
+        || extractLabeledLine(c.requirements, "現有系統公司")
+        || "";
+      return {
+        salesComment,
+        meetingContent,
+        systems: [...(c.systems || [])],
+        implementWhen,
+        currentVendor,
+        users: String(c.quantity || "").trim() || extractLabeledLine(raw, "用家"),
+        budget: c.budget ? String(c.budget) : (extractLabeledLine(raw, "預算") || ""),
+      };
+    }
+
+    function buildPortalMeetingNotes(fields) {
+      const lines = [];
+      if (fields.salesComment) {
+        lines.push("【Sales Comment】");
+        lines.push(fields.salesComment);
+        lines.push("");
+      }
+      if (fields.systems?.length) lines.push(`興趣系統：${fields.systems.join("、")}`);
+      if (fields.implementWhen) lines.push(`實行時間：${fields.implementWhen}`);
+      if (fields.currentVendor) lines.push(`現有系統公司：${fields.currentVendor}`);
+      if (fields.users) lines.push(`用家：${fields.users}`);
+      if (fields.budget) lines.push(`預算：${fields.budget}`);
+      if (fields.meetingContent) {
+        if (lines.length) lines.push("");
+        lines.push("【會議內容】");
+        lines.push(fields.meetingContent);
+      }
+      return lines.join("\n").trim();
+    }
+
+    function portalSalesSummaryHtml(c) {
+      const p = parsePortalSalesComment(c);
+      const bits = [];
+      if (p.systems.length) bits.push(`興趣：${p.systems.join("、")}`);
+      if (p.implementWhen) bits.push(`實行：${p.implementWhen}`);
+      if (p.currentVendor) bits.push(`現用：${p.currentVendor}`);
+      if (p.users) bits.push(`用家：${p.users}`);
+      if (p.budget) bits.push(`預算：${money(Number(p.budget) || 0)}`);
+      if (p.salesComment) bits.push(`Comment：${p.salesComment.slice(0, 80)}${p.salesComment.length > 80 ? "…" : ""}`);
+      if (!bits.length && !p.meetingContent) return "";
+      return bits.map((b) => `<div>${escapeHtml(b)}</div>`).join("")
+        + (p.meetingContent ? `<div class="muted" style="margin-top:2px">會議：${escapeHtml(p.meetingContent.slice(0, 100))}${p.meetingContent.length > 100 ? "…" : ""}</div>` : "");
+    }
+
     function renderPortalToday() {
       const list = document.getElementById("portalTodayList");
       const sub = document.getElementById("portalTodaySub");
@@ -4001,12 +4109,12 @@
       list.innerHTML = items.map((c) => {
         const t = new Date(c.appointmentAt);
         const timeStr = t.toLocaleTimeString("zh-HK", { hour: "2-digit", minute: "2-digit" });
-        const apptLocal = !Number.isNaN(t.getTime())
-          ? new Date(t.getTime() - t.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
-          : "";
         const contacts = contactsByCase[c.id] || [];
         const address = String(c.customerAddress || "").trim();
         const remark = portalCaseRemarkText(c);
+        const parsed = parsePortalSalesComment(c);
+        const salesSummary = portalSalesSummaryHtml(c);
+        const selectedSys = new Set(parsed.systems);
         const contactHtml = contacts.length
           ? contacts.map((p) => `
               <div class="appt-contact">
@@ -4015,6 +4123,9 @@
                 ${p.email ? `<div class="muted" style="font-size:.68rem">${escapeHtml(p.email)}</div>` : ""}
               </div>`).join("")
           : `<span class="muted">未有聯絡人</span>`;
+        const sysTags = SYSTEMS.map((s) =>
+          `<button type="button" class="tag ${selectedSys.has(s) ? "on" : ""}" data-sys="${escapeAttr(s)}">${escapeHtml(s)}</button>`
+        ).join("");
         return `<article class="portal-appt" data-case-id="${escapeAttr(c.id)}">
           <div class="appt-head">
             <div>
@@ -4027,7 +4138,7 @@
             <div class="row"><div class="lbl">地址</div><div class="val">${address ? escapeHtml(address) : "<span class=\"muted\">未有地址</span>"}</div></div>
             <div class="row"><div class="lbl">聯絡人</div><div class="val">${contactHtml}</div></div>
             <div class="row"><div class="lbl">Remark</div><div class="val">${remark ? escapeHtml(remark) : "<span class=\"muted\">—</span>"}</div></div>
-            <div class="row"><div class="lbl">會議</div><div class="val">${c.meetingNotes ? escapeHtml(c.meetingNotes) : "<span class=\"muted\">未有會議記錄</span>"}</div></div>
+            <div class="row"><div class="lbl">Sales</div><div class="val">${salesSummary || "<span class=\"muted\">未有當日 Sales Comment</span>"}</div></div>
           </div>
           <div class="appt-actions">
             <button type="button" class="btn btn-teal btn-sm" data-toggle-edit>更新會議內容</button>
@@ -4035,29 +4146,48 @@
             <button type="button" class="btn btn-ghost btn-sm" data-scan-card>掃名片</button>
           </div>
           <div class="appt-edit collapsed" data-edit-panel>
-            <label class="field" style="margin:0"><span>約見時間</span>
-              <input type="datetime-local" data-appt-at value="${escapeAttr(apptLocal)}" />
+            <p class="edit-title">當日 Sales Comment</p>
+            <p class="edit-sub">填寫會面後資訊，會同步更新案件系統／用家／預算</p>
+            <label class="field" style="margin:0"><span>Sales Comment</span>
+              <textarea data-sales-comment rows="2" placeholder="今日會面重點、客人口氣、下一步…">${escapeHtml(parsed.salesComment)}</textarea>
             </label>
-            <label class="field" style="margin:0"><span>地址</span>
-              <input type="text" data-address value="${escapeAttr(address)}" placeholder="公司地址" />
+            <div class="field" style="margin:0">
+              <span>客人對邊個系統有興趣</span>
+              <div class="sys-tags" data-sys-tags>${sysTags}</div>
+            </div>
+            <label class="field" style="margin:0"><span>幾時想實行新系統</span>
+              <input type="text" data-implement-when value="${escapeAttr(parsed.implementWhen)}" placeholder="例如 2027-03 / Q2 2027 / 下半年" />
             </label>
-            <label class="field" style="margin:0"><span>Remark</span>
-              <textarea data-remark rows="2" placeholder="案件 Remark／備註…">${escapeHtml(remark)}</textarea>
+            <label class="field" style="margin:0"><span>現時用緊邊間系統公司</span>
+              <input type="text" data-current-vendor value="${escapeAttr(parsed.currentVendor)}" placeholder="例如 SAP / Oracle / Excel" />
             </label>
-            <label class="field" style="margin:0"><span>會議記錄</span>
-              <textarea data-meet-notes rows="3" placeholder="會面重點、跟進事項…">${escapeHtml(c.meetingNotes || "")}</textarea>
+            <div class="row2" style="margin:0">
+              <label class="field" style="margin:0"><span>幾多個用家</span>
+                <input type="text" data-users value="${escapeAttr(parsed.users)}" placeholder="例如 50 用戶" />
+              </label>
+              <label class="field" style="margin:0"><span>預計預算 (HKD)</span>
+                <input type="number" data-budget min="0" step="1000" value="${escapeAttr(parsed.budget)}" placeholder="0" />
+              </label>
+            </div>
+            <label class="field" style="margin:0"><span>會議內容</span>
+              <textarea data-meeting-content rows="3" placeholder="會議討論內容、決定、跟進事項…">${escapeHtml(parsed.meetingContent)}</textarea>
             </label>
             <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:700">
               <input type="checkbox" data-meet-done ${c.meetingDone ? "checked" : ""} /> 會面已完成
             </label>
             <div class="appt-actions" style="margin-top:0">
-              <button type="button" class="btn btn-teal btn-sm" data-save-meeting>儲存更新</button>
+              <button type="button" class="btn btn-teal btn-sm" data-save-meeting>儲存 Sales Comment</button>
               <button type="button" class="btn btn-ghost btn-sm" data-cancel-edit>取消</button>
             </div>
           </div>
         </article>`;
       }).join("");
 
+      list.querySelectorAll("[data-sys-tags]").forEach((wrap) => {
+        wrap.querySelectorAll(".tag").forEach((t) => {
+          t.onclick = () => t.classList.toggle("on");
+        });
+      });
       list.querySelectorAll("[data-toggle-edit]").forEach((btn) => {
         btn.onclick = () => {
           const art = btn.closest(".portal-appt");
@@ -4066,7 +4196,7 @@
           const open = panel.classList.contains("collapsed");
           panel.classList.toggle("collapsed", !open);
           btn.textContent = open ? "收起更新" : "更新會議內容";
-          if (open) panel.querySelector("[data-meet-notes]")?.focus();
+          if (open) panel.querySelector("[data-sales-comment]")?.focus();
         };
       });
       list.querySelectorAll("[data-cancel-edit]").forEach((btn) => {
@@ -4083,22 +4213,83 @@
           const id = art?.dataset.caseId;
           if (!id) return;
           const c = cases.find((x) => x.id === id);
-          const apptVal = art.querySelector("[data-appt-at]")?.value || "";
-          const address = art.querySelector("[data-address]")?.value.trim() || "";
-          const remark = art.querySelector("[data-remark]")?.value || "";
-          const meetNotes = art.querySelector("[data-meet-notes]")?.value || "";
+          const salesComment = art.querySelector("[data-sales-comment]")?.value.trim() || "";
+          const meetingContent = art.querySelector("[data-meeting-content]")?.value.trim() || "";
+          const implementWhen = art.querySelector("[data-implement-when]")?.value.trim() || "";
+          const currentVendor = art.querySelector("[data-current-vendor]")?.value.trim() || "";
+          const users = art.querySelector("[data-users]")?.value.trim() || "";
+          const budgetRaw = art.querySelector("[data-budget]")?.value;
+          const budget = budgetRaw === "" || budgetRaw == null ? (Number(c?.budget) || 0) : Number(budgetRaw) || 0;
           const meetDone = !!art.querySelector("[data-meet-done]")?.checked;
-          // keep non-remark note lines (e.g. 語音原文) when rewriting notes
-          const keepLines = String(c?.notes || "").split("\n").filter((l) => /^語音原文：/.test(l.trim()));
-          const nextNotes = [remark.trim(), ...keepLines].filter(Boolean).join("\n");
+          const systems = [...art.querySelectorAll("[data-sys-tags] .tag.on")].map((t) => t.dataset.sys).filter(Boolean);
+          if (!salesComment && !meetingContent && !systems.length && !implementWhen && !currentVendor && !users && !budgetRaw) {
+            return toast("請至少填寫一項 Sales Comment／會議內容");
+          }
+          const meetingNotes = buildPortalMeetingNotes({
+            salesComment,
+            meetingContent,
+            systems,
+            implementWhen,
+            currentVendor,
+            users,
+            budget: budgetRaw !== "" && budgetRaw != null ? String(Number(budgetRaw) || budget) : (budget ? String(budget) : ""),
+          });
+          const keepLines = String(c?.notes || "").split("\n")
+            .map((l) => l.trimEnd())
+            .filter((l) => l && !/^地址：/.test(l.trim()) && !/^現有系統公司：/.test(l.trim()) && !/^實行時間：/.test(l.trim()));
+          if (currentVendor) keepLines.unshift(`現有系統公司：${currentVendor}`);
+          if (implementWhen) keepLines.unshift(`實行時間：${implementWhen}`);
+          const targetClosingDate = /^\d{4}-\d{2}-\d{2}$/.test(implementWhen)
+            ? implementWhen
+            : (c?.targetClosingDate || "");
+          const reqParts = [];
+          if (systems.length) reqParts.push(`Product interest: ${systems.join(", ")}`);
+          if (currentVendor) reqParts.push(`現有系統公司：${currentVendor}`);
+          if (implementWhen) reqParts.push(`實行時間：${implementWhen}`);
+          const prevReq = String(c?.requirements || "").trim();
+          const requirements = reqParts.length
+            ? reqParts.join("\n")
+            : prevReq;
+
           await updateCase(id, {
-            customerAddress: address,
-            notes: nextNotes,
-            meetingNotes: meetNotes,
-            meetingDone: meetDone,
+            systems,
+            quantity: users || c?.quantity || "",
+            budget,
+            amount: budget || c?.amount || 0,
+            targetClosingDate,
+            requirements,
+            notes: keepLines.join("\n"),
+            meetingNotes,
+            meetingDone: meetDone || !!(salesComment || meetingContent),
             appointmentFlag: true,
-            appointmentAt: apptVal ? new Date(apptVal).toISOString() : (c?.appointmentAt || null),
-          }, { source: "Portal 更新會議" });
+            followUpOpportunity: true,
+            stage: ["new_lead", "contacting", "unreachable", "appointment_set"].includes(c?.stage)
+              ? "first_interview"
+              : c?.stage,
+          }, { source: "Portal Sales Comment" });
+
+          try {
+            const logBits = [
+              salesComment && `Sales Comment：${salesComment}`,
+              systems.length && `興趣系統：${systems.join("、")}`,
+              implementWhen && `實行時間：${implementWhen}`,
+              currentVendor && `現有系統公司：${currentVendor}`,
+              users && `用家：${users}`,
+              budgetRaw !== "" && budgetRaw != null && `預算：${budget}`,
+              meetingContent && `會議內容：${meetingContent}`,
+            ].filter(Boolean);
+            if (logBits.length) {
+              await db.from("crm_activity_logs").insert({
+                id: `log-${crypto.randomUUID().slice(0, 10)}`,
+                case_id: id,
+                log_type: "meeting_done",
+                content: logBits.join("\n"),
+                happened_at: new Date().toISOString(),
+                created_at: new Date().toISOString(),
+              });
+            }
+          } catch (_) {}
+          await loadCases();
           renderPortalToday();
         };
       });
