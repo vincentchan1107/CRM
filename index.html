@@ -2443,6 +2443,71 @@
       flex-wrap: wrap;
       margin-top: 8px;
     }
+    .pc-pick {
+      margin-top: 6px;
+      width: 100%;
+      border: 1px dashed #cfc4f8;
+      border-radius: 10px;
+      padding: 7px 10px;
+      background: #f7f4fc;
+      color: var(--ink-soft);
+      font-size: .72rem;
+      font-weight: 600;
+    }
+    .pc-ocr-lines {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0 0 10px;
+      padding: 8px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #faf9fd;
+    }
+    .pc-ocr-lines .hint {
+      width: 100%;
+      font-size: .68rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .pc-ocr-chip {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: .7rem;
+      font-weight: 600;
+      cursor: pointer;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pc-ocr-chip:hover { border-color: var(--accent); color: var(--teal-deep); }
+    .pc-ocr-chip.active {
+      background: var(--accent-soft);
+      border-color: #cfc4f8;
+      color: var(--teal-deep);
+    }
+    .pc-assign-bar {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .pc-assign-bar button {
+      border: 1px solid #ddd6f8;
+      background: #efeaff;
+      color: var(--teal-deep);
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: .66rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
     .card-thumbs {
       display: flex;
       flex-wrap: wrap;
@@ -2638,21 +2703,43 @@
         <div id="portalCardPreviewWrap" class="hidden" style="margin-top:10px">
           <img id="portalCardPreview" alt="名片預覽" style="width:100%;max-height:220px;object-fit:contain;border-radius:12px;border:1px solid var(--line);background:#f7f4fc" />
         </div>
-        <p class="muted" id="portalCardStatus" style="margin:8px 0;font-size:.75rem">選擇或拍攝名片後會自動讀取</p>
+        <p class="muted" id="portalCardStatus" style="margin:8px 0;font-size:.75rem">選擇或拍攝名片後會自動讀取；可喺各欄「OCR 選擇」揀正確資料</p>
         <div id="portalCardFields" class="hidden">
+          <div id="pcOcrLineBox" class="pc-ocr-lines hidden"></div>
           <div class="row2">
-            <label class="field"><span>客戶／公司名</span><input id="pc_company" placeholder="公司名稱" /></label>
-            <label class="field"><span>聯絡人</span><input id="pc_name" placeholder="姓名" /></label>
+            <label class="field"><span>客戶／公司名</span>
+              <input id="pc_company" placeholder="公司名稱" />
+              <select class="pc-pick" data-target="pc_company" aria-label="公司名 OCR 選擇"><option value="">— OCR 選擇 —</option></select>
+            </label>
+            <label class="field"><span>聯絡人</span>
+              <input id="pc_name" placeholder="姓名" />
+              <select class="pc-pick" data-target="pc_name" aria-label="聯絡人 OCR 選擇"><option value="">— OCR 選擇 —</option></select>
+            </label>
           </div>
           <div class="row2">
-            <label class="field"><span>Title</span><input id="pc_title" placeholder="職銜" /></label>
-            <label class="field"><span>電郵</span><input id="pc_email" type="email" placeholder="email" /></label>
+            <label class="field"><span>Title</span>
+              <input id="pc_title" placeholder="職銜" />
+              <select class="pc-pick" data-target="pc_title" aria-label="Title OCR 選擇"><option value="">— OCR 選擇 —</option></select>
+            </label>
+            <label class="field"><span>電郵</span>
+              <input id="pc_email" type="email" placeholder="email" />
+              <select class="pc-pick" data-target="pc_email" aria-label="電郵 OCR 選擇"><option value="">— OCR 選擇 —</option></select>
+            </label>
           </div>
           <div class="row2">
-            <label class="field"><span>電話</span><input id="pc_tel" placeholder="Tel" /></label>
-            <label class="field"><span>手提</span><input id="pc_mobile" placeholder="Mobile" /></label>
+            <label class="field"><span>電話</span>
+              <input id="pc_tel" placeholder="Tel" />
+              <select class="pc-pick" data-target="pc_tel" aria-label="電話 OCR 選擇"><option value="">— OCR 選擇 —</option></select>
+            </label>
+            <label class="field"><span>手提</span>
+              <input id="pc_mobile" placeholder="Mobile" />
+              <select class="pc-pick" data-target="pc_mobile" aria-label="手提 OCR 選擇"><option value="">— OCR 選擇 —</option></select>
+            </label>
           </div>
-          <label class="field"><span>地址</span><input id="pc_address" placeholder="公司地址" /></label>
+          <label class="field"><span>地址</span>
+            <input id="pc_address" placeholder="公司地址" />
+            <select class="pc-pick" data-target="pc_address" aria-label="地址 OCR 選擇"><option value="">— OCR 選擇 —</option></select>
+          </label>
           <label class="field"><span>OCR 原文（可改）</span><textarea id="pc_ocr" rows="3"></textarea></label>
           <button type="button" class="btn btn-teal" style="width:100%;margin-top:8px" id="btnSaveCard">儲存名片並更新客戶資料</button>
         </div>
@@ -3044,6 +3131,8 @@
     let portalCardImageData = "";
     let portalCardBusy = false;
     let portalBound = false;
+    let portalCardOcrLines = [];
+    let portalCardOcrPickLine = "";
     let mgmtTab = localStorage.getItem("crm_mgmt_tab") || "customers";
     if (!["customers", "partners", "sales"].includes(mgmtTab)) mgmtTab = "customers";
     let agendaPeriod = localStorage.getItem("crm_agenda_period") || "today";
@@ -4602,24 +4691,149 @@
       if (CARD_COMPANY_RE.test(nameLine) || CARD_ADDRESS_RE.test(nameLine) || CARD_META_RE.test(nameLine)) {
         nameLine = emailName || "";
       }
-      if (!nameLine && emailName) nameLine = emailName;
+      // 只喺高信心時自動填人名；否則交俾用戶喺 OCR 選擇揀
+      const nameConfidence = nameFromTitleSplit
+        ? scoreCardNameCandidate(nameFromTitleSplit, 0, 1, emailName)
+        : (best?.score || 0);
+      const autoName = nameConfidence >= 28 || (emailName && nameLine === emailName && nameConfidence >= 18)
+        ? nameLine
+        : (nameConfidence >= 36 ? nameLine : "");
+
+      const emails = [...text.matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)].map((x) => x[0]);
+      const companyCands = lines.filter((l) => CARD_COMPANY_RE.test(l));
+      const titleCands = lines
+        .map((l) => splitNameAndTitle(l))
+        .filter((x) => x.title)
+        .map((x) => x.title);
+      lines.filter((l) => CARD_TITLE_RE.test(l) && !CARD_COMPANY_RE.test(l)).forEach((l) => titleCands.push(l));
+      const nameCands = [];
+      if (nameLine) nameCands.push(nameLine);
+      if (emailName) nameCands.push(emailName);
+      ranked.slice(0, 8).forEach((r) => {
+        if (r.score >= 8) {
+          const n = splitNameAndTitle(r.line).name || r.line;
+          if (n) nameCands.push(n);
+        }
+      });
+      lines.forEach((l) => {
+        if (/^[\u4e00-\u9fff]{2,4}$/.test(l) || /^[A-Za-z][A-Za-z.'-]*(?:\s+[A-Za-z][A-Za-z.'-]*){1,3}$/.test(l)) {
+          nameCands.push(l);
+        }
+      });
+      const addressCands = lines.filter((l) => CARD_ADDRESS_RE.test(l));
+      const phoneVals = uniqPhones.map((p) => (p.digits.slice(-8).length === 8 ? p.digits.slice(-8) : p.raw));
+      if (mobile) phoneVals.unshift(mobile);
+      if (tel) phoneVals.unshift(tel);
+
+      const uniq = (arr) => {
+        const out = [];
+        const seen = new Set();
+        for (const v of arr) {
+          const s = String(v || "").trim();
+          if (!s) continue;
+          const k = s.toLowerCase();
+          if (seen.has(k)) continue;
+          seen.add(k);
+          out.push(s);
+        }
+        return out;
+      };
 
       return {
         company: companyLine.replace(/\s+/g, " ").trim(),
-        name: nameLine,
+        name: autoName,
+        nameSuggestion: nameLine,
         title: titleLine.replace(/\s+/g, " ").trim(),
         email: email.trim(),
         tel: String(tel || "").trim(),
         mobile: String(mobile || "").trim(),
         address: addressLine.replace(/\s+/g, " ").trim(),
         ocr: text.trim(),
+        lines,
+        candidates: {
+          company: uniq([...companyCands, ...lines]),
+          name: uniq([...nameCands, ...lines]),
+          title: uniq([...titleCands, ...lines]),
+          email: uniq([...emails, ...lines.filter((l) => /@/.test(l))]),
+          tel: uniq([...phoneVals, ...lines]),
+          mobile: uniq([mobile, ...phoneVals, ...lines]),
+          address: uniq([...addressCands, ...lines]),
+        },
       };
     }
 
-    function fillPortalCardFields(parsed) {
+    function fillPcPickSelect(targetId, values, preferred) {
+      const sel = document.querySelector(`.pc-pick[data-target="${targetId}"]`);
+      if (!sel) return;
+      const opts = ['<option value="">— OCR 選擇 —</option>'];
+      const seen = new Set();
+      const push = (v, label) => {
+        const s = String(v || "").trim();
+        if (!s) return;
+        const k = s.toLowerCase();
+        if (seen.has(k)) return;
+        seen.add(k);
+        const mark = preferred && s === preferred ? " ✓建議" : "";
+        opts.push(`<option value="${escapeAttr(s)}">${escapeHtml((label || s).slice(0, 80))}${mark}</option>`);
+      };
+      if (preferred) push(preferred, preferred);
+      (values || []).forEach((v) => push(v));
+      sel.innerHTML = opts.join("");
+      sel.value = "";
+    }
+
+    function renderPortalOcrLineChips(lines) {
+      const box = document.getElementById("pcOcrLineBox");
+      if (!box) return;
+      portalCardOcrLines = (lines || []).map((l) => String(l || "").trim()).filter(Boolean);
+      portalCardOcrPickLine = "";
+      if (!portalCardOcrLines.length) {
+        box.classList.add("hidden");
+        box.innerHTML = "";
+        return;
+      }
+      box.classList.remove("hidden");
+      box.innerHTML = `<div class="hint">OCR 讀到嘅行 — 先撳一行，再揀填入邊個欄</div>`
+        + portalCardOcrLines.map((l, i) =>
+          `<button type="button" class="pc-ocr-chip" data-ocr-line="${i}" title="${escapeAttr(l)}">${escapeHtml(l)}</button>`
+        ).join("")
+        + `<div class="pc-assign-bar hidden" id="pcAssignBar">
+            <button type="button" data-assign="pc_company">→ 公司名</button>
+            <button type="button" data-assign="pc_name">→ 聯絡人</button>
+            <button type="button" data-assign="pc_title">→ Title</button>
+            <button type="button" data-assign="pc_email">→ 電郵</button>
+            <button type="button" data-assign="pc_tel">→ 電話</button>
+            <button type="button" data-assign="pc_mobile">→ 手提</button>
+            <button type="button" data-assign="pc_address">→ 地址</button>
+          </div>`;
+      box.querySelectorAll("[data-ocr-line]").forEach((btn) => {
+        btn.onclick = () => {
+          const idx = Number(btn.dataset.ocrLine);
+          portalCardOcrPickLine = portalCardOcrLines[idx] || "";
+          box.querySelectorAll(".pc-ocr-chip").forEach((b) => b.classList.toggle("active", b === btn));
+          document.getElementById("pcAssignBar")?.classList.toggle("hidden", !portalCardOcrPickLine);
+        };
+      });
+      box.querySelectorAll("[data-assign]").forEach((btn) => {
+        btn.onclick = () => {
+          if (!portalCardOcrPickLine) return;
+          const el = document.getElementById(btn.dataset.assign);
+          if (el) {
+            el.value = portalCardOcrPickLine;
+            el.focus();
+          }
+          toast(`已填入${btn.textContent.replace("→ ", "")}`);
+        };
+      });
+    }
+
+    function fillPortalCardFields(parsed, opts = {}) {
+      const keepExisting = !!opts.keepExisting;
       const set = (id, v) => {
         const el = document.getElementById(id);
-        if (el) el.value = v || "";
+        if (!el) return;
+        if (keepExisting && String(el.value || "").trim()) return; // 保留人手已填
+        el.value = v || "";
       };
       set("pc_company", parsed.company);
       set("pc_name", parsed.name);
@@ -4629,12 +4843,38 @@
       set("pc_mobile", parsed.mobile);
       set("pc_address", parsed.address);
       set("pc_ocr", parsed.ocr);
+
+      const cands = parsed.candidates || {};
+      fillPcPickSelect("pc_company", cands.company, parsed.company);
+      fillPcPickSelect("pc_name", cands.name, parsed.nameSuggestion || parsed.name);
+      fillPcPickSelect("pc_title", cands.title, parsed.title);
+      fillPcPickSelect("pc_email", cands.email, parsed.email);
+      fillPcPickSelect("pc_tel", cands.tel, parsed.tel);
+      fillPcPickSelect("pc_mobile", cands.mobile, parsed.mobile);
+      fillPcPickSelect("pc_address", cands.address, parsed.address);
+      renderPortalOcrLineChips(parsed.lines || []);
+
       document.getElementById("portalCardFields")?.classList.remove("hidden");
       const nameEl = document.getElementById("pc_name");
-      if (nameEl && !parsed.name) {
-        nameEl.placeholder = "未能識別人名，請手動輸入";
-        nameEl.focus();
+      if (nameEl && !String(nameEl.value || "").trim()) {
+        nameEl.placeholder = "請喺下方 OCR 選擇揀人名，或手動輸入";
       }
+    }
+
+    function bindPortalCardPickers() {
+      document.querySelectorAll(".pc-pick").forEach((sel) => {
+        if (sel.dataset.bound) return;
+        sel.dataset.bound = "1";
+        sel.onchange = () => {
+          const id = sel.dataset.target;
+          const el = document.getElementById(id);
+          if (!el || !sel.value) return;
+          el.value = sel.value;
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          toast("已選取 OCR 資料");
+          sel.value = "";
+        };
+      });
     }
 
     async function runPortalCardOcr(dataUrl) {
@@ -4657,13 +4897,14 @@
           .filter((l) => String(l.text || "").trim())
           .sort((a, b) => (a.bbox?.y0 ?? 0) - (b.bbox?.y0 ?? 0));
         const parsed = parseBusinessCardText(result?.data?.text || "", ocrLines);
-        fillPortalCardFields(parsed);
+        // 若欄位已有人手輸入，保留；其餘用建議值，並提供 OCR 選擇
+        fillPortalCardFields(parsed, { keepExisting: true });
+        bindPortalCardPickers();
         if (status) {
+          const n = (parsed.lines || []).length;
           status.textContent = parsed.name
-            ? `已讀取聯絡人：${parsed.name}（請核對後儲存）`
-            : (parsed.company || parsed.email || parsed.mobile
-              ? "已讀取部分欄位，聯絡人姓名請手動確認"
-              : "未能可靠識別，請手動修正欄位");
+            ? `已建議聯絡人「${parsed.name}」· 共 ${n} 行 OCR，可用「OCR 選擇」改正確值`
+            : `已讀取 ${n} 行文字 · 請用各欄「OCR 選擇」或上方 OCR 行揀聯絡人／資料`;
         }
       } catch (err) {
         console.warn(err);
@@ -4818,6 +5059,7 @@
       document.getElementById("portalCardCamera")?.addEventListener("change", onFile);
       document.getElementById("portalCardFile")?.addEventListener("change", onFile);
       document.getElementById("btnSaveCard")?.addEventListener("click", () => savePortalCard());
+      bindPortalCardPickers();
     }
 
     function initPortal() {
