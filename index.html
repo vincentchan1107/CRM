@@ -2687,7 +2687,7 @@
       <div id="portalCardPanel" class="panel portal-shell hidden" style="max-width:560px;margin:0 auto 12px">
         <div class="page-head" style="margin-bottom:8px">
           <h2 style="font-size:1.1rem;margin:0">影相／上載客戶卡片</h2>
-          <p class="muted page-head-sub">OCR 讀取後可更新客戶名、Title、電話、手提、電郵、地址</p>
+          <p class="muted page-head-sub">優化讀取：公司全名 · 人名 · 電話 · 電郵 · 地址（可再 OCR 選擇）</p>
         </div>
         <label class="field"><span>關聯案件</span>
           <select id="portalCardCase"></select>
@@ -4423,12 +4423,18 @@
           const img = new Image();
           img.onerror = () => reject(new Error("圖片無法解碼"));
           img.onload = () => {
-            let { width: w, height: h } = img;
-            const scale = Math.min(1, maxSide / Math.max(w, h));
-            // OCR 用：太細嘅圖放大少少，提升字元辨識
-            const up = opts.forOcr && Math.max(w, h) < 1000 ? Math.min(1.8, 1200 / Math.max(w, h)) : 1;
-            w = Math.round(w * scale * up);
-            h = Math.round(h * scale * up);
+            let { width: w0, height: h0 } = img;
+            // OCR：目標長邊約 1800–2200，細圖會放大
+            let targetSide = maxSide;
+            if (opts.forOcr) {
+              targetSide = Math.max(maxSide, 1800);
+              if (Math.max(w0, h0) < 900) targetSide = 2000;
+            }
+            const scale = targetSide / Math.max(w0, h0);
+            // 儲存版唔放大超過原圖；OCR 版允許放大
+            const finalScale = opts.forOcr ? Math.max(scale, 1) : Math.min(1, scale);
+            const w = Math.round(w0 * finalScale);
+            const h = Math.round(h0 * finalScale);
             const canvas = document.createElement("canvas");
             canvas.width = w;
             canvas.height = h;
@@ -4442,16 +4448,51 @@
               try {
                 const imageData = ctx.getImageData(0, 0, w, h);
                 const d = imageData.data;
-                for (let i = 0; i < d.length; i += 4) {
+                // grayscale + contrast stretch
+                let min = 255, max = 0;
+                const gray = new Uint8ClampedArray(w * h);
+                for (let i = 0, p = 0; i < d.length; i += 4, p++) {
                   const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-                  // mild contrast boost for text
-                  const v = g < 140 ? Math.max(0, g * 0.85) : Math.min(255, 255 - (255 - g) * 0.7);
+                  gray[p] = g;
+                  if (g < min) min = g;
+                  if (g > max) max = g;
+                }
+                const span = Math.max(1, max - min);
+                // Otsu threshold on contrast-stretched grayscale
+                const hist = new Array(256).fill(0);
+                for (let p = 0; p < gray.length; p++) {
+                  const v = Math.round(((gray[p] - min) / span) * 255);
+                  gray[p] = v;
+                  hist[v] += 1;
+                }
+                const total = gray.length;
+                let sum = 0;
+                for (let i = 0; i < 256; i++) sum += i * hist[i];
+                let sumB = 0, wB = 0, best = 0, bestVar = -1;
+                for (let t = 0; t < 256; t++) {
+                  wB += hist[t];
+                  if (!wB) continue;
+                  const wF = total - wB;
+                  if (!wF) break;
+                  sumB += t * hist[t];
+                  const mB = sumB / wB;
+                  const mF = (sum - sumB) / wF;
+                  const between = wB * wF * (mB - mF) * (mB - mF);
+                  if (between > bestVar) { bestVar = between; best = t; }
+                }
+                // soft binarize around Otsu (keep some gray for Tesseract)
+                for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+                  const g = gray[p];
+                  let v;
+                  if (g < best - 18) v = 0;
+                  else if (g > best + 18) v = 255;
+                  else v = Math.round(255 * (g - (best - 18)) / 36);
                   d[i] = d[i + 1] = d[i + 2] = v;
                 }
                 ctx.putImageData(imageData, 0, 0);
               } catch (_) {}
             }
-            resolve(canvas.toDataURL("image/jpeg", quality));
+            resolve(canvas.toDataURL(opts.forOcr ? "image/png" : "image/jpeg", quality));
           };
           img.src = reader.result;
         };
@@ -4581,40 +4622,115 @@
       }
       lines = merged;
 
-      const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-      const email = emailMatch ? emailMatch[0] : "";
+      // email：修正常見 OCR 混淆（0/O、1/l、空格）
+      const fixEmail = (s) => String(s || "")
+        .replace(/\s+/g, "")
+        .replace(/[@＠]/, "@")
+        .replace(/,/g, ".")
+        .toLowerCase();
+      const emailMatches = [...text.matchAll(/[A-Z0-9._%+\-]+[@＠][A-Z0-9.\-]+\.[A-Z]{2,}/gi)]
+        .map((x) => fixEmail(x[0]))
+        .filter((e) => /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(e));
+      const email = emailMatches[0] || "";
       const emailName = nameFromEmailLocal(email);
 
+      const normalizeHkPhone = (raw) => {
+        let digits = String(raw || "").replace(/\D/g, "");
+        if (digits.startsWith("852") && digits.length >= 11) digits = digits.slice(-8);
+        if (digits.length > 8 && digits.length <= 11) digits = digits.slice(-8);
+        return digits.length === 8 ? digits : "";
+      };
       const phoneCandidates = [];
-      const phoneRe = /(?:(?:\+?852[\s-]?)?(?:[23]\d{3}|[456789]\d{3})[\s-]?\d{4})|(?:\+?\d[\d\s().-]{7,}\d)/g;
+      const phoneRe = /(?:\+?852[\s\-]*)?(?:\(?\d{4}\)?[\s\-]?\d{4}|\d{8})/g;
       let m;
-      while ((m = phoneRe.exec(text)) !== null) {
-        const digits = m[0].replace(/\D/g, "");
-        if (digits.length < 8) continue;
+      while ((m = phoneRe.exec(text.replace(/[Oo]/g, "0").replace(/[Il|]/g, "1"))) !== null) {
+        const digits = normalizeHkPhone(m[0]);
+        if (!digits) continue;
         phoneCandidates.push({ raw: m[0].trim(), digits });
       }
       const uniqPhones = [];
       for (const p of phoneCandidates) {
-        if (!uniqPhones.some((x) => x.digits.slice(-8) === p.digits.slice(-8))) uniqPhones.push(p);
+        if (!uniqPhones.some((x) => x.digits === p.digits)) uniqPhones.push(p);
       }
       let mobile = "";
       let tel = "";
-      // labeled phones first
-      const mobileLabeled = text.match(/(?:Mobile|手提|手機|手機號碼|Mobi(?:le)?)[:：\s\-]*([+\d][\d\s().-]{6,}\d)/i);
-      const telLabeled = text.match(/(?:Tel|電話|Phone|Direct)[:：\s\-]*([+\d][\d\s().-]{6,}\d)/i);
-      if (mobileLabeled) mobile = mobileLabeled[1].replace(/\D/g, "").slice(-8);
-      if (telLabeled) tel = telLabeled[1].replace(/\D/g, "").slice(-8);
+      const mobileLabeled = text.match(/(?:Mobile|手提|手機|手機號碼|M\b|Mob)[:：\s\-]*([+\d()OoIl|\s\-]{7,})/i);
+      const telLabeled = text.match(/(?:Tel(?:ephone)?|電話|Phone|Direct|T\b)[:：\s\-]*([+\d()OoIl|\s\-]{7,})/i);
+      if (mobileLabeled) mobile = normalizeHkPhone(mobileLabeled[1].replace(/[Oo]/g, "0").replace(/[Il|]/g, "1"));
+      if (telLabeled) tel = normalizeHkPhone(telLabeled[1].replace(/[Oo]/g, "0").replace(/[Il|]/g, "1"));
       for (const p of uniqPhones) {
-        const last8 = p.digits.slice(-8);
-        const isMobile = /^[456789]/.test(last8);
-        if (isMobile && !mobile) mobile = last8;
-        else if (!isMobile && !tel) tel = last8.length === 8 ? last8 : p.raw;
+        const isMobile = /^[456789]/.test(p.digits);
+        if (isMobile && !mobile) mobile = p.digits;
+        else if (!isMobile && !tel) tel = p.digits;
       }
-      if (!mobile && uniqPhones[0]) mobile = uniqPhones[0].digits.slice(-8);
-      if (!tel && uniqPhones[1]) tel = uniqPhones[1].digits.slice(-8);
+      // 若只分到一個號：4-9 開頭當手提，2-3 當電話
+      if (!mobile && !tel && uniqPhones[0]) {
+        if (/^[456789]/.test(uniqPhones[0].digits)) mobile = uniqPhones[0].digits;
+        else tel = uniqPhones[0].digits;
+      }
+      if (!mobile && uniqPhones.find((p) => /^[456789]/.test(p.digits))) {
+        mobile = uniqPhones.find((p) => /^[456789]/.test(p.digits)).digits;
+      }
+      if (!tel && uniqPhones.find((p) => /^[23]/.test(p.digits))) {
+        tel = uniqPhones.find((p) => /^[23]/.test(p.digits)).digits;
+      }
 
-      const companyLine = lines.find((l) => CARD_COMPANY_RE.test(l)) || "";
-      const addressLine = lines.find((l) => CARD_ADDRESS_RE.test(l) && !CARD_COMPANY_RE.test(l) && !/@/.test(l)) || "";
+      // 公司全名：合併相鄰中英公司行，取最完整
+      const companyIdxs = lines
+        .map((l, i) => (CARD_COMPANY_RE.test(l) ? i : -1))
+        .filter((i) => i >= 0);
+      let companyLine = "";
+      if (companyIdxs.length) {
+        // 揀最長、含 Limited/有限公司 優先
+        const scored = companyIdxs.map((i) => {
+          const l = lines[i];
+          let sc = l.length;
+          if (/有限公司|Limited|Ltd/i.test(l)) sc += 20;
+          if (/股份|集團|Holdings|Group/i.test(l)) sc += 8;
+          return { i, l, sc };
+        }).sort((a, b) => b.sc - a.sc);
+        const bestCo = scored[0];
+        const parts = [bestCo.l];
+        const prev = lines[bestCo.i - 1] || "";
+        const next = lines[bestCo.i + 1] || "";
+        const looksCompanyZh = (s) =>
+          CARD_COMPANY_RE.test(s)
+          || (/(公司|集團|企業|中心|銀行|醫院|學校|協會|商會)/.test(s) && s.length >= 4 && s.length <= 40);
+        // 中文公司名一行、英文另一行（避免把人名併入公司）
+        if (prev && looksCompanyZh(prev) && !CARD_META_RE.test(prev) && !/@/.test(prev) && !/^[\u4e00-\u9fff]{2,4}$/.test(prev)) {
+          parts.unshift(prev);
+        }
+        if (next && looksCompanyZh(next) && next !== bestCo.l) parts.push(next);
+        if (next && /^[A-Za-z0-9]/.test(next) && CARD_COMPANY_RE.test(next) && next !== bestCo.l) parts.push(next);
+        if (prev && /^[A-Za-z0-9]/.test(prev) && CARD_COMPANY_RE.test(prev) && prev !== bestCo.l) parts.unshift(prev);
+        companyLine = [...new Set(parts)].join(" ").replace(/\s+/g, " ").trim();
+      }
+
+      // 地址：合併連續地址行（HK 名片常拆幾行）
+      const addrIdxs = lines
+        .map((l, i) => (CARD_ADDRESS_RE.test(l) && !CARD_COMPANY_RE.test(l) && !/@/.test(l) ? i : -1))
+        .filter((i) => i >= 0);
+      let addressLine = "";
+      if (addrIdxs.length) {
+        const blocks = [];
+        let cur = [addrIdxs[0]];
+        for (let k = 1; k < addrIdxs.length; k++) {
+          if (addrIdxs[k] <= cur[cur.length - 1] + 2) cur.push(addrIdxs[k]);
+          else { blocks.push(cur); cur = [addrIdxs[k]]; }
+        }
+        blocks.push(cur);
+        const bestBlock = blocks.sort((a, b) => b.length - a.length || b.reduce((s, i) => s + lines[i].length, 0) - a.reduce((s, i) => s + lines[i].length, 0))[0];
+        const start = Math.max(0, bestBlock[0] - 1);
+        const end = Math.min(lines.length - 1, bestBlock[bestBlock.length - 1] + 1);
+        const chunk = [];
+        for (let i = start; i <= end; i++) {
+          const l = lines[i];
+          if (!l || /@/.test(l) || CARD_META_RE.test(l) || CARD_COMPANY_RE.test(l)) continue;
+          if (CARD_ADDRESS_RE.test(l) || /^\d+[A-Za-z\/\-]?$/.test(l) || /樓|室|座|Flat|Unit|Floor/i.test(l)) chunk.push(l);
+        }
+        addressLine = chunk.join(", ").replace(/\s+/g, " ").trim();
+        if (!addressLine) addressLine = lines[bestBlock[0]];
+      }
 
       // title: prefer lines that are mostly title, or split from name+title
       let titleLine = "";
@@ -4699,8 +4815,10 @@
         ? nameLine
         : (nameConfidence >= 36 ? nameLine : "");
 
-      const emails = [...text.matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)].map((x) => x[0]);
-      const companyCands = lines.filter((l) => CARD_COMPANY_RE.test(l));
+      const emails = emailMatches.length ? emailMatches : [...text.matchAll(/[A-Z0-9._%+\-]+[@＠][A-Z0-9.\-]+\.[A-Z]{2,}/gi)].map((x) => fixEmail(x[0]));
+      const companyCands = [];
+      if (companyLine) companyCands.push(companyLine);
+      lines.filter((l) => CARD_COMPANY_RE.test(l)).forEach((l) => companyCands.push(l));
       const titleCands = lines
         .map((l) => splitNameAndTitle(l))
         .filter((x) => x.title)
@@ -4720,8 +4838,10 @@
           nameCands.push(l);
         }
       });
-      const addressCands = lines.filter((l) => CARD_ADDRESS_RE.test(l));
-      const phoneVals = uniqPhones.map((p) => (p.digits.slice(-8).length === 8 ? p.digits.slice(-8) : p.raw));
+      const addressCands = [];
+      if (addressLine) addressCands.push(addressLine);
+      lines.filter((l) => CARD_ADDRESS_RE.test(l)).forEach((l) => addressCands.push(l));
+      const phoneVals = uniqPhones.map((p) => p.digits);
       if (mobile) phoneVals.unshift(mobile);
       if (tel) phoneVals.unshift(tel);
 
@@ -4877,6 +4997,60 @@
       });
     }
 
+    function mergeOcrPassResults(passes) {
+      const lineMap = new Map(); // key -> { text, y, conf, score }
+      const texts = [];
+      for (const pass of passes) {
+        if (!pass) continue;
+        texts.push(String(pass.text || "").trim());
+        for (const l of (pass.lines || [])) {
+          const text = String(l.text || "").trim();
+          if (!text || text.length < 2) continue;
+          const y = l.bbox?.y0 ?? 0;
+          const conf = Number(l.confidence) || 0;
+          const key = text.toLowerCase().replace(/\s+/g, " ");
+          const prev = lineMap.get(key);
+          const score = conf + text.length * 0.5 + (pass.weight || 0);
+          if (!prev || score > prev.score) {
+            lineMap.set(key, { text, y, conf, score });
+          }
+        }
+      }
+      const lines = [...lineMap.values()].sort((a, b) => a.y - b.y || b.score - a.score);
+      // 合併近距離重複／半截行
+      const merged = [];
+      for (const l of lines) {
+        const last = merged[merged.length - 1];
+        if (last && Math.abs(last.y - l.y) < 12) {
+          // 同一視覺行：保留較長／較高分
+          if (l.score > last.score || l.text.length > last.text.length + 2) {
+            merged[merged.length - 1] = l;
+          }
+          continue;
+        }
+        merged.push(l);
+      }
+      return {
+        text: texts.filter(Boolean).join("\n"),
+        lines: merged,
+      };
+    }
+
+    async function runOneOcrPass(dataUrl, lang, label, weight, status) {
+      const result = await Tesseract.recognize(dataUrl, lang, {
+        logger: (m) => {
+          if (status && m.status === "recognizing text" && m.progress != null) {
+            status.textContent = `${label} ${Math.round(m.progress * 100)}%`;
+          }
+        },
+      });
+      return {
+        text: result?.data?.text || "",
+        lines: result?.data?.lines || [],
+        weight,
+      };
+    }
+
     async function runPortalCardOcr(dataUrl) {
       const status = document.getElementById("portalCardStatus");
       if (!window.Tesseract) {
@@ -4884,27 +5058,37 @@
         document.getElementById("portalCardFields")?.classList.remove("hidden");
         return;
       }
-      if (status) status.textContent = "正在讀取名片文字…";
+      if (status) status.textContent = "正在優化讀取名片（多輪辨識）…";
       try {
-        const result = await Tesseract.recognize(dataUrl, "chi_tra+eng", {
-          logger: (m) => {
-            if (status && m.status === "recognizing text" && m.progress != null) {
-              status.textContent = `正在讀取… ${Math.round(m.progress * 100)}%`;
-            }
-          },
-        });
-        const ocrLines = (result?.data?.lines || [])
-          .filter((l) => String(l.text || "").trim())
-          .sort((a, b) => (a.bbox?.y0 ?? 0) - (b.bbox?.y0 ?? 0));
-        const parsed = parseBusinessCardText(result?.data?.text || "", ocrLines);
-        // 若欄位已有人手輸入，保留；其餘用建議值，並提供 OCR 選擇
+        // 多輪：英文（電郵／電話準）、中文（公司／地址／人名）、混合
+        const passes = [];
+        try {
+          passes.push(await runOneOcrPass(dataUrl, "eng", "讀取英文…", 8, status));
+        } catch (e) { console.warn("eng ocr", e); }
+        try {
+          passes.push(await runOneOcrPass(dataUrl, "chi_tra", "讀取中文…", 10, status));
+        } catch (e) { console.warn("chi ocr", e); }
+        try {
+          passes.push(await runOneOcrPass(dataUrl, "chi_tra+eng", "混合讀取…", 6, status));
+        } catch (e) { console.warn("mix ocr", e); }
+
+        if (!passes.length) throw new Error("全部 OCR 輪次失敗");
+        const merged = mergeOcrPassResults(passes);
+        const parsed = parseBusinessCardText(merged.text, merged.lines);
         fillPortalCardFields(parsed, { keepExisting: true });
         bindPortalCardPickers();
+
+        const hits = [
+          parsed.company && "公司",
+          (parsed.name || parsed.nameSuggestion) && "人名",
+          (parsed.tel || parsed.mobile) && "電話",
+          parsed.email && "電郵",
+          parsed.address && "地址",
+        ].filter(Boolean);
         if (status) {
-          const n = (parsed.lines || []).length;
-          status.textContent = parsed.name
-            ? `已建議聯絡人「${parsed.name}」· 共 ${n} 行 OCR，可用「OCR 選擇」改正確值`
-            : `已讀取 ${n} 行文字 · 請用各欄「OCR 選擇」或上方 OCR 行揀聯絡人／資料`;
+          status.textContent = hits.length
+            ? `已讀取：${hits.join("、")}（可再用 OCR 選擇微調）· ${merged.lines.length} 行`
+            : `已讀取 ${merged.lines.length} 行，請用 OCR 選擇填入公司／人名／電話／電郵／地址`;
         }
       } catch (err) {
         console.warn(err);
@@ -4919,11 +5103,10 @@
       portalCardBusy = true;
       const status = document.getElementById("portalCardStatus");
       try {
-        if (status) status.textContent = "壓縮圖片中…";
-        // 儲存用較細圖；OCR 用對比加強版
+        if (status) status.textContent = "處理名片影像中…";
         const [stored, ocrImg] = await Promise.all([
           compressImageFile(file, 1280, 0.72),
-          compressImageFile(file, 1600, 0.92, { forOcr: true }),
+          compressImageFile(file, 2000, 0.95, { forOcr: true }),
         ]);
         portalCardImageData = stored;
         const preview = document.getElementById("portalCardPreview");
