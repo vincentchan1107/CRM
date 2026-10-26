@@ -12,6 +12,24 @@ alter table public.crm_cases
 alter table public.crm_cases
   add column if not exists company_sales text not null default '';
 
+-- 公司地址（Customer Address）
+alter table public.crm_cases
+  add column if not exists customer_address text not null default '';
+
+-- 客戶名片圖片（Portal 影相／上載）
+create table if not exists public.crm_case_cards (
+  id text primary key,
+  case_id text not null references public.crm_cases(id) on delete cascade,
+  contact_id text references public.crm_contacts(id) on delete set null,
+  image_data text not null default '',
+  ocr_text text not null default '',
+  created_at timestamptz not null default now()
+);
+create index if not exists crm_case_cards_case_idx on public.crm_case_cards(case_id);
+alter table public.crm_case_cards enable row level security;
+drop policy if exists crm_case_cards_all on public.crm_case_cards;
+create policy crm_case_cards_all on public.crm_case_cards for all to anon, authenticated using (true) with check (true);
+
 -- 允許成功簽單 close_reason = won
 alter table public.crm_cases drop constraint if exists crm_cases_close_reason_check;
 alter table public.crm_cases
