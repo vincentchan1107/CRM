@@ -2109,6 +2109,87 @@
     #dashChartSalesTarget .table-wrap table { width: 100%; min-width: 560px; }
     #dashTeamSales { width: 100%; box-sizing: border-box; }
     #dashTeamSales .sales-line-chart { margin-top: 4px; }
+    #dashTargetClosing { width: 100%; box-sizing: border-box; }
+    .tc-sales-checks {
+      display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
+      margin: 8px 0 0; padding: 10px 12px;
+      background: #f7f4fc; border: 1px solid var(--line); border-radius: 14px;
+    }
+    .tc-sales-checks label {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: .78rem; font-weight: 750; color: var(--ink-soft); cursor: pointer;
+      user-select: none;
+    }
+    .tc-sales-checks label.all { color: var(--ink); font-weight: 800; }
+    .tc-weeks {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+      width: 100%;
+    }
+    @media (max-width: 900px) {
+      .tc-weeks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .tc-weeks { grid-template-columns: 1fr; }
+    }
+    .tc-week {
+      background: #faf9fd;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .tc-week-head {
+      padding: 10px 12px 8px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+    .tc-week-head strong { display: block; font-size: .88rem; font-weight: 800; }
+    .tc-week-head .muted { font-size: .68rem; margin-top: 2px; }
+    .tc-week-body {
+      padding: 8px;
+      display: grid;
+      gap: 6px;
+      flex: 1;
+      align-content: start;
+    }
+    .tc-case {
+      text-align: left;
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .tc-case:hover {
+      border-color: #c4b5fd;
+      box-shadow: 0 4px 12px rgba(107,70,254,.08);
+    }
+    .tc-case .tc-name {
+      font-size: .78rem; font-weight: 800; color: var(--ink);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .tc-case .tc-meta {
+      display: flex; justify-content: space-between; gap: 6px; align-items: baseline;
+      margin-top: 4px; font-size: .68rem; font-weight: 700;
+    }
+    .tc-case .tc-sales { color: var(--ink-soft); }
+    .tc-case .tc-amt { color: var(--accent); white-space: nowrap; }
+    .tc-empty {
+      font-size: .72rem; font-weight: 650; color: var(--muted);
+      padding: 12px 6px; text-align: center;
+    }
+    .tc-list-wrap { margin-top: 14px; width: 100%; overflow-x: auto; }
+    .tc-list-wrap table { width: 100%; min-width: 720px; }
+    .tc-list-wrap td.comment {
+      max-width: 280px; font-size: .72rem; color: var(--ink-soft); font-weight: 650;
+    }
     #dashPartnerPerf { width: 100%; box-sizing: border-box; }
     .partner-perf-summary {
       display: grid;
@@ -2368,6 +2449,7 @@
         <div class="panel" id="dashPartnerPerf"></div>
         <div class="panel" id="dashChartSalesTarget"></div>
         <div class="panel" id="dashTeamSales"></div>
+        <div class="panel" id="dashTargetClosing"></div>
         <div class="dash-charts" id="dashCharts">
           <div class="panel chart-panel" id="dashChartStage"></div>
           <div class="panel chart-panel" id="dashChartFunnel"></div>
@@ -3590,6 +3672,14 @@
     let partnerPerfFrom = localStorage.getItem("crm_partner_perf_from") || "";
     let partnerPerfTo = localStorage.getItem("crm_partner_perf_to") || "";
     let teamSalesPeriod = localStorage.getItem("crm_team_sales_period") || "month";
+    let targetClosingMonthMode = localStorage.getItem("crm_tc_month_mode") || "this";
+    let targetClosingSalesSel = (() => {
+      try {
+        const raw = JSON.parse(localStorage.getItem("crm_tc_sales_sel") || "null");
+        if (Array.isArray(raw) && raw.length) return raw.filter((n) => COMPANY_SALES.includes(n) || n === "__unset");
+      } catch (_) {}
+      return [...COMPANY_SALES, "__unset"];
+    })();
 
     function parseLocalDate(raw) {
       if (!raw) return null;
@@ -3777,6 +3867,7 @@
 
       renderDashPartnerPerf(filtered);
       renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt, filtered });
+      renderDashTargetClosing(filtered);
     }
 
     function caseCreatedDate(c) {
@@ -4402,6 +4493,213 @@
           teamSalesPeriod = b.dataset.teamSalesPeriod || "month";
           localStorage.setItem("crm_team_sales_period", teamSalesPeriod);
           renderDashboard();
+        };
+      });
+    }
+
+    function getTargetClosingMonthRange(mode = targetClosingMonthMode) {
+      const now = new Date();
+      const offset = mode === "next" ? 1 : 0;
+      const from = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+      const to = endOfDay(new Date(now.getFullYear(), now.getMonth() + offset + 1, 0));
+      const title = `${from.getFullYear()}年${from.getMonth() + 1}月${mode === "next" ? "（下月）" : "（本月）"}`;
+      return { from, to, title, mode, year: from.getFullYear(), month: from.getMonth() + 1 };
+    }
+
+    function weekOfMonthFromDate(d) {
+      if (!d) return 4;
+      const day = d.getDate();
+      if (day <= 7) return 1;
+      if (day <= 14) return 2;
+      if (day <= 21) return 3;
+      return 4;
+    }
+
+    function weekDayRangeLabel(week, lastDay) {
+      if (week === 1) return "1–7 日";
+      if (week === 2) return "8–14 日";
+      if (week === 3) return "15–21 日";
+      return `22–${lastDay} 日`;
+    }
+
+    function caseTargetClosingDateOnly(c) {
+      return parseLocalDate(c.targetClosingDate || "") || caseForecastDate(c);
+    }
+
+    function lastCaseComment(c) {
+      const logs = logsByCase[c.id] || [];
+      for (const l of logs) {
+        if (l.log_type === "field_change") continue;
+        const text = String(l.content || "").trim();
+        if (!text) continue;
+        const typeLabel = (LOG_TYPES.find((t) => t.id === l.log_type) || { label: l.log_type }).label;
+        const when = l.happened_at || l.created_at;
+        return {
+          text,
+          typeLabel,
+          when: when ? new Date(when).toLocaleString("zh-HK") : "",
+        };
+      }
+      const meet = String(c.meetingNotes || "").trim();
+      if (meet) return { text: meet, typeLabel: "會後 Comment", when: "" };
+      const notes = String(c.notes || "").trim();
+      if (notes) return { text: notes, typeLabel: "備註", when: "" };
+      return { text: "", typeLabel: "", when: "" };
+    }
+
+    function renderDashTargetClosing(filtered) {
+      const root = document.getElementById("dashTargetClosing");
+      if (!root) return;
+      const range = getTargetClosingMonthRange();
+      const lastDay = range.to.getDate();
+      const selected = new Set(targetClosingSalesSel);
+      const pool = (filtered || cases).filter((c) => {
+        if (c.stage === "closed" && c.closeReason !== "won") return false;
+        const d = caseTargetClosingDateOnly(c);
+        if (!d || d < range.from || d > range.to) return false;
+        const sales = normalizeCompanySales(c.companySales) || "__unset";
+        return selected.has(sales);
+      });
+
+      const weeks = [1, 2, 3, 4].map((w) => {
+        const list = pool
+          .filter((c) => weekOfMonthFromDate(caseTargetClosingDateOnly(c)) === w)
+          .sort((a, b) => {
+            const da = caseTargetClosingDateOnly(a)?.getTime() || 0;
+            const db = caseTargetClosingDateOnly(b)?.getTime() || 0;
+            if (da !== db) return da - db;
+            return (normalizeCompanySales(a.companySales) || "").localeCompare(normalizeCompanySales(b.companySales) || "");
+          });
+        const amount = list.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+        return { week: w, list, amount, label: weekDayRangeLabel(w, lastDay) };
+      });
+
+      const totalAmt = pool.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+      const totalBudget = pool.reduce((s, c) => s + (Number(c.budget) || 0), 0);
+      const allSelected = COMPANY_SALES.every((n) => selected.has(n)) && selected.has("__unset");
+
+      const listRows = [...pool].sort((a, b) => {
+        const da = caseTargetClosingDateOnly(a)?.getTime() || 0;
+        const db = caseTargetClosingDateOnly(b)?.getTime() || 0;
+        return da - db;
+      });
+
+      root.innerHTML = chartHeadHtml(
+        "Target Closing（本月／下月）",
+        "按 Week 睇各銷售員預計 Closing 客戶同金額"
+      ) + `
+        <div class="dash-period" style="margin:8px 0 0;padding:10px 12px">
+          <div class="seg" id="tcMonthSeg">
+            <button type="button" data-tc-month="this">本月</button>
+            <button type="button" data-tc-month="next">下月</button>
+          </div>
+        </div>
+        <div class="tc-sales-checks" id="tcSalesChecks">
+          <label class="all"><input type="checkbox" data-tc-sales="__all" ${allSelected ? "checked" : ""}/> 全部 Sales</label>
+          ${COMPANY_SALES.map((n) => `
+            <label><input type="checkbox" data-tc-sales="${escapeAttr(n)}" ${selected.has(n) ? "checked" : ""}/> ${escapeHtml(n)}</label>
+          `).join("")}
+          <label><input type="checkbox" data-tc-sales="__unset" ${selected.has("__unset") ? "checked" : ""}/> 未指派</label>
+        </div>
+        <p class="muted" style="margin:8px 0 0;font-size:.75rem">${escapeHtml(range.title)} · Target Closing Date · ${pool.length} 宗</p>
+        <div class="money-compare" style="margin-top:10px">
+          <div class="mc"><div class="lbl">Target Closing 宗數</div><div class="val">${pool.length}</div><div class="muted" style="font-size:.68rem">${escapeHtml(range.title)}</div></div>
+          <div class="mc"><div class="lbl">Contract Amount</div><div class="val">${money(totalAmt)}</div><div class="muted" style="font-size:.68rem">期間合計</div></div>
+          <div class="mc"><div class="lbl">Client Budget</div><div class="val">${money(totalBudget)}</div><div class="muted" style="font-size:.68rem">期間合計</div></div>
+        </div>
+        <div class="tc-weeks">
+          ${weeks.map((w) => `
+            <div class="tc-week">
+              <div class="tc-week-head">
+                <strong>Week ${w.week}</strong>
+                <div class="muted">${escapeHtml(w.label)} · ${w.list.length} 宗 · ${money(w.amount)}</div>
+              </div>
+              <div class="tc-week-body">
+                ${w.list.length ? w.list.map((c) => {
+                  const sales = normalizeCompanySales(c.companySales) || "未指派";
+                  return `<button type="button" class="tc-case" data-case-id="${escapeAttr(c.id)}" title="${escapeAttr(c.customerName)}">
+                    <div class="tc-name">${escapeHtml(c.customerName || "—")}</div>
+                    <div class="tc-meta">
+                      <span class="tc-sales">${escapeHtml(sales)}</span>
+                      <span class="tc-amt">${money(c.amount)}</span>
+                    </div>
+                  </button>`;
+                }).join("") : `<div class="tc-empty">呢週暫無 Target Closing</div>`}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+        <div class="page-head" style="margin:16px 0 8px">
+          <h3 style="font-size:1rem;margin:0">Target Closing 明細</h3>
+          <p class="muted page-head-sub">Client Budget · 最近 Case Comment</p>
+        </div>
+        <div class="tc-list-wrap">
+          ${listRows.length ? `<table>
+            <thead>
+              <tr>
+                <th>客戶</th><th>Sales</th><th>Target Closing</th><th>Week</th>
+                <th>Contract Amount</th><th>Client Budget</th><th>Last Comment</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${listRows.map((c) => {
+                const d = caseTargetClosingDateOnly(c);
+                const w = weekOfMonthFromDate(d);
+                const sales = normalizeCompanySales(c.companySales) || "未指派";
+                const comment = lastCaseComment(c);
+                const commentShow = comment.text
+                  ? `${comment.typeLabel ? comment.typeLabel + "： " : ""}${comment.text}`
+                  : "—";
+                return `<tr>
+                  <td><strong>${escapeHtml(c.customerName || "—")}</strong></td>
+                  <td>${escapeHtml(sales)}</td>
+                  <td>${d ? formatLocalDate(d) : "—"}</td>
+                  <td>W${w}</td>
+                  <td><strong>${money(c.amount)}</strong></td>
+                  <td>${money(c.budget)}</td>
+                  <td class="comment" title="${escapeAttr(commentShow)}">${escapeHtml(String(commentShow).slice(0, 120))}</td>
+                  <td><button type="button" class="btn btn-ghost btn-sm" data-case-id="${escapeAttr(c.id)}">詳情</button></td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>` : `<div class="breakdown-empty">所選期間／銷售員暫無 Target Closing 案件</div>`}
+        </div>
+      `;
+
+      root.querySelectorAll("#tcMonthSeg button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.tcMonth === targetClosingMonthMode);
+        b.onclick = () => {
+          targetClosingMonthMode = b.dataset.tcMonth || "this";
+          localStorage.setItem("crm_tc_month_mode", targetClosingMonthMode);
+          renderDashboard();
+        };
+      });
+
+      const persistSalesSel = () => {
+        localStorage.setItem("crm_tc_sales_sel", JSON.stringify(targetClosingSalesSel));
+        renderDashboard();
+      };
+
+      root.querySelectorAll("#tcSalesChecks input[data-tc-sales]").forEach((input) => {
+        input.onchange = () => {
+          const key = input.dataset.tcSales;
+          if (key === "__all") {
+            targetClosingSalesSel = input.checked ? [...COMPANY_SALES, "__unset"] : [];
+            persistSalesSel();
+            return;
+          }
+          const set = new Set(targetClosingSalesSel);
+          if (input.checked) set.add(key);
+          else set.delete(key);
+          targetClosingSalesSel = [...set];
+          persistSalesSel();
+        };
+      });
+
+      root.querySelectorAll("[data-case-id]").forEach((el) => {
+        el.onclick = (e) => {
+          e.stopPropagation();
+          openDrawer(el.dataset.caseId);
         };
       });
     }
