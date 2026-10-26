@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
       --ink: #1a1630;
@@ -2294,7 +2295,8 @@
       border: 1px solid var(--line);
       box-shadow: var(--shadow);
     }
-    .dash-period .seg {
+    .dash-period .seg,
+    .seg {
       display: flex;
       flex-wrap: wrap;
       gap: 4px;
@@ -2302,7 +2304,8 @@
       padding: 4px;
       border-radius: 999px;
     }
-    .dash-period .seg button {
+    .dash-period .seg button,
+    .seg button {
       border: 0;
       background: transparent;
       color: var(--muted);
@@ -2312,10 +2315,83 @@
       font-weight: 700;
       cursor: pointer;
     }
-    .dash-period .seg button.active {
+    .dash-period .seg button.active,
+    .seg button.active {
       background: var(--accent);
       color: #fff;
       box-shadow: 0 8px 16px rgba(107,70,254,.28);
+    }
+    .portal-appt {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #faf9fd;
+    }
+    .portal-appt .appt-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .portal-appt .appt-time {
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--teal-deep);
+      white-space: nowrap;
+    }
+    .portal-appt textarea {
+      width: 100%;
+      min-height: 72px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+      resize: vertical;
+      background: #fff;
+    }
+    .portal-appt .appt-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .card-thumbs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .card-thumbs a,
+    .card-thumbs img {
+      display: block;
+      width: 56px;
+      height: 36px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: #f3f0fa;
+    }
+    .drawer-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 8px;
+      margin: 8px 0 12px;
+    }
+    .drawer-card-grid a {
+      display: block;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #f7f4fc;
+    }
+    .drawer-card-grid img {
+      width: 100%;
+      height: 88px;
+      object-fit: contain;
+      display: block;
+      background: #f7f4fc;
     }
     .dash-period, .stage-filter, .mgmt-tabs {
       background: rgba(255,255,255,.92);
@@ -2432,37 +2508,100 @@
 
     <!-- PORTAL -->
     <section id="view-portal" class="hidden">
-      <div class="panel" style="max-width:520px;margin:0 auto 12px">
-        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
-          <div>
-            <div class="eyebrow">Mobile Portal</div>
-            <div class="page-head" style="margin-top:4px">
-              <h1 style="font-size:1.6rem">語音建案</h1>
+      <div class="panel portal-shell" style="max-width:560px;margin:0 auto 12px">
+        <div class="eyebrow">Mobile Portal</div>
+        <div class="page-head" style="margin-top:4px">
+          <h1 style="font-size:1.45rem">Sales 外勤 Portal</h1>
+          <p class="muted page-head-sub">今日 Appointment · 會議記錄 · 名片掃描</p>
+        </div>
+        <label class="field" style="margin-top:10px">
+          <span>本公司 Sales</span>
+          <select id="portalSalesSelect"></select>
+        </label>
+        <div class="seg" id="portalTabSeg" style="margin-top:10px">
+          <button type="button" data-portal-tab="today" class="active">今日 Appointment</button>
+          <button type="button" data-portal-tab="card">名片掃描</button>
+          <button type="button" data-portal-tab="create">語音建案</button>
+        </div>
+      </div>
+
+      <div id="portalTodayPanel" class="panel portal-shell" style="max-width:560px;margin:0 auto 12px">
+        <div class="page-head" style="margin-bottom:8px">
+          <h2 style="font-size:1.1rem;margin:0">今日 Appointment</h2>
+          <p class="muted page-head-sub" id="portalTodaySub">載入中…</p>
+        </div>
+        <div id="portalTodayList"></div>
+      </div>
+
+      <div id="portalCardPanel" class="panel portal-shell hidden" style="max-width:560px;margin:0 auto 12px">
+        <div class="page-head" style="margin-bottom:8px">
+          <h2 style="font-size:1.1rem;margin:0">影相／上載客戶卡片</h2>
+          <p class="muted page-head-sub">OCR 讀取後可更新客戶名、Title、電話、手提、電郵、地址</p>
+        </div>
+        <label class="field"><span>關聯案件</span>
+          <select id="portalCardCase"></select>
+        </label>
+        <div class="row2" style="margin-top:8px">
+          <label class="field"><span>影相</span>
+            <input id="portalCardCamera" type="file" accept="image/*" capture="environment" />
+          </label>
+          <label class="field"><span>上載相片</span>
+            <input id="portalCardFile" type="file" accept="image/*" />
+          </label>
+        </div>
+        <div id="portalCardPreviewWrap" class="hidden" style="margin-top:10px">
+          <img id="portalCardPreview" alt="名片預覽" style="width:100%;max-height:220px;object-fit:contain;border-radius:12px;border:1px solid var(--line);background:#f7f4fc" />
+        </div>
+        <p class="muted" id="portalCardStatus" style="margin:8px 0;font-size:.75rem">選擇或拍攝名片後會自動讀取</p>
+        <div id="portalCardFields" class="hidden">
+          <div class="row2">
+            <label class="field"><span>客戶／公司名</span><input id="pc_company" placeholder="公司名稱" /></label>
+            <label class="field"><span>聯絡人</span><input id="pc_name" placeholder="姓名" /></label>
+          </div>
+          <div class="row2">
+            <label class="field"><span>Title</span><input id="pc_title" placeholder="職銜" /></label>
+            <label class="field"><span>電郵</span><input id="pc_email" type="email" placeholder="email" /></label>
+          </div>
+          <div class="row2">
+            <label class="field"><span>電話</span><input id="pc_tel" placeholder="Tel" /></label>
+            <label class="field"><span>手提</span><input id="pc_mobile" placeholder="Mobile" /></label>
+          </div>
+          <label class="field"><span>地址</span><input id="pc_address" placeholder="公司地址" /></label>
+          <label class="field"><span>OCR 原文（可改）</span><textarea id="pc_ocr" rows="3"></textarea></label>
+          <button type="button" class="btn btn-teal" style="width:100%;margin-top:8px" id="btnSaveCard">儲存名片並更新客戶資料</button>
+        </div>
+      </div>
+
+      <div id="portalCreatePanel" class="hidden">
+        <div class="panel" style="max-width:560px;margin:0 auto 12px">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+            <div>
+              <div class="eyebrow">語音建案</div>
               <p class="muted page-head-sub" id="portalStatus">按麥克風講出案件，或貼文字後解析</p>
             </div>
+            <button class="mic" id="micBtn" title="語音輸入">🎤</button>
           </div>
-          <button class="mic" id="micBtn" title="語音輸入">🎤</button>
+          <label class="field" style="margin-top:12px">
+            <span>語音／文字輸入</span>
+            <textarea id="transcript" rows="3" placeholder="例如：客戶係新里程製造，來自 Partner A，用緊 ERP 同 SCM，需求係整合庫存，數量三個模組，budget 大約四十五萬"></textarea>
+          </label>
+          <button class="btn btn-teal btn-sm" id="btnParse">解析並填入表格</button>
+          <div id="parsePreview" class="hidden" style="margin-top:12px;padding:12px;border-radius:14px;background:#efeefe;border:1px solid #d8d4fb;font-size:.82rem"></div>
         </div>
-        <label class="field" style="margin-top:12px">
-          <span>語音／文字輸入</span>
-          <textarea id="transcript" rows="3" placeholder="例如：客戶係新里程製造，來自 Partner A，用緊 ERP 同 SCM，需求係整合庫存，數量三個模組，budget 大約四十五萬"></textarea>
-        </label>
-        <button class="btn btn-teal btn-sm" id="btnParse">解析並填入表格</button>
-        <div id="parsePreview" class="hidden" style="margin-top:12px;padding:12px;border-radius:14px;background:#efeefe;border:1px solid #d8d4fb;font-size:.82rem"></div>
+        <form class="panel" id="caseForm" style="max-width:560px;margin:0 auto">
+          <label class="field"><span>客戶名稱</span><input name="customerName" required placeholder="公司／客戶名稱" /></label>
+          <label class="field"><span>來自邊個 Partner</span>
+            <select name="partner" id="partnerSelect"></select>
+          </label>
+          <div class="field"><span>客見有用咩系統</span><div class="tags" id="systemTags"></div></div>
+          <label class="field"><span>需求</span><textarea name="requirements" rows="3" placeholder="客戶主要需求"></textarea></label>
+          <div class="row2">
+            <label class="field"><span>數量</span><input name="quantity" placeholder="例如 20 用戶" /></label>
+            <label class="field"><span>Budget (HKD)</span><input name="budget" type="number" placeholder="0" /></label>
+          </div>
+          <button class="btn btn-ink" style="width:100%" type="submit">建立案件（首次會見）</button>
+        </form>
       </div>
-      <form class="panel" id="caseForm" style="max-width:520px;margin:0 auto">
-        <label class="field"><span>客戶名稱</span><input name="customerName" required placeholder="公司／客戶名稱" /></label>
-        <label class="field"><span>來自邊個 Partner</span>
-          <select name="partner" id="partnerSelect"></select>
-        </label>
-        <div class="field"><span>客見有用咩系統</span><div class="tags" id="systemTags"></div></div>
-        <label class="field"><span>需求</span><textarea name="requirements" rows="3" placeholder="客戶主要需求"></textarea></label>
-        <div class="row2">
-          <label class="field"><span>數量</span><input name="quantity" placeholder="例如 20 用戶" /></label>
-          <label class="field"><span>Budget (HKD)</span><input name="budget" type="number" placeholder="0" /></label>
-        </div>
-        <button class="btn btn-ink" style="width:100%" type="submit">建立案件（首次會見）</button>
-      </form>
     </section>
 
     <!-- DASHBOARD (default home) -->
@@ -2587,7 +2726,7 @@
       </div>
       <div id="mgmtAlterBanner" class="setup-box hidden" style="margin-top:12px">
         <strong>建議執行欄位升級 SQL</strong>
-        <p class="muted" style="margin:8px 0">為啟用「下次跟進日期」、Team Leader、本公司銷售員、公司地址欄位，請在 Supabase SQL Editor Run：<code>supabase/mgmt_alter.sql</code></p>
+        <p class="muted" style="margin:8px 0">為啟用「下次跟進日期」、Team Leader、本公司銷售員、公司地址、客戶名片圖片表，請在 Supabase SQL Editor Run：<code>supabase/mgmt_alter.sql</code></p>
         <p class="muted" style="margin:0 0 8px">Raw：<a href="https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql" target="_blank" rel="noopener">mgmt_alter.sql</a></p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-teal btn-sm" id="btnCopyMgmtSql">複製升級 SQL</button>
@@ -2607,7 +2746,7 @@
         <div id="customerMergeBox" class="hidden" style="margin-bottom:12px"></div>
         <div class="table-wrap"><table>
           <thead><tr>
-            <th>客戶公司</th><th>VISIT 次數</th><th>上次會議</th><th>最後聯絡渠道</th><th>下次跟進</th><th>狀態</th><th>Sales／Partner</th><th>操作</th>
+            <th>客戶公司</th><th>聯絡人／手提</th><th>名片</th><th>VISIT 次數</th><th>上次會議</th><th>最後聯絡渠道</th><th>下次跟進</th><th>狀態</th><th>Sales／Partner</th><th>操作</th>
           </tr></thead>
           <tbody id="customersBody"></tbody>
         </table></div>
@@ -2807,11 +2946,18 @@
     let cases = [];
     let contactsByCase = {};
     let logsByCase = {};
+    let cardsByCase = {};
     let selectedSystems = new Set();
     let dragId = null;
     let dbReady = false;
     let mgmtColsReady = false;
     let addressColReady = false;
+    let cardsTableReady = false;
+    let portalSalesSelected = localStorage.getItem("crm_portal_sales") || COMPANY_SALES[0];
+    let portalTab = localStorage.getItem("crm_portal_tab") || "today";
+    let portalCardImageData = "";
+    let portalCardBusy = false;
+    let portalBound = false;
     let mgmtTab = localStorage.getItem("crm_mgmt_tab") || "customers";
     if (!["customers", "partners", "sales"].includes(mgmtTab)) mgmtTab = "customers";
     let agendaPeriod = localStorage.getItem("crm_agenda_period") || "today";
@@ -3260,7 +3406,7 @@
       if (name === "dashboard") renderDashboard();
       if (name === "board") renderBoard();
       if (name === "cases") renderCasesTable();
-      if (name === "portal") initPortalForm();
+      if (name === "portal") initPortal();
       if (name === "agenda") renderAgenda();
       if (name === "mgmt") {
         document.querySelectorAll(".mgmt-panel").forEach((p) => p.classList.toggle("active", p.id === `mgmt-${mgmtTab}`));
@@ -3278,9 +3424,11 @@
       if (dbReady) {
         const probe = await db.from("crm_cases").select("next_follow_up_at,team_leader,company_sales").limit(1);
         mgmtColsReady = !probe.error;
-        document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady);
         const addrProbe = await db.from("crm_cases").select("customer_address").limit(1);
         addressColReady = !addrProbe.error;
+        const cardsProbe = await db.from("crm_case_cards").select("id").limit(1);
+        cardsTableReady = !cardsProbe.error;
+        document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady && addressColReady && cardsTableReady);
       }
       if (error || contactsProbe.error) {
         console.warn(error || contactsProbe.error);
@@ -3303,6 +3451,7 @@
         cases = [];
         contactsByCase = {};
         logsByCase = {};
+        cardsByCase = {};
         casesLoading = false;
         return;
       }
@@ -3314,10 +3463,15 @@
         return;
       }
       cases = (data || []).map(fromRow);
-      const [{ data: contacts }, { data: logs }] = await Promise.all([
+      const loads = [
         db.from("crm_contacts").select("*").order("name"),
         db.from("crm_activity_logs").select("*").order("created_at", { ascending: false }),
-      ]);
+      ];
+      if (cardsTableReady) loads.push(db.from("crm_case_cards").select("*").order("created_at", { ascending: false }));
+      const results = await Promise.all(loads);
+      const contacts = results[0].data;
+      const logs = results[1].data;
+      const cards = cardsTableReady ? (results[2]?.data || []) : [];
       contactsByCase = {};
       (contacts || []).forEach((c) => {
         (contactsByCase[c.case_id] ||= []).push(c);
@@ -3325,6 +3479,10 @@
       logsByCase = {};
       (logs || []).forEach((l) => {
         (logsByCase[l.case_id] ||= []).push(l);
+      });
+      cardsByCase = {};
+      (cards || []).forEach((card) => {
+        (cardsByCase[card.case_id] ||= []).push(card);
       });
       casesLoading = false;
       await assignUnassignedCasesToVincent();
@@ -3709,8 +3867,9 @@
 
     function initPortalForm() {
       const sel = document.getElementById("partnerSelect");
-      sel.innerHTML = PARTNERS.map((p) => `<option value="${p}">${p}</option>`).join("");
+      if (sel) sel.innerHTML = PARTNERS.map((p) => `<option value="${p}">${p}</option>`).join("");
       const tags = document.getElementById("systemTags");
+      if (!tags) return;
       tags.innerHTML = SYSTEMS.map((s) => `<button type="button" class="tag ${selectedSystems.has(s) ? "on" : ""}" data-sys="${s}">${s}</button>`).join("");
       tags.querySelectorAll(".tag").forEach((t) => {
         t.onclick = () => {
@@ -3719,6 +3878,411 @@
           t.classList.toggle("on");
         };
       });
+    }
+
+    function setPortalTab(tab) {
+      portalTab = ["today", "card", "create"].includes(tab) ? tab : "today";
+      localStorage.setItem("crm_portal_tab", portalTab);
+      document.querySelectorAll("#portalTabSeg [data-portal-tab]").forEach((b) => {
+        b.classList.toggle("active", b.dataset.portalTab === portalTab);
+      });
+      document.getElementById("portalTodayPanel")?.classList.toggle("hidden", portalTab !== "today");
+      document.getElementById("portalCardPanel")?.classList.toggle("hidden", portalTab !== "card");
+      document.getElementById("portalCreatePanel")?.classList.toggle("hidden", portalTab !== "create");
+      if (portalTab === "today") renderPortalToday();
+      if (portalTab === "card") fillPortalCardCaseSelect();
+    }
+
+    function sameLocalDay(a, b) {
+      return a.getFullYear() === b.getFullYear()
+        && a.getMonth() === b.getMonth()
+        && a.getDate() === b.getDate();
+    }
+
+    function portalTodayAppointments() {
+      const sales = normalizeCompanySales(portalSalesSelected) || COMPANY_SALES[0];
+      const now = new Date();
+      return cases
+        .filter((c) => {
+          if ((normalizeCompanySales(c.companySales) || "Vincent") !== sales) return false;
+          if (!c.appointmentAt) return false;
+          const d = new Date(c.appointmentAt);
+          return !Number.isNaN(d.getTime()) && sameLocalDay(d, now);
+        })
+        .sort((a, b) => new Date(a.appointmentAt) - new Date(b.appointmentAt));
+    }
+
+    function renderPortalToday() {
+      const list = document.getElementById("portalTodayList");
+      const sub = document.getElementById("portalTodaySub");
+      if (!list) return;
+      const sales = normalizeCompanySales(portalSalesSelected) || COMPANY_SALES[0];
+      const items = portalTodayAppointments();
+      const todayLabel = formatLocalDate(new Date());
+      if (sub) sub.textContent = `${sales} · ${todayLabel} · ${items.length} 個約見`;
+      if (!items.length) {
+        list.innerHTML = `<div class="empty-state" style="padding:24px 12px">今日未有 ${escapeHtml(sales)} 的 Appointment<br><span class="muted" style="font-size:.75rem">可改選 Sales，或到名片掃描／語音建案</span></div>`;
+        return;
+      }
+      list.innerHTML = items.map((c) => {
+        const t = new Date(c.appointmentAt);
+        const timeStr = t.toLocaleTimeString("zh-HK", { hour: "2-digit", minute: "2-digit" });
+        const contacts = (contactsByCase[c.id] || []).slice(0, 2);
+        const contactLine = contacts.map((p) => {
+          const bits = [p.name, p.mobile || p.tel].filter(Boolean);
+          return bits.join(" · ");
+        }).join(" ｜ ");
+        return `<article class="portal-appt" data-case-id="${escapeAttr(c.id)}">
+          <div class="appt-head">
+            <div>
+              <strong>${escapeHtml(companyKey(c))}</strong>
+              <div class="muted" style="font-size:.72rem;margin-top:2px">${escapeHtml(c.partner || "")}${c.stage ? " · " + escapeHtml(stageMeta(c.stage).short || c.stage) : ""}</div>
+              ${contactLine ? `<div class="muted" style="font-size:.72rem;margin-top:2px">${escapeHtml(contactLine)}</div>` : ""}
+            </div>
+            <div class="appt-time">${escapeHtml(timeStr)}${c.meetingDone ? "<br><span class=\"tag-ok\">已會面</span>" : ""}</div>
+          </div>
+          <label class="field" style="margin:0"><span>會議記錄</span>
+            <textarea data-meet-notes placeholder="會面重點、跟進事項…">${escapeHtml(c.meetingNotes || "")}</textarea>
+          </label>
+          <div class="appt-actions">
+            <button type="button" class="btn btn-teal btn-sm" data-save-notes>儲存會議記錄</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-open-case>詳情</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-scan-card>掃名片</button>
+          </div>
+        </article>`;
+      }).join("");
+      list.querySelectorAll("[data-save-notes]").forEach((btn) => {
+        btn.onclick = async () => {
+          const art = btn.closest(".portal-appt");
+          const id = art?.dataset.caseId;
+          const note = art?.querySelector("[data-meet-notes]")?.value || "";
+          if (!id) return;
+          await updateCase(id, {
+            meetingNotes: note,
+            meetingDone: true,
+            appointmentFlag: true,
+          }, { source: "Portal 會議記錄" });
+          renderPortalToday();
+        };
+      });
+      list.querySelectorAll("[data-open-case]").forEach((btn) => {
+        btn.onclick = () => openDrawer(btn.closest(".portal-appt")?.dataset.caseId);
+      });
+      list.querySelectorAll("[data-scan-card]").forEach((btn) => {
+        btn.onclick = () => {
+          const id = btn.closest(".portal-appt")?.dataset.caseId;
+          setPortalTab("card");
+          const sel = document.getElementById("portalCardCase");
+          if (sel && id) sel.value = id;
+        };
+      });
+    }
+
+    function fillPortalCardCaseSelect() {
+      const sel = document.getElementById("portalCardCase");
+      if (!sel) return;
+      const prev = sel.value;
+      const sales = normalizeCompanySales(portalSalesSelected) || "";
+      const ranked = [...cases].sort((a, b) => {
+        const as = (normalizeCompanySales(a.companySales) || "Vincent") === sales ? 0 : 1;
+        const bs = (normalizeCompanySales(b.companySales) || "Vincent") === sales ? 0 : 1;
+        if (as !== bs) return as - bs;
+        return String(a.customerName || "").localeCompare(String(b.customerName || ""), "zh-HK");
+      });
+      sel.innerHTML = `<option value="">— 揀案件 —</option>` + ranked.map((c) => {
+        const label = `${companyKey(c)} · ${normalizeCompanySales(c.companySales) || "Vincent"}`;
+        return `<option value="${escapeAttr(c.id)}">${escapeHtml(label)}</option>`;
+      }).join("");
+      if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+    }
+
+    function compressImageFile(file, maxSide = 1280, quality = 0.72) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("讀取圖片失敗"));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error("圖片無法解碼"));
+          img.onload = () => {
+            let { width: w, height: h } = img;
+            const scale = Math.min(1, maxSide / Math.max(w, h));
+            w = Math.round(w * scale);
+            h = Math.round(h * scale);
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL("image/jpeg", quality));
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function parseBusinessCardText(raw) {
+      const text = String(raw || "").replace(/\r/g, "");
+      const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+      const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+      const email = emailMatch ? emailMatch[0] : "";
+      const phoneCandidates = [];
+      const phoneRe = /(?:(?:\+?852[\s-]?)?(?:[23]\d{3}|[456789]\d{3})[\s-]?\d{4})|(?:\+?\d[\d\s().-]{7,}\d)/g;
+      let m;
+      while ((m = phoneRe.exec(text)) !== null) {
+        const digits = m[0].replace(/\D/g, "");
+        if (digits.length < 8) continue;
+        phoneCandidates.push({ raw: m[0].trim(), digits });
+      }
+      const uniqPhones = [];
+      for (const p of phoneCandidates) {
+        if (!uniqPhones.some((x) => x.digits.slice(-8) === p.digits.slice(-8))) uniqPhones.push(p);
+      }
+      let mobile = "";
+      let tel = "";
+      for (const p of uniqPhones) {
+        const last8 = p.digits.slice(-8);
+        const isMobile = /^[456789]/.test(last8);
+        if (isMobile && !mobile) mobile = last8;
+        else if (!isMobile && !tel) tel = last8.length === 8 ? last8 : p.raw;
+      }
+      if (!mobile && uniqPhones[0]) mobile = uniqPhones[0].digits.slice(-8);
+      if (!tel && uniqPhones[1]) tel = uniqPhones[1].digits.slice(-8);
+
+      const companyLine = lines.find((l) =>
+        /(有限公司|集團|集團有限公司|Limited|Ltd\.?|LLC|Inc\.?|Corporation|Company|Co\.)/i.test(l)
+      ) || "";
+      const titleLine = lines.find((l) =>
+        /(Manager|Director|Officer|Supervisor|Engineer|Consultant|Executive|CEO|CTO|CFO|Founder|總經理|經理|主任|總監|董事|工程師|顧問|主管|副總)/i.test(l)
+        && !/@/.test(l)
+        && !/(有限公司|Limited|Ltd)/i.test(l)
+      ) || "";
+      const addressLine = lines.find((l) =>
+        /(Road|Rd\.?|Street|St\.?|Avenue|Ave\.?|Floor|F\.|Room|Rm\.?|Building|Bldg|道|街|路|樓|室|大廈|中心|工業|區)/i.test(l)
+        && !/@/.test(l)
+      ) || "";
+
+      const skip = new Set([companyLine, titleLine, addressLine, email].filter(Boolean).map((s) => s.toLowerCase()));
+      const nameLine = lines.find((l) => {
+        if (skip.has(l.toLowerCase())) return false;
+        if (/@/.test(l)) return false;
+        if (/^\+?\d[\d\s().-]{6,}$/.test(l)) return false;
+        if (/(Tel|Fax|Mobile|Phone|Email|www\.|http)/i.test(l)) return false;
+        if (l.length < 2 || l.length > 40) return false;
+        return /[A-Za-z\u4e00-\u9fff]/.test(l);
+      }) || "";
+
+      return {
+        company: companyLine.replace(/\s+/g, " ").trim(),
+        name: nameLine.replace(/\s+/g, " ").trim(),
+        title: titleLine.replace(/\s+/g, " ").trim(),
+        email: email.trim(),
+        tel: String(tel || "").trim(),
+        mobile: String(mobile || "").trim(),
+        address: addressLine.replace(/\s+/g, " ").trim(),
+        ocr: text.trim(),
+      };
+    }
+
+    function fillPortalCardFields(parsed) {
+      const set = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.value = v || "";
+      };
+      set("pc_company", parsed.company);
+      set("pc_name", parsed.name);
+      set("pc_title", parsed.title);
+      set("pc_email", parsed.email);
+      set("pc_tel", parsed.tel);
+      set("pc_mobile", parsed.mobile);
+      set("pc_address", parsed.address);
+      set("pc_ocr", parsed.ocr);
+      document.getElementById("portalCardFields")?.classList.remove("hidden");
+    }
+
+    async function runPortalCardOcr(dataUrl) {
+      const status = document.getElementById("portalCardStatus");
+      if (!window.Tesseract) {
+        if (status) status.textContent = "OCR 函式庫未載入，請手動填寫欄位";
+        document.getElementById("portalCardFields")?.classList.remove("hidden");
+        return;
+      }
+      if (status) status.textContent = "正在讀取名片文字…";
+      try {
+        const result = await Tesseract.recognize(dataUrl, "chi_tra+eng", {
+          logger: (m) => {
+            if (status && m.status === "recognizing text" && m.progress != null) {
+              status.textContent = `正在讀取… ${Math.round(m.progress * 100)}%`;
+            }
+          },
+        });
+        const parsed = parseBusinessCardText(result?.data?.text || "");
+        fillPortalCardFields(parsed);
+        if (status) {
+          status.textContent = parsed.name || parsed.company || parsed.email || parsed.mobile
+            ? "已讀取，請核對後儲存"
+            : "未能可靠識別，請手動修正欄位";
+        }
+      } catch (err) {
+        console.warn(err);
+        if (status) status.textContent = "OCR 失敗，請手動填寫";
+        document.getElementById("portalCardFields")?.classList.remove("hidden");
+      }
+    }
+
+    async function handlePortalCardFile(file) {
+      if (!file || !/^image\//.test(file.type || "")) return toast("請選擇圖片檔");
+      if (portalCardBusy) return;
+      portalCardBusy = true;
+      const status = document.getElementById("portalCardStatus");
+      try {
+        if (status) status.textContent = "壓縮圖片中…";
+        portalCardImageData = await compressImageFile(file);
+        const preview = document.getElementById("portalCardPreview");
+        const wrap = document.getElementById("portalCardPreviewWrap");
+        if (preview) preview.src = portalCardImageData;
+        wrap?.classList.remove("hidden");
+        await runPortalCardOcr(portalCardImageData);
+      } catch (err) {
+        toast(err.message || "處理圖片失敗");
+        if (status) status.textContent = "處理失敗";
+      } finally {
+        portalCardBusy = false;
+      }
+    }
+
+    async function savePortalCard() {
+      if (!dbReady) return toast("請先完成 Supabase 設定");
+      if (!cardsTableReady) return toast("請先 Run mgmt_alter.sql 建立 crm_case_cards");
+      const caseId = document.getElementById("portalCardCase")?.value || "";
+      if (!caseId) return toast("請先揀關聯案件");
+      if (!portalCardImageData) return toast("請先影相或上載名片");
+      const company = document.getElementById("pc_company")?.value.trim() || "";
+      const name = document.getElementById("pc_name")?.value.trim() || "";
+      const title = document.getElementById("pc_title")?.value.trim() || "";
+      const email = document.getElementById("pc_email")?.value.trim() || "";
+      const tel = document.getElementById("pc_tel")?.value.trim() || "";
+      const mobile = document.getElementById("pc_mobile")?.value.trim() || "";
+      const address = document.getElementById("pc_address")?.value.trim() || "";
+      const ocr = document.getElementById("pc_ocr")?.value.trim() || "";
+      const c = cases.find((x) => x.id === caseId);
+      if (!c) return toast("找不到案件");
+
+      let contactId = null;
+      const existing = (contactsByCase[caseId] || []);
+      const match = existing.find((p) => {
+        if (name && p.name && p.name.toLowerCase() === name.toLowerCase()) return true;
+        if (mobile && p.mobile && String(p.mobile).replace(/\D/g, "").slice(-8) === mobile.replace(/\D/g, "").slice(-8)) return true;
+        if (email && p.email && p.email.toLowerCase() === email.toLowerCase()) return true;
+        return false;
+      });
+      if (match) {
+        contactId = match.id;
+        const { error } = await db.from("crm_contacts").update({
+          name: name || match.name,
+          title: title || match.title || "",
+          tel: tel || match.tel || "",
+          mobile: mobile || match.mobile || "",
+          email: email || match.email || "",
+        }).eq("id", match.id);
+        if (error) return toast("更新聯絡人失敗：" + error.message);
+      } else if (name || mobile || email || tel) {
+        contactId = `ct-${crypto.randomUUID().slice(0, 10)}`;
+        const { error } = await db.from("crm_contacts").insert({
+          id: contactId,
+          case_id: caseId,
+          name: name || company || "名片聯絡人",
+          title,
+          tel,
+          mobile,
+          email,
+          fax: "",
+        });
+        if (error) return toast("新增聯絡人失敗：" + error.message);
+      }
+
+      const cardId = `card-${crypto.randomUUID().slice(0, 10)}`;
+      const { error: cardErr } = await db.from("crm_case_cards").insert({
+        id: cardId,
+        case_id: caseId,
+        contact_id: contactId,
+        image_data: portalCardImageData,
+        ocr_text: ocr,
+        created_at: new Date().toISOString(),
+      });
+      if (cardErr) return toast("儲存名片失敗：" + cardErr.message);
+
+      const patch = {};
+      if (company && company !== companyKey(c)) patch.customerName = company;
+      if (address) patch.customerAddress = address;
+      if (Object.keys(patch).length) {
+        await updateCase(caseId, patch, { silent: true, source: "Portal 名片 OCR" });
+      } else {
+        await loadCases();
+      }
+
+      try {
+        await db.from("crm_activity_logs").insert({
+          id: `log-${crypto.randomUUID().slice(0, 10)}`,
+          case_id: caseId,
+          contact_id: contactId,
+          log_type: "remark",
+          content: `上傳名片${name ? "：" + name : ""}${mobile ? " · 手提 " + mobile : ""}${email ? " · " + email : ""}`,
+          happened_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        });
+      } catch (_) {}
+
+      toast("已儲存名片並更新客戶資料");
+      portalCardImageData = "";
+      document.getElementById("portalCardPreviewWrap")?.classList.add("hidden");
+      document.getElementById("portalCardFields")?.classList.add("hidden");
+      document.getElementById("portalCardCamera").value = "";
+      document.getElementById("portalCardFile").value = "";
+      document.getElementById("portalCardStatus").textContent = "選擇或拍攝名片後會自動讀取";
+      if (!document.getElementById("view-mgmt").classList.contains("hidden")) renderMgmt();
+    }
+
+    function bindPortalUi() {
+      if (portalBound) return;
+      portalBound = true;
+      const salesSel = document.getElementById("portalSalesSelect");
+      if (salesSel) {
+        salesSel.onchange = () => {
+          portalSalesSelected = salesSel.value || COMPANY_SALES[0];
+          localStorage.setItem("crm_portal_sales", portalSalesSelected);
+          renderPortalToday();
+          fillPortalCardCaseSelect();
+        };
+      }
+      document.getElementById("portalTabSeg")?.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-portal-tab]");
+        if (!btn) return;
+        setPortalTab(btn.dataset.portalTab);
+      });
+      const onFile = (e) => {
+        const file = e.target.files?.[0];
+        if (file) handlePortalCardFile(file);
+      };
+      document.getElementById("portalCardCamera")?.addEventListener("change", onFile);
+      document.getElementById("portalCardFile")?.addEventListener("change", onFile);
+      document.getElementById("btnSaveCard")?.addEventListener("click", () => savePortalCard());
+    }
+
+    function initPortal() {
+      bindPortalUi();
+      if (!COMPANY_SALES.includes(portalSalesSelected)) portalSalesSelected = COMPANY_SALES[0];
+      const salesSel = document.getElementById("portalSalesSelect");
+      if (salesSel) {
+        salesSel.innerHTML = COMPANY_SALES.map((n) =>
+          `<option value="${escapeAttr(n)}" ${n === portalSalesSelected ? "selected" : ""}>${escapeHtml(n)}</option>`
+        ).join("");
+      }
+      initPortalForm();
+      fillPortalCardCaseSelect();
+      setPortalTab(portalTab || "today");
     }
 
     function fillPortal(parsed) {
@@ -5562,7 +6126,7 @@
     }
 
     function renderMgmt() {
-      document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady);
+      document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady && addressColReady && cardsTableReady);
       syncMgmtNav();
       if (mgmtTab === "customers") renderCustomersMgmt();
       else if (mgmtTab === "partners") renderPartnersMgmt();
@@ -5720,7 +6284,7 @@
       if (onlyOverdue) rows = rows.filter((r) => r.overdue);
       if (q) {
         rows = rows.filter((r) => {
-          const contactHay = r.cases.flatMap((c) => (contactsByCase[c.id] || []).map((p) => p.name || "")).join(" ");
+          const contactHay = r.cases.flatMap((c) => (contactsByCase[c.id] || []).map((p) => [p.name, p.mobile, p.tel, p.email, p.title].join(" "))).join(" ");
           return [r.name, [...r.sales].join(" "), [...r.partners].join(" "), r.lastChannel?.label || "", contactHay].join(" ").toLowerCase().includes(q);
         });
       }
@@ -5731,8 +6295,25 @@
           ? `<span class="tag-overdue">逾期未跟進</span>`
           : (r.nextFollowUp ? `<span class="tag-ok">已排期</span>` : `<span class="muted">未設跟進日</span>`);
         const ch = r.lastChannel || { label: "—", detail: "" };
+        const people = r.cases.flatMap((c) => contactsByCase[c.id] || []);
+        const contactHtml = people.length
+          ? people.slice(0, 4).map((p) => {
+              const mobile = String(p.mobile || "").trim();
+              return `<div><strong>${escapeHtml(p.name || "—")}</strong>${p.title ? `<span class="muted" style="font-size:.68rem"> · ${escapeHtml(p.title)}</span>` : ""}
+                ${mobile ? `<div style="font-size:.78rem;font-weight:700;color:var(--teal-deep)">手提 ${escapeHtml(mobile)}</div>` : `<div class="muted" style="font-size:.68rem">未有手提</div>`}
+              </div>`;
+            }).join("")
+          : `<span class="muted">—</span>`;
+        const cards = r.cases.flatMap((c) => cardsByCase[c.id] || []);
+        const cardsHtml = cards.length
+          ? `<div class="card-thumbs">${cards.slice(0, 6).map((card) =>
+              `<a href="${escapeAttr(card.image_data)}" target="_blank" rel="noopener" title="名片"><img src="${escapeAttr(card.image_data)}" alt="名片" loading="lazy" /></a>`
+            ).join("")}${cards.length > 6 ? `<span class="muted" style="font-size:.68rem">+${cards.length - 6}</span>` : ""}</div>`
+          : `<span class="muted">—</span>`;
         return `<tr data-customer-key="${escapeAttr(r.key)}">
           <td><strong>${escapeHtml(r.name)}</strong><div class="muted" style="font-size:.68rem">${r.cases.length} 宗案件</div></td>
+          <td>${contactHtml}</td>
+          <td>${cardsHtml}</td>
           <td><strong>${r.visit}</strong></td>
           <td>${lastText}</td>
           <td><strong>${escapeHtml(ch.label)}</strong>${ch.detail ? `<div class="muted" style="font-size:.68rem">${escapeHtml(ch.detail)}</div>` : ""}</td>
@@ -5746,7 +6327,7 @@
           </td>
           <td><button class="btn btn-ghost btn-sm" data-open="${escapeAttr(r.primaryCaseId)}">詳情</button></td>
         </tr>`;
-      }).join("") || `<tr><td colspan="8"><div class="empty-state">沒有客戶</div></td></tr>`;
+      }).join("") || `<tr><td colspan="10"><div class="empty-state">沒有客戶</div></td></tr>`;
 
       document.querySelectorAll("#customersBody [data-open]").forEach((b) => b.onclick = () => openDrawer(b.dataset.open));
       document.querySelectorAll("#customersBody .cust-follow").forEach((input) => {
@@ -7103,6 +7684,13 @@
               <input id="d_address" value="${escapeAttr(c.customerAddress || "")}" placeholder="公司地址" />
             </label>
 
+            <div class="eyebrow" style="margin-top:8px">客戶名片（${(cardsByCase[c.id] || []).length}）</div>
+            <div class="drawer-card-grid">${(cardsByCase[c.id] || []).map((card) => `
+              <a href="${escapeAttr(card.image_data)}" target="_blank" rel="noopener" title="${escapeAttr((card.ocr_text || "").slice(0, 80))}">
+                <img src="${escapeAttr(card.image_data)}" alt="名片" loading="lazy" />
+              </a>`).join("") || `<div class="breakdown-empty">未有名片圖片 — 可於手機 Portal「名片掃描」上載</div>`}
+            </div>
+
             <div class="eyebrow" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:8px">
               <span>Multi Contact（${contacts.length}）</span>
               <button type="button" class="btn btn-ghost btn-sm" id="btnToggleAddContact" aria-expanded="false">＋ 新增 Contact</button>
@@ -7111,8 +7699,8 @@
               <div class="breakdown-item">
                 <div><strong>${escapeHtml(p.name)}</strong><div class="muted" style="font-size:.72rem">${escapeHtml(p.title || "聯絡人")}</div></div>
                 <div class="breakdown-meta">
-                  ${p.tel ? `<span>Tel ${escapeHtml(p.tel)}</span>` : ""}
-                  ${p.mobile ? `<span>Mobile ${escapeHtml(p.mobile)}</span>` : ""}
+                  ${p.mobile ? `<span style="font-weight:700;color:var(--teal-deep)">手提 ${escapeHtml(p.mobile)}</span>` : `<span class="muted">未有手提</span>`}
+                  ${p.tel ? `<span>電話 ${escapeHtml(p.tel)}</span>` : ""}
                   ${p.email ? `<span>${escapeHtml(p.email)}</span>` : ""}
                   ${p.fax ? `<span>Fax ${escapeHtml(p.fax)}</span>` : ""}
                 </div>
@@ -7539,6 +8127,10 @@
       if (!document.getElementById("view-mgmt").classList.contains("hidden")) renderMgmt();
       if (!document.getElementById("view-agenda").classList.contains("hidden")) renderAgenda();
       if (!document.getElementById("view-logs").classList.contains("hidden")) renderLogHistory();
+      if (!document.getElementById("view-portal").classList.contains("hidden")) {
+        fillPortalCardCaseSelect();
+        if (portalTab === "today") renderPortalToday();
+      }
     }
 
     function escapeHtml(s) {
@@ -7785,6 +8377,21 @@
         stage: "first_interview",
         closeReason: null,
         notes: document.getElementById("transcript").value.trim() ? `語音原文：${document.getElementById("transcript").value.trim()}` : "",
+        companySales: normalizeCompanySales(portalSalesSelected) || COMPANY_SALES[0],
+        customerAddress: "",
+        appointmentFlag: false,
+        appointmentAt: "",
+        appointmentConfirmed: false,
+        meetingDone: false,
+        meetingNotes: "",
+        followUpOpportunity: false,
+        nextFollowUpAt: "",
+        leadStatus: "Processing",
+        sourceEvent: "Portal 語音建案",
+        teamLeader: "",
+        ricohHouse: "",
+        ricohSales: "",
+        ricohConsultant: "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -8041,7 +8648,9 @@
     document.getElementById("btnRecheckMgmtSchema").onclick = async () => {
       await loadCases();
       renderMgmt();
-      toast(mgmtColsReady ? "欄位已就緒，橫幅已收埋" : "仍偵測唔到新欄位，請確認已 Run SQL");
+      toast(mgmtColsReady && addressColReady && cardsTableReady
+        ? "欄位已就緒，橫幅已收埋"
+        : "仍偵測唔到新欄位／名片表，請確認已 Run SQL");
     };
     document.getElementById("btnOpenMgmtSql").onclick = () => {
       window.open("https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql", "_blank", "noopener");
@@ -8058,6 +8667,7 @@
     };
 
     // boot
+    bindPortalUi();
     initPortalForm();
     casesLoading = true;
     loadCases().then(() => {
