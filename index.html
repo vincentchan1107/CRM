@@ -2811,6 +2811,7 @@
     let dragId = null;
     let dbReady = false;
     let mgmtColsReady = false;
+    let addressColReady = false;
     let mgmtTab = localStorage.getItem("crm_mgmt_tab") || "customers";
     if (!["customers", "partners", "sales"].includes(mgmtTab)) mgmtTab = "customers";
     let agendaPeriod = localStorage.getItem("crm_agenda_period") || "today";
@@ -3278,6 +3279,8 @@
         const probe = await db.from("crm_cases").select("next_follow_up_at,team_leader,company_sales").limit(1);
         mgmtColsReady = !probe.error;
         document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady);
+        const addrProbe = await db.from("crm_cases").select("customer_address").limit(1);
+        addressColReady = !addrProbe.error;
       }
       if (error || contactsProbe.error) {
         console.warn(error || contactsProbe.error);
@@ -3348,13 +3351,30 @@
       need.forEach((c) => { c.companySales = "Vincent"; });
     }
 
+    function extractAddressFromText(text) {
+      const m = String(text || "").match(/(?:^|\n)地址：\s*(.+?)(?:\n|$)/);
+      return m ? m[1].trim() : "";
+    }
+
+    function syncAddressIntoNotes(notes, address) {
+      const lines = String(notes || "").split("\n").map((l) => l.trimEnd()).filter((l) => !/^地址：/.test(l.trim()));
+      if (address) lines.unshift(`地址：${address}`);
+      return lines.join("\n").replace(/^\n+|\n+$/g, "");
+    }
+
     function fromRow(r) {
+      const notes = r.notes || "";
+      const requirements = r.requirements || "";
+      const customerAddress = String(r.customer_address || "").trim()
+        || extractAddressFromText(notes)
+        || extractAddressFromText(requirements)
+        || "";
       return {
         id: r.id,
         customerName: r.customer_name,
         partner: normalizePartner(r.partner) || "RICOH",
         systems: r.systems || [],
-        requirements: r.requirements || "",
+        requirements,
         quantity: r.quantity || "",
         budget: Number(r.budget) || 0,
         amount: Number(r.amount) || 0,
@@ -3362,7 +3382,8 @@
         targetClosingDate: r.target_closing_date || "",
         stage: r.stage || "new_lead",
         closeReason: r.close_reason,
-        notes: r.notes || "",
+        notes,
+        customerAddress,
         ricohHouse: r.ricoh_house || "",
         ricohSales: r.ricoh_sales || "",
         ricohConsultant: r.ricoh_consultant || "",
@@ -3383,6 +3404,8 @@
     }
 
     function toRow(c) {
+      const address = String(c.customerAddress || "").trim();
+      const notes = syncAddressIntoNotes(c.notes, address);
       const row = {
         id: c.id,
         customer_name: c.customerName,
@@ -3396,7 +3419,7 @@
         target_closing_date: c.targetClosingDate || null,
         stage: c.stage,
         close_reason: c.closeReason,
-        notes: c.notes,
+        notes,
         ricoh_house: c.ricohHouse || "",
         ricoh_sales: c.ricohSales || "",
         ricoh_consultant: c.ricohConsultant || "",
@@ -3415,6 +3438,7 @@
         row.team_leader = c.teamLeader || "";
         row.company_sales = c.companySales || "";
       }
+      if (addressColReady) row.customer_address = address;
       return row;
     }
 
@@ -7074,7 +7098,15 @@
               <label class="field"><span>Partner Consultant</span><input id="d_consultant" value="${escapeAttr(c.ricohConsultant)}" /></label>
             </div>
 
-            <div class="eyebrow" style="margin-top:4px">Multi Contact（${contacts.length}）</div>
+            <div class="eyebrow" style="margin-top:4px">公司地址</div>
+            <label class="field"><span>Customer Address</span>
+              <input id="d_address" value="${escapeAttr(c.customerAddress || "")}" placeholder="公司地址" />
+            </label>
+
+            <div class="eyebrow" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <span>Multi Contact（${contacts.length}）</span>
+              <button type="button" class="btn btn-ghost btn-sm" id="btnToggleAddContact" aria-expanded="false">＋ 新增 Contact</button>
+            </div>
             <div class="contact-grid">${contacts.map((p) => `
               <div class="breakdown-item">
                 <div><strong>${escapeHtml(p.name)}</strong><div class="muted" style="font-size:.72rem">${escapeHtml(p.title || "聯絡人")}</div></div>
@@ -7086,6 +7118,25 @@
                 </div>
               </div>`).join("") || `<div class="breakdown-empty">未有聯絡人</div>`}
             </div>
+            <form class="panel hidden" id="drawerAddContactForm" style="margin:0 0 12px;padding:10px 12px;background:#faf9fd">
+              <div class="eyebrow" style="margin-bottom:8px">新增 Contact Person</div>
+              <div class="row2">
+                <label class="field"><span>姓名 *</span><input id="d_cName" name="name" required placeholder="聯絡人姓名" /></label>
+                <label class="field"><span>職銜</span><input id="d_cTitle" name="title" placeholder="例如 Marketing Manager" /></label>
+              </div>
+              <div class="row2">
+                <label class="field"><span>Tel</span><input id="d_cTel" name="tel" placeholder="電話" /></label>
+                <label class="field"><span>Mobile</span><input id="d_cMobile" name="mobile" placeholder="手機" /></label>
+              </div>
+              <div class="row2">
+                <label class="field"><span>Email</span><input id="d_cEmail" name="email" type="email" placeholder="email@company.com" /></label>
+                <label class="field"><span>Fax</span><input id="d_cFax" name="fax" placeholder="傳真" /></label>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+                <button type="submit" class="btn btn-teal btn-sm" id="btnAddContactSave">儲存 Contact</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="btnAddContactCancel">取消</button>
+              </div>
+            </form>
 
             <div class="eyebrow">會面／跟進狀態</div>
             <div class="row3">
@@ -7203,9 +7254,45 @@
           targetClosingDate: targetClosing,
           budget: budgetRaw === "" ? 0 : Number(budgetRaw) || 0,
           amount: amountRaw === "" ? 0 : Number(amountRaw) || 0,
+          customerAddress: document.getElementById("d_address").value.trim(),
         }, { source: "案件詳情" });
         openDrawer(c.id);
       };
+
+      const addContactForm = document.getElementById("drawerAddContactForm");
+      const btnToggleAddContact = document.getElementById("btnToggleAddContact");
+      const openAddContact = (open) => {
+        addContactForm.classList.toggle("hidden", !open);
+        btnToggleAddContact.setAttribute("aria-expanded", open ? "true" : "false");
+        btnToggleAddContact.textContent = open ? "收起新增" : "＋ 新增 Contact";
+        if (open) document.getElementById("d_cName")?.focus();
+      };
+      btnToggleAddContact.onclick = () => openAddContact(addContactForm.classList.contains("hidden"));
+      document.getElementById("btnAddContactCancel").onclick = () => {
+        addContactForm.reset();
+        openAddContact(false);
+      };
+      addContactForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const name = document.getElementById("d_cName").value.trim();
+        if (!name) return toast("請填聯絡人姓名");
+        const row = {
+          id: `ct-${crypto.randomUUID().slice(0, 10)}`,
+          case_id: c.id,
+          name,
+          title: document.getElementById("d_cTitle").value.trim(),
+          tel: document.getElementById("d_cTel").value.trim(),
+          mobile: document.getElementById("d_cMobile").value.trim(),
+          email: document.getElementById("d_cEmail").value.trim(),
+          fax: document.getElementById("d_cFax").value.trim(),
+        };
+        const { error } = await db.from("crm_contacts").insert(row);
+        if (error) return toast("新增 Contact 失敗：" + error.message);
+        toast(`已新增 Contact：${name}`);
+        await loadCases();
+        openDrawer(c.id);
+      };
+
       document.getElementById("drawerAddLog").onclick = async () => {
         const content = document.getElementById("d_logContent").value.trim();
         const logType = document.getElementById("d_logType").value;
@@ -7249,6 +7336,7 @@
       { key: "ricohConsultant", label: "Partner Consultant", fmt: (v) => v || "—" },
       { key: "amount", label: "Contract Amount", fmt: (v) => money(Number(v) || 0) },
       { key: "budget", label: "Client Budget", fmt: (v) => money(Number(v) || 0) },
+      { key: "customerAddress", label: "公司地址", fmt: (v) => v || "—" },
       { key: "successRate", label: "成功機率", fmt: (v) => pct(Number(v) || 0) },
       { key: "targetClosingDate", label: "Target Closing Date", fmt: (v) => v || "—" },
       { key: "nextFollowUpAt", label: "下次跟進", fmt: (v) => v || "—" },
@@ -7884,14 +7972,13 @@
       const followUp = String(document.getElementById("agendaLeadFollowUp").value || "").trim();
       if (!customer) return toast("請填 Customer（客戶）");
       const noteParts = [];
-      if (address) noteParts.push(`地址：${address}`);
       if (remark) noteParts.push(remark);
       const item = {
         id: `lead-${crypto.randomUUID().slice(0, 8)}`,
         customerName: customer,
         partner,
         systems: [],
-        requirements: address ? `地址：${address}` : "",
+        requirements: "",
         quantity: "",
         budget: 0,
         amount: 0,
@@ -7900,6 +7987,7 @@
         stage: "new_lead",
         closeReason: null,
         notes: noteParts.join("\n\n"),
+        customerAddress: address,
         ricohHouse: "",
         ricohSales: partnerSales,
         ricohConsultant: "",
