@@ -1837,6 +1837,30 @@
     .sales-kpi-panel {
       background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px;
     }
+    .sales-activity-block {
+      margin-top: 18px;
+      padding-top: 4px;
+    }
+    .sales-activity-block .page-head { margin-bottom: 8px; }
+    .sales-activity-block .table-wrap { width: 100%; overflow-x: auto; }
+    .sales-activity-block table { width: 100%; min-width: 640px; }
+    .sales-activity-block td.note {
+      max-width: 260px; font-size: .72rem; font-weight: 650; color: var(--ink-soft);
+    }
+    .sales-activity-block .tag-overdue {
+      display: inline-block; margin-left: 6px; font-size: .62rem; font-weight: 800;
+      color: #9f1239; background: #ffe4e6; border-radius: 999px; padding: 2px 7px;
+    }
+    .sales-activity-tabs {
+      display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px;
+    }
+    .sales-activity-tabs button {
+      border: 1px solid var(--line); background: #fff; border-radius: 999px;
+      padding: 6px 12px; font-size: .75rem; font-weight: 750; color: var(--ink-soft); cursor: pointer;
+    }
+    .sales-activity-tabs button.active {
+      background: #efeefe; border-color: #d8d4fb; color: var(--accent);
+    }
     .kpi-form-grid {
       display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       margin-top: 10px;
@@ -6333,7 +6357,7 @@
             <div class="eyebrow">銷售員 KPI · 全年目標設計</div>
             <div class="page-head" style="margin-top:2px">
               <h2 style="font-size:1.35rem">${escapeHtml(name)}</h2>
-              <p class="muted page-head-sub">Closing 目標可隨時設定；過去月份可人手補入實際 Closing $，由本月起跟系統簽單鎖定</p>
+              <p class="muted page-head-sub">此 Sales 的 KPI、過去會面記錄同跟進 Case · Closing 目標可隨時設定</p>
             </div>
           </div>
           <button type="button" class="btn btn-teal btn-sm" id="btnSaveSalesKpi">儲存 KPI</button>
@@ -6446,6 +6470,125 @@
           </table>
         </div>
         <p class="muted" style="margin-top:8px;font-size:.72rem">Closing 目標可隨時改 · 過去月份可人手輸入實際 Closing $ · 由本月（${escapeHtml(currentMonthKey())}）起 Closing $ 跟系統簽單 · Dashboard 按期間合計</p>
+        ${renderSalesActivitySections(name)}
+      `;
+    }
+
+    function casesForCompanySales(name) {
+      return cases.filter((c) => normalizeCompanySales(c.companySales) === name);
+    }
+
+    function buildSalesMeetingRecords(name) {
+      const items = [];
+      const now = new Date();
+      for (const c of casesForCompanySales(name)) {
+        const meetDates = meetingDatesForCase(c);
+        if (meetDates.length) {
+          meetDates.forEach((d) => {
+            items.push({
+              date: d,
+              case: c,
+              status: "已會面",
+              note: c.meetingNotes || lastCaseComment(c).text || "",
+            });
+          });
+          continue;
+        }
+        if (c.appointmentAt) {
+          const d = new Date(c.appointmentAt);
+          if (Number.isNaN(d.getTime()) || d > now) continue;
+          items.push({
+            date: d,
+            case: c,
+            status: c.meetingDone ? "已會面" : (c.appointmentConfirmed ? "已約（過往）" : "約見記錄"),
+            note: c.meetingNotes || "",
+          });
+        }
+      }
+      return items.sort((a, b) => b.date - a.date);
+    }
+
+    function buildSalesFollowCases(name) {
+      const list = casesForCompanySales(name).filter((c) => {
+        if (isDq(c)) return false;
+        if (c.stage === "closed" && !isWon(c)) return false;
+        return (
+          !!c.nextFollowUpAt ||
+          !!c.followUpOpportunity ||
+          ["contacting", "appointment_set", "first_interview", "quotation", "follow_up", "final_stage"].includes(c.stage)
+        );
+      });
+      return list.sort((a, b) => {
+        const ao = isFollowUpOverdue(a) ? 0 : 1;
+        const bo = isFollowUpOverdue(b) ? 0 : 1;
+        if (ao !== bo) return ao - bo;
+        const ad = parseLocalDate(a.nextFollowUpAt)?.getTime() || Number.MAX_SAFE_INTEGER;
+        const bd = parseLocalDate(b.nextFollowUpAt)?.getTime() || Number.MAX_SAFE_INTEGER;
+        if (ad !== bd) return ad - bd;
+        return (a.customerName || "").localeCompare(b.customerName || "", "zh-HK");
+      });
+    }
+
+    function renderSalesActivitySections(name) {
+      const meetings = buildSalesMeetingRecords(name);
+      const follows = buildSalesFollowCases(name);
+      const overdueN = follows.filter((c) => isFollowUpOverdue(c)).length;
+      const openN = casesForCompanySales(name).filter((c) => c.stage !== "closed").length;
+      return `
+        <div class="sales-activity-block" id="salesActivityBlock">
+          <div class="page-head">
+            <h3 style="font-size:1.05rem;margin:0">${escapeHtml(name)} · 活動記錄</h3>
+            <p class="muted page-head-sub">Open ${openN} · 會面 ${meetings.length} · 跟進 Case ${follows.length}${overdueN ? ` · 逾期 ${overdueN}` : ""}</p>
+          </div>
+          <div class="sales-activity-tabs" id="salesActivityTabs">
+            <button type="button" data-sales-act="meetings" class="active">過去會面記錄（${meetings.length}）</button>
+            <button type="button" data-sales-act="followups">跟進 Case 記錄（${follows.length}）</button>
+          </div>
+          <div data-sales-act-panel="meetings">
+            ${meetings.length ? `<div class="table-wrap"><table>
+              <thead><tr><th>日期</th><th>客戶</th><th>狀態</th><th>Contract Amount</th><th>Comment</th><th></th></tr></thead>
+              <tbody>
+                ${meetings.slice(0, 60).map((it) => {
+                  const c = it.case;
+                  return `<tr>
+                    <td>${formatLocalDate(it.date)}<div class="muted" style="font-size:.68rem">${it.date.toLocaleTimeString("zh-HK", { hour: "2-digit", minute: "2-digit" })}</div></td>
+                    <td><strong>${escapeHtml(c.customerName || "—")}</strong><div class="muted" style="font-size:.68rem">${escapeHtml(c.partner || "")}</div></td>
+                    <td>${escapeHtml(it.status)}</td>
+                    <td><strong>${money(c.amount)}</strong></td>
+                    <td class="note" title="${escapeAttr(it.note || "")}">${escapeHtml(String(it.note || "—").slice(0, 100))}</td>
+                    <td><button type="button" class="btn btn-ghost btn-sm" data-case-id="${escapeAttr(c.id)}">詳情</button></td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table></div>
+            ${meetings.length > 60 ? `<p class="muted" style="margin-top:6px;font-size:.72rem">只顯示最近 60 筆會面</p>` : ""}`
+            : `<div class="breakdown-empty">${escapeHtml(name)} 暫時未有過去會面記錄</div>`}
+          </div>
+          <div data-sales-act-panel="followups" class="hidden">
+            ${follows.length ? `<div class="table-wrap"><table>
+              <thead><tr><th>客戶</th><th>Stage</th><th>下次跟進</th><th>Contract Amount</th><th>Budget</th><th>Last Comment</th><th></th></tr></thead>
+              <tbody>
+                ${follows.slice(0, 80).map((c) => {
+                  const s = stageMeta(c.stage);
+                  const comment = lastCaseComment(c);
+                  const next = c.nextFollowUpAt || "";
+                  const overdue = isFollowUpOverdue(c);
+                  return `<tr>
+                    <td><strong>${escapeHtml(c.customerName || "—")}</strong><div class="muted" style="font-size:.68rem">${escapeHtml(c.partner || "")}</div></td>
+                    <td><span class="badge" style="color:${s.color};background:${s.bg}">${escapeHtml(s.short)}</span>${c.followUpOpportunity ? ' <span class="muted" style="font-size:.68rem">有機會</span>' : ""}</td>
+                    <td>${next ? escapeHtml(next) : "—"}${overdue ? '<span class="tag-overdue">已逾期</span>' : ""}</td>
+                    <td><strong>${money(c.amount)}</strong></td>
+                    <td>${money(c.budget)}</td>
+                    <td class="note" title="${escapeAttr(comment.text || "")}">${escapeHtml(String(comment.text || "—").slice(0, 100))}</td>
+                    <td><button type="button" class="btn btn-ghost btn-sm" data-case-id="${escapeAttr(c.id)}">詳情</button></td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table></div>
+            ${follows.length > 80 ? `<p class="muted" style="margin-top:6px;font-size:.72rem">只顯示前 80 宗跟進 Case</p>` : ""}`
+            : `<div class="breakdown-empty">${escapeHtml(name)} 暫時未有跟進 Case</div>`}
+          </div>
+        </div>
       `;
     }
 
@@ -6548,6 +6691,21 @@
         renderSalesMgmt();
         refreshDash();
       };
+
+      panel.querySelectorAll("#salesActivityTabs [data-sales-act]").forEach((btn) => {
+        btn.onclick = () => {
+          const key = btn.dataset.salesAct;
+          panel.querySelectorAll("#salesActivityTabs [data-sales-act]").forEach((b) => {
+            b.classList.toggle("active", b.dataset.salesAct === key);
+          });
+          panel.querySelectorAll("[data-sales-act-panel]").forEach((p) => {
+            p.classList.toggle("hidden", p.dataset.salesActPanel !== key);
+          });
+        };
+      });
+      panel.querySelectorAll("[data-case-id]").forEach((btn) => {
+        btn.onclick = () => openDrawer(btn.dataset.caseId);
+      });
     }
 
     function renderSalesMgmt() {
