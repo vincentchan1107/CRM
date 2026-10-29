@@ -613,6 +613,72 @@
       border-color: #a7f3d0;
       color: #047857;
     }
+    .mgmt-alert.clickable {
+      cursor: pointer;
+      transition: box-shadow .15s ease, transform .15s ease;
+      user-select: none;
+    }
+    .mgmt-alert.clickable:hover {
+      box-shadow: 0 8px 20px rgba(190, 18, 60, .12);
+    }
+    .mgmt-alert.clickable .alert-hint {
+      margin-left: auto;
+      font-size: .72rem;
+      font-weight: 700;
+      color: #be123c;
+      opacity: .85;
+    }
+    .overdue-modal-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: rgba(26, 22, 48, .45);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 16px;
+    }
+    @media (min-width: 720px) {
+      .overdue-modal-bg { align-items: center; }
+    }
+    .overdue-modal {
+      width: min(560px, 100%);
+      max-height: min(78vh, 640px);
+      overflow: auto;
+      background: #fff;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      box-shadow: 0 24px 48px rgba(40, 20, 80, .18);
+      padding: 16px 16px 14px;
+    }
+    .overdue-modal .om-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .overdue-modal .om-list {
+      display: grid;
+      gap: 8px;
+    }
+    .overdue-modal .om-item {
+      border: 1px solid #fecdd3;
+      background: #fff7f8;
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+    .overdue-modal .om-item strong { font-size: .86rem; }
+    .overdue-modal .om-item .meta {
+      font-size: .72rem;
+      color: var(--ink-soft);
+      margin-top: 3px;
+      line-height: 1.45;
+    }
     .mgmt-panel { display: none; }
     .mgmt-panel.active { display: block; }
     .mgmt-stats {
@@ -2817,6 +2883,7 @@
 
     <!-- BOARD -->
     <section id="view-board" class="hidden">
+      <div id="boardOverdueAlert"></div>
       <div class="board-toolbar">
         <div class="board-toolbar-left">
           <div class="board-search-wrap">
@@ -3066,6 +3133,7 @@
   </div>
 
   <div id="drawerRoot"></div>
+  <div id="overdueModalRoot"></div>
   <div id="toastRoot"></div>
 
   <script>
@@ -3865,6 +3933,103 @@
       const d = parseLocalDate(c.nextFollowUpAt);
       if (!d) return false;
       return d < todayStart();
+    }
+
+    function getOverdueFollowUpItems() {
+      const rows = typeof buildCustomerRows === "function" ? buildCustomerRows() : [];
+      return rows
+        .filter((r) => r.overdue)
+        .map((r) => {
+          const overdueCases = (r.cases || []).filter(isFollowUpOverdue);
+          const dates = overdueCases
+            .map((c) => c.nextFollowUpAt)
+            .filter(Boolean)
+            .sort();
+          return {
+            key: r.key,
+            name: r.name,
+            primaryCaseId: r.primaryCaseId,
+            nextFollowUp: dates[0] || r.nextFollowUp || "",
+            sales: [...(r.sales || [])].join("、"),
+            partners: [...(r.partners || [])].join("、"),
+            caseCount: overdueCases.length || r.cases.length,
+            cases: overdueCases,
+          };
+        })
+        .sort((a, b) => String(a.nextFollowUp).localeCompare(String(b.nextFollowUp)));
+    }
+
+    function overdueAlertHtml(overdueN, { source = "mgmt" } = {}) {
+      if (!overdueN) {
+        return `<div class="mgmt-alert ok">✓ 暫時沒有逾期跟進客戶</div>`;
+      }
+      return `<div class="mgmt-alert clickable" role="button" tabindex="0" data-open-overdue-modal data-overdue-source="${escapeAttr(source)}" aria-label="查看逾期跟進客戶">
+        ⚠ 有 <strong>${overdueN}</strong> 個客戶已超過下次跟進日期仍未更新 — 請盡快跟進
+        <span class="alert-hint">點擊查看 →</span>
+      </div>`;
+    }
+
+    function bindOverdueAlert(root) {
+      if (!root) return;
+      root.querySelectorAll("[data-open-overdue-modal]").forEach((el) => {
+        const open = () => openOverdueFollowUpModal(el.dataset.overdueSource || "mgmt");
+        el.onclick = open;
+        el.onkeydown = (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            open();
+          }
+        };
+      });
+    }
+
+    function openOverdueFollowUpModal(source = "mgmt") {
+      const items = getOverdueFollowUpItems();
+      const root = document.getElementById("overdueModalRoot");
+      if (!root) return;
+      if (!items.length) {
+        toast("暫時沒有逾期跟進客戶");
+        return;
+      }
+      const fromLabel = source === "board" ? "Case Management" : "客戶管理";
+      root.innerHTML = `<div class="overdue-modal-bg" role="presentation">
+        <div class="overdue-modal" role="dialog" aria-modal="true" aria-label="逾期跟進通知">
+          <div class="om-head">
+            <div>
+              <div class="eyebrow">跟進提示 · ${escapeHtml(fromLabel)}</div>
+              <h2 style="margin:4px 0 0;font-size:1.15rem">逾期未跟進客戶（${items.length}）</h2>
+              <p class="muted" style="margin:4px 0 0;font-size:.75rem">以下客戶已超過下次跟進日期，請盡快更新</p>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" id="overdueModalClose">關閉</button>
+          </div>
+          <div class="om-list">
+            ${items.map((it) => `
+              <div class="om-item">
+                <div>
+                  <strong>${escapeHtml(it.name)}</strong>
+                  <div class="meta">
+                    下次跟進：<span style="color:#9f1239;font-weight:800">${escapeHtml(it.nextFollowUp || "—")}</span>
+                    · ${it.caseCount} 宗逾期案件
+                    ${it.sales ? `<br>Sales：${escapeHtml(it.sales)}` : ""}
+                    ${it.partners ? ` · Partner：${escapeHtml(it.partners)}` : ""}
+                  </div>
+                </div>
+                <button type="button" class="btn btn-teal btn-sm" data-open-overdue-case="${escapeAttr(it.primaryCaseId)}">詳情</button>
+              </div>`).join("")}
+          </div>
+        </div>
+      </div>`;
+      const close = () => { root.innerHTML = ""; };
+      root.querySelector(".overdue-modal-bg").onclick = (e) => {
+        if (e.target.classList.contains("overdue-modal-bg")) close();
+      };
+      document.getElementById("overdueModalClose").onclick = close;
+      root.querySelectorAll("[data-open-overdue-case]").forEach((btn) => {
+        btn.onclick = () => {
+          close();
+          openDrawer(btn.dataset.openOverdueCase);
+        };
+      });
     }
 
     /* -------- voice parse (natural Cantonese / Chinese notes) -------- */
@@ -6795,6 +6960,12 @@
 
     function renderBoard() {
       syncBoardFilterUi();
+      const overdueN = getOverdueFollowUpItems().length;
+      const boardAlert = document.getElementById("boardOverdueAlert");
+      if (boardAlert) {
+        boardAlert.innerHTML = overdueAlertHtml(overdueN, { source: "board" });
+        bindOverdueAlert(boardAlert);
+      }
       renderBoardDash();
       renderStageFilter();
       paintKanbanColumns();
@@ -7251,9 +7422,10 @@
       let rows = buildCustomerRows();
       const overdueN = rows.filter((r) => r.overdue).length;
       const alert = document.getElementById("customerOverdueAlert");
-      alert.innerHTML = overdueN
-        ? `<div class="mgmt-alert">⚠ 有 <strong>${overdueN}</strong> 個客戶已超過下次跟進日期仍未更新 — 請盡快跟進</div>`
-        : `<div class="mgmt-alert ok">✓ 暫時沒有逾期跟進客戶</div>`;
+      if (alert) {
+        alert.innerHTML = overdueAlertHtml(overdueN, { source: "mgmt" });
+        bindOverdueAlert(alert);
+      }
 
       if (onlyOverdue) rows = rows.filter((r) => r.overdue);
       if (q) {
