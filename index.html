@@ -65,6 +65,51 @@
       background-image:
         radial-gradient(circle at 1px 1px, rgba(107, 70, 254, .12) 1px, transparent 0);
       background-size: 22px 22px;
+      animation: grid-drift 48s linear infinite;
+    }
+    @keyframes grid-drift {
+      from { background-position: 0 0; }
+      to { background-position: 22px 22px; }
+    }
+    @keyframes rise-in {
+      from { opacity: 0; transform: translateY(14px) scale(.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes soft-fade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes float-orb {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(18px, -22px, 0) scale(1.06); }
+    }
+    @keyframes float-orb-alt {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(-16px, 18px, 0) scale(1.08); }
+    }
+    @keyframes live-pulse {
+      0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(39, 194, 129, .45); }
+      50% { transform: scale(1.15); opacity: .85; box-shadow: 0 0 0 7px rgba(39, 194, 129, 0); }
+    }
+    @keyframes shimmer-bar {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+    .motion-item {
+      opacity: 0;
+    }
+    .motion-play .motion-item {
+      animation: rise-in .55s cubic-bezier(.22, 1, .36, 1) both;
+      animation-delay: calc(var(--motion-i, 0) * 45ms);
+    }
+    .motion-play .motion-fade {
+      animation: soft-fade .45s ease both;
+      animation-delay: calc(var(--motion-i, 0) * 35ms);
+    }
+    body.motion-paused .motion-item,
+    body.motion-paused .motion-fade {
+      opacity: 1;
+      animation: none !important;
     }
     a { color: inherit; text-decoration: none; }
     button, input, select, textarea { font: inherit; }
@@ -240,6 +285,8 @@
       background: radial-gradient(circle, rgba(167, 139, 250, .28), transparent 70%);
       pointer-events: none;
       z-index: 0;
+      animation: float-orb 16s ease-in-out infinite;
+      will-change: transform;
     }
     .app-main::after {
       content: "";
@@ -252,6 +299,8 @@
       background: radial-gradient(circle, rgba(251, 182, 206, .22), transparent 70%);
       pointer-events: none;
       z-index: 0;
+      animation: float-orb-alt 20s ease-in-out infinite;
+      will-change: transform;
     }
     .topbar, .wrap { position: relative; z-index: 1; }
     .topbar {
@@ -321,6 +370,47 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    .topbar-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.88);
+      border: 1px solid var(--line);
+      font-size: .68rem;
+      font-weight: 750;
+      color: var(--ink-soft);
+      letter-spacing: .02em;
+    }
+    .live-pill .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--mint);
+      animation: live-pulse 1.8s ease-out infinite;
+    }
+    .btn-motion {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.9);
+      color: var(--ink-soft);
+      border-radius: 999px;
+      padding: 6px 11px;
+      font-size: .7rem;
+      font-weight: 750;
+      cursor: pointer;
+    }
+    .btn-motion:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-motion[aria-pressed="true"] {
+      background: #f3f0fa;
+      color: var(--muted);
     }
     .topbar-meta {
       font-size: .75rem;
@@ -889,6 +979,12 @@
       box-shadow: var(--shadow);
       padding: 20px 22px;
       backdrop-filter: blur(8px);
+      transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+    }
+    .panel:hover, .hero-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 34px rgba(80, 55, 160, 0.12);
+      border-color: #ddd4f1;
     }
     .hero-card {
       position: relative;
@@ -935,7 +1031,10 @@
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       border: 0; border-radius: 999px; padding: 10px 16px; font-weight: 600; font-size: .84rem; cursor: pointer;
+      transition: transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease, color .16s ease;
     }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
     .btn-teal { background: linear-gradient(135deg, #7b5cff, var(--accent)); color: #fff; box-shadow: 0 10px 22px rgba(107,70,254,.32); }
     .btn-teal:hover { background: var(--teal-deep); }
     .btn-ink { background: var(--navy); color: #fff; }
@@ -950,6 +1049,21 @@
       box-shadow: var(--shadow);
       position: relative;
       overflow: hidden;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .stat:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(80, 55, 160, 0.12);
+    }
+    .stat::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #4aa8ff, #6b46fe, #ff6b9d, #4aa8ff);
+      background-size: 200% 100%;
+      animation: shimmer-bar 7s linear infinite;
+      opacity: .75;
     }
     .stat-top {
       display: flex;
@@ -2779,6 +2893,37 @@
     .dash-period, .stage-filter, .mgmt-tabs {
       background: rgba(255,255,255,.92);
     }
+    body.motion-paused::before,
+    body.motion-paused .app-main::before,
+    body.motion-paused .app-main::after,
+    body.motion-paused .live-pill .live-dot,
+    body.motion-paused .stat::after {
+      animation: none !important;
+    }
+    body.motion-paused .panel:hover,
+    body.motion-paused .hero-card:hover,
+    body.motion-paused .stat:hover,
+    body.motion-paused .btn:hover {
+      transform: none;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      body::before,
+      .app-main::before,
+      .app-main::after,
+      .live-pill .live-dot,
+      .stat::after,
+      .motion-play .motion-item,
+      .motion-play .motion-fade {
+        animation: none !important;
+      }
+      .motion-item, .motion-fade { opacity: 1 !important; }
+      .panel, .hero-card, .stat, .btn, .dash-action-card {
+        transition: none !important;
+      }
+      .panel:hover, .hero-card:hover, .stat:hover, .btn:hover {
+        transform: none !important;
+      }
+    }
     .dash-period .custom-range {
       display: flex;
       flex-wrap: wrap;
@@ -2839,7 +2984,11 @@
           <span class="topbar-company">Achiever Solutions Ltd.</span>
           <div class="topbar-title" id="topbarTitle">Dashboard</div>
         </div>
-        <div class="topbar-meta">ADMIN · Achiever</div>
+        <div class="topbar-right">
+          <span class="live-pill" title="系統運作中"><i class="live-dot" aria-hidden="true"></i>LIVE</span>
+          <button type="button" class="btn-motion" id="btnToggleMotion" aria-pressed="false" title="暫停／恢復介面動態">暫停動態</button>
+          <div class="topbar-meta">ADMIN · Achiever</div>
+        </div>
       </header>
       <main class="wrap">
     <div id="setupBanner" class="setup-box hidden">
@@ -4413,6 +4562,72 @@
       logs: "Log History",
     };
 
+    function prefersReducedMotion() {
+      try {
+        return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      } catch (_) {
+        return false;
+      }
+    }
+    let motionPaused = localStorage.getItem("crm_motion_paused") === "1";
+    function syncMotionToggleUi() {
+      document.body.classList.toggle("motion-paused", !!motionPaused);
+      const btn = document.getElementById("btnToggleMotion");
+      if (!btn) return;
+      btn.setAttribute("aria-pressed", motionPaused ? "true" : "false");
+      btn.textContent = motionPaused ? "恢復動態" : "暫停動態";
+    }
+    function setMotionPaused(on) {
+      motionPaused = !!on;
+      localStorage.setItem("crm_motion_paused", motionPaused ? "1" : "0");
+      syncMotionToggleUi();
+      if (!motionPaused) {
+        const active = document.querySelector("section[id^='view-']:not(.hidden)");
+        if (active) replayViewMotion(active);
+      }
+    }
+    function replayViewMotion(root) {
+      if (!root || motionPaused || prefersReducedMotion()) return;
+      root.classList.remove("motion-play");
+      root.querySelectorAll(".motion-item, .motion-fade").forEach((el) => {
+        el.classList.remove("motion-item", "motion-fade");
+        el.style.removeProperty("--motion-i");
+      });
+      // force reflow so animation can replay
+      void root.offsetWidth;
+      const selectors = [
+        ".dash-action-card",
+        ".grid-stats > .stat",
+        "#dashCompareStats > .stat",
+        ".dash-flex-toolbar",
+        ".dash-period",
+        ".dash-filters",
+        ".dash-module",
+        ".panel",
+        ".hero-card",
+        ".stat",
+        ".page-head",
+        ".mgmt-alert",
+        ".kanban-col",
+        ".agenda-day",
+        ".table-wrap",
+        ".portal-card",
+      ];
+      const seen = new Set();
+      let i = 0;
+      for (const sel of selectors) {
+        root.querySelectorAll(sel).forEach((el) => {
+          if (seen.has(el)) return;
+          // skip nested duplicates (e.g. .panel inside .dash-module)
+          if (el.closest(".dash-module") && !el.classList.contains("dash-module") && el.matches(".panel")) return;
+          seen.add(el);
+          el.classList.add(el.matches(".dash-flex-toolbar, .dash-period, .dash-filters, .page-head") ? "motion-fade" : "motion-item");
+          el.style.setProperty("--motion-i", String(Math.min(i, 14)));
+          i += 1;
+        });
+      }
+      root.classList.add("motion-play");
+    }
     function showView(name) {
       if (name === "home") name = "dashboard";
       ["home", "portal", "dashboard", "board", "cases", "agenda", "mgmt", "logs"].forEach((v) => {
@@ -4442,6 +4657,9 @@
       }
       if (name === "logs") renderLogHistory();
       location.hash = (name === "dashboard" || name === "home") ? "" : (name === "mgmt" ? `mgmt-${mgmtTab}` : name);
+      const viewRoot = document.getElementById(`view-${name}`);
+      // wait a frame so render content exists before staggering
+      requestAnimationFrame(() => replayViewMotion(viewRoot));
     }
 
     async function checkDb() {
@@ -10620,6 +10838,10 @@
     };
 
     // boot
+    syncMotionToggleUi();
+    document.getElementById("btnToggleMotion")?.addEventListener("click", () => {
+      setMotionPaused(!motionPaused);
+    });
     bindPortalUi();
     initPortalForm();
     casesLoading = true;
