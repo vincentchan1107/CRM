@@ -2482,6 +2482,42 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: .78rem; line-height: 1.45; box-sizing: border-box;
     }
+    .mkt-format-bar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      margin: 0 0 8px; padding: 8px 10px;
+      border: 1px solid #e4e0fb; border-radius: 12px; background: #faf8ff;
+    }
+    .mkt-format-bar .grp {
+      display: inline-flex; flex-wrap: wrap; gap: 5px; align-items: center;
+    }
+    .mkt-format-bar .grp-label {
+      font-size: .66rem; font-weight: 800; color: var(--muted);
+      letter-spacing: .03em; text-transform: uppercase; margin-right: 2px;
+    }
+    .mkt-swatch {
+      width: 22px; height: 22px; border-radius: 999px; border: 2px solid #fff;
+      box-shadow: 0 0 0 1px #d8d4fb; cursor: pointer; padding: 0;
+    }
+    .mkt-swatch:hover { transform: scale(1.08); }
+    .mkt-format-bar select,
+    .mkt-format-bar input[type="color"],
+    .mkt-format-bar input[type="url"] {
+      border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px;
+      font-size: .72rem; font-weight: 700; background: #fff;
+    }
+    .mkt-format-bar input[type="color"] {
+      width: 34px; height: 28px; padding: 2px; border-radius: 8px; cursor: pointer;
+    }
+    .mkt-format-bar input[type="url"] { min-width: 160px; flex: 1; }
+    .mkt-format-bar .btn-mini {
+      border: 1px solid #ddd5ef; background: #fff; border-radius: 999px;
+      padding: 5px 10px; font-size: .7rem; font-weight: 800; cursor: pointer; color: var(--ink-soft);
+    }
+    .mkt-format-bar .btn-mini:hover { border-color: var(--accent); color: var(--accent); }
+    .mkt-format-bar .btn-mini.on {
+      background: #efeefe; border-color: #c4b5fd; color: var(--accent);
+    }
+    .mkt-preview img { max-width: 100%; height: auto; border-radius: 8px; }
     .col-menu {
       position: relative; display: inline-block;
     }
@@ -4095,8 +4131,44 @@
             <label class="field"><span>名稱</span><input type="text" id="mktTplName" placeholder="例如：產品推廣信" /></label>
             <label class="field"><span>預設主旨</span><input type="text" id="mktTplSubject" placeholder="例如：致 {{聯絡人}} — {{公司名}} 最新方案" /></label>
             <div class="mkt-merge-bar" id="mktTplMergeBar"></div>
+            <div class="mkt-format-bar" id="mktFormatBar" title="選取文字後套用格式；插入圖片可用網址或上載">
+              <div class="grp">
+                <span class="grp-label">顏色</span>
+                <button type="button" class="mkt-swatch" data-mkt-color="#1f2430" style="background:#1f2430" title="墨黑"></button>
+                <button type="button" class="mkt-swatch" data-mkt-color="#6b46fe" style="background:#6b46fe" title="品牌紫"></button>
+                <button type="button" class="mkt-swatch" data-mkt-color="#0f766e" style="background:#0f766e" title="青綠"></button>
+                <button type="button" class="mkt-swatch" data-mkt-color="#b45309" style="background:#b45309" title="琥珀"></button>
+                <button type="button" class="mkt-swatch" data-mkt-color="#be123c" style="background:#be123c" title="玫紅"></button>
+                <button type="button" class="mkt-swatch" data-mkt-color="#1d4ed8" style="background:#1d4ed8" title="藍"></button>
+                <input type="color" id="mktColorPicker" value="#6b46fe" title="自選顏色" />
+              </div>
+              <div class="grp">
+                <span class="grp-label">字型</span>
+                <select id="mktFontSize" title="字型大小">
+                  <option value="12px">細 12</option>
+                  <option value="14px" selected>標準 14</option>
+                  <option value="16px">中 16</option>
+                  <option value="18px">大 18</option>
+                  <option value="22px">更大 22</option>
+                  <option value="28px">標題 28</option>
+                </select>
+                <button type="button" class="btn-mini" data-mkt-format="size" title="套用字型大小到選取文字">套用大小</button>
+                <button type="button" class="btn-mini" data-mkt-format="bold" title="粗體"><b>B</b></button>
+                <button type="button" class="btn-mini" data-mkt-format="italic" title="斜體"><i>I</i></button>
+                <button type="button" class="btn-mini" data-mkt-format="underline" title="底線"><u>U</u></button>
+              </div>
+              <div class="grp" style="flex:1;min-width:220px">
+                <span class="grp-label">圖片</span>
+                <input type="url" id="mktImageUrl" placeholder="圖片網址 https://…" />
+                <button type="button" class="btn-mini" id="mktInsertImageUrl">插入網址</button>
+                <label class="btn-mini" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer">
+                  上載圖片
+                  <input type="file" id="mktImageFile" accept="image/*" hidden />
+                </label>
+              </div>
+            </div>
             <label class="field"><span>HTML 內容（支援 Mail Merge）</span>
-              <textarea id="mktTplHtml" rows="14" placeholder="可寫 HTML，插入 {{公司名}} {{聯絡人}} 等欄位"></textarea>
+              <textarea id="mktTplHtml" rows="14" placeholder="可寫 HTML，插入 {{公司名}} {{聯絡人}} 等欄位；可用上方工具列改顏色／字型／插圖"></textarea>
             </label>
             <div class="mkt-preview-label">即時預覽</div>
             <div class="mkt-preview" id="mktTplPreview"></div>
@@ -11755,6 +11827,80 @@
       try { el.setSelectionRange(pos, pos); } catch (_) {}
       el.dispatchEvent(new Event("input", { bubbles: true }));
     }
+    function wrapMktSelection(el, beforeTag, afterTag, placeholder = "文字") {
+      if (!el) return;
+      el.focus();
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? start;
+      const selected = el.value.slice(start, end) || placeholder;
+      const next = beforeTag + selected + afterTag;
+      el.value = el.value.slice(0, start) + next + el.value.slice(end);
+      const selStart = start + beforeTag.length;
+      const selEnd = selStart + selected.length;
+      try { el.setSelectionRange(selStart, selEnd); } catch (_) {}
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    function applyMktTextColor(color) {
+      const el = document.getElementById("mktTplHtml");
+      const c = String(color || "").trim();
+      if (!c) return;
+      wrapMktSelection(el, `<span style="color:${c}">`, `</span>`);
+    }
+    function applyMktFontSize(size) {
+      const el = document.getElementById("mktTplHtml");
+      const s = String(size || "14px").trim();
+      wrapMktSelection(el, `<span style="font-size:${s};line-height:1.5">`, `</span>`);
+    }
+    function insertMktImage(src, alt = "推廣圖片") {
+      const el = document.getElementById("mktTplHtml");
+      if (!src) return toast("請先輸入圖片網址或上載圖片");
+      const safeAlt = String(alt || "推廣圖片").replace(/"/g, "&quot;");
+      const html = `\n<img src="${src}" alt="${safeAlt}" style="max-width:100%;height:auto;border-radius:8px;display:block;margin:12px 0" />\n`;
+      insertAtCursor(el, html);
+      toast("已插入圖片");
+    }
+    function bindMktFormatToolbar() {
+      const bar = document.getElementById("mktFormatBar");
+      if (!bar || bar.dataset.bound === "1") return;
+      bar.dataset.bound = "1";
+      bar.querySelectorAll("[data-mkt-color]").forEach((btn) => {
+        btn.onclick = () => applyMktTextColor(btn.dataset.mktColor);
+      });
+      document.getElementById("mktColorPicker")?.addEventListener("input", (e) => {
+        applyMktTextColor(e.target.value);
+      });
+      bar.querySelectorAll("[data-mkt-format]").forEach((btn) => {
+        btn.onclick = () => {
+          const el = document.getElementById("mktTplHtml");
+          const kind = btn.dataset.mktFormat;
+          if (kind === "size") {
+            applyMktFontSize(document.getElementById("mktFontSize")?.value || "14px");
+            return;
+          }
+          if (kind === "bold") return wrapMktSelection(el, "<strong>", "</strong>");
+          if (kind === "italic") return wrapMktSelection(el, "<em>", "</em>");
+          if (kind === "underline") return wrapMktSelection(el, "<u>", "</u>");
+        };
+      });
+      document.getElementById("mktInsertImageUrl")?.addEventListener("click", () => {
+        const url = (document.getElementById("mktImageUrl")?.value || "").trim();
+        if (!/^https?:\/\//i.test(url) && !url.startsWith("data:image/")) {
+          return toast("請輸入有效圖片網址（http/https）");
+        }
+        insertMktImage(url);
+      });
+      document.getElementById("mktImageFile")?.addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+        if (!String(file.type || "").startsWith("image/")) return toast("請選擇圖片檔");
+        if (file.size > 1.5 * 1024 * 1024) return toast("圖片太大（建議 < 1.5MB）");
+        const reader = new FileReader();
+        reader.onload = () => insertMktImage(String(reader.result || ""), file.name || "推廣圖片");
+        reader.onerror = () => toast("讀取圖片失敗");
+        reader.readAsDataURL(file);
+      });
+    }
     function renderMktMergeBar(root, getTarget) {
       if (!root) return;
       root.innerHTML = MKT_MERGE_FIELDS.map((f) =>
@@ -12026,6 +12172,7 @@
     function bindMarketingUi() {
       if (mktBound) return;
       mktBound = true;
+      bindMktFormatToolbar();
       document.getElementById("mktTabSeg")?.addEventListener("click", (e) => {
         const btn = e.target.closest("[data-mkt-tab]");
         if (!btn) return;
