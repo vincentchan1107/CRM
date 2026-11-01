@@ -2000,6 +2000,26 @@
       gap: 12px;
       margin-top: 8px;
     }
+    .dash-stale-head {
+      display: flex; flex-wrap: wrap; gap: 8px 12px;
+      align-items: baseline; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .dash-stale-head .sub {
+      font-size: .74rem; font-weight: 650; color: var(--muted);
+    }
+    .dash-stale-table-wrap { width: 100%; overflow-x: auto; }
+    .dash-stale-table-wrap table { width: 100%; min-width: 640px; }
+    .dash-stale-table-wrap td.muted-cell {
+      font-size: .72rem; font-weight: 650; color: var(--ink-soft);
+    }
+    .dash-stale-table-wrap .idle-days {
+      font-weight: 800; color: #9f1239; font-variant-numeric: tabular-nums;
+    }
+    .dash-stale-empty {
+      padding: 18px 12px; text-align: center; color: var(--muted);
+      font-size: .8rem; font-weight: 650;
+    }
     .chart-panel { min-height: 280px; }
     #dashChartStage { min-height: 320px; }
     .chart-panel h2 { font-size: 1.05rem; }
@@ -3653,6 +3673,13 @@
           </div>
           <div class="dash-module-body" id="dashActivityFeed"></div>
         </div>
+        <div class="panel dash-module" data-dash-module="stale" id="dashStaleClientsWrap">
+          <div class="dash-module-head">
+            <button type="button" class="dash-module-drag" data-dash-drag aria-label="拖曳排序" title="拖曳排序">⠿</button>
+            <button type="button" class="dash-module-toggle" data-toggle-module="stale" aria-expanded="true">無新動態客戶 ▾</button>
+          </div>
+          <div class="dash-module-body" id="dashStaleClients"></div>
+        </div>
         <div class="panel dash-module" data-dash-module="partner" id="dashPartnerPerfWrap">
           <div class="dash-module-head">
             <button type="button" class="dash-module-drag" data-dash-drag aria-label="拖曳排序" title="拖曳排序">⠿</button>
@@ -4056,12 +4083,13 @@
       : "all";
     // which modules belong to each category lens (ALL = everything)
     const DASH_CATEGORY_MODULES = {
-      all: ["activity", "partner", "salesTarget", "teamSales", "targetClosing", "stage", "funnel"],
-      sales: ["activity", "salesTarget", "teamSales", "targetClosing"],
-      partner: ["activity", "partner"],
-      lead: ["activity", "stage", "funnel", "targetClosing"],
+      all: ["activity", "stale", "partner", "salesTarget", "teamSales", "targetClosing", "stage", "funnel"],
+      sales: ["activity", "stale", "salesTarget", "teamSales", "targetClosing"],
+      partner: ["activity", "stale", "partner"],
+      lead: ["activity", "stale", "stage", "funnel", "targetClosing"],
     };
-    const DEFAULT_DASH_MODULE_ORDER = ["activity", "partner", "salesTarget", "teamSales", "targetClosing", "stage", "funnel"];
+    const DEFAULT_DASH_MODULE_ORDER = ["activity", "stale", "partner", "salesTarget", "teamSales", "targetClosing", "stage", "funnel"];
+    const DASH_STALE_DAYS = 60; // ~兩個月內無動態
     let dashActivityPeriod = localStorage.getItem("crm_dash_activity_period") || "week"; // today | week
     let dashModuleOrder = (() => {
       const raw = loadDashArr("crm_dash_module_order", DEFAULT_DASH_MODULE_ORDER);
@@ -7561,6 +7589,126 @@
       }
     }
 
+    function caseLastActivityAt(c) {
+      let best = 0;
+      const consider = (raw) => {
+        if (!raw) return;
+        const t = new Date(raw).getTime();
+        if (!Number.isNaN(t) && t > best) best = t;
+      };
+      // 動態 = Log／案件更新／會面；下次跟進日本身唔算「有更新」
+      consider(c?.updatedAt);
+      consider(c?.createdAt);
+      consider(c?.appointmentAt);
+      for (const l of (logsByCase[c?.id] || [])) {
+        consider(l.happened_at || l.created_at);
+      }
+      return best ? new Date(best) : null;
+    }
+
+    function buildStaleClientRows(pool, { days = DASH_STALE_DAYS } = {}) {
+      const cutoff = daysAgo(days);
+      const map = new Map();
+      for (const c of pool || []) {
+        if (c.stage === "closed" || isDq(c)) continue;
+        const key = companyKey(c);
+        if (!map.has(key)) {
+          map.set(key, {
+            key,
+            name: key,
+            cases: [],
+            primaryCaseId: c.id,
+            sales: new Set(),
+            partners: new Set(),
+            lastAt: null,
+            stage: c.stage,
+          });
+        }
+        const row = map.get(key);
+        row.cases.push(c);
+        if (normalizeCompanySales(c.companySales)) row.sales.add(normalizeCompanySales(c.companySales));
+        if (normalizePartner(c.partner)) row.partners.add(normalizePartner(c.partner));
+        const last = caseLastActivityAt(c);
+        if (last && (!row.lastAt || last > row.lastAt)) row.lastAt = last;
+        // prefer an open non-closed primary
+        if (c.stage !== "closed") row.primaryCaseId = c.id;
+        row.stage = c.stage;
+      }
+      const now = todayStart().getTime();
+      return [...map.values()]
+        .filter((r) => !r.lastAt || r.lastAt < cutoff)
+        .map((r) => {
+          const idleDays = r.lastAt
+            ? Math.max(0, Math.floor((now - todayStartFromDate(r.lastAt).getTime()) / 86400000))
+            : null;
+          return {
+            ...r,
+            salesText: [...r.sales].join("、") || "未指派",
+            partnerText: [...r.partners].join("、") || "—",
+            lastText: r.lastAt ? formatLocalDate(r.lastAt) : "從未有動態",
+            idleDays,
+            caseCount: r.cases.length,
+          };
+        })
+        .sort((a, b) => {
+          const at = a.lastAt ? a.lastAt.getTime() : 0;
+          const bt = b.lastAt ? b.lastAt.getTime() : 0;
+          if (at !== bt) return at - bt; // oldest / never first
+          return a.name.localeCompare(b.name, "zh-HK");
+        });
+    }
+
+    function todayStartFromDate(d) {
+      const x = d instanceof Date ? d : new Date(d);
+      return new Date(x.getFullYear(), x.getMonth(), x.getDate());
+    }
+
+    function renderDashStaleClients(filtered) {
+      const root = document.getElementById("dashStaleClients");
+      if (!root) return;
+      const rows = buildStaleClientRows(filtered || cases.filter(caseMatchesDashFilters), { days: DASH_STALE_DAYS });
+      const cutoff = daysAgo(DASH_STALE_DAYS);
+      root.innerHTML = `
+        <div class="dash-stale-head">
+          <div>
+            <strong style="font-size:.92rem">兩個月內無動態更新</strong>
+            <div class="sub">截止 ${escapeHtml(formatLocalDate(cutoff))} 前未有 Log／會面／案件更新的進行中客戶 · 共 ${rows.length} 個</div>
+          </div>
+        </div>
+        ${rows.length ? `<div class="dash-stale-table-wrap"><table>
+          <thead><tr>
+            <th>客戶</th><th>本公司銷售</th><th>Partner</th><th>階段</th><th>最後動態</th><th>閒置天數</th><th>操作</th>
+          </tr></thead>
+          <tbody>
+            ${rows.slice(0, 80).map((r) => {
+              const s = stageMeta(r.stage);
+              return `<tr>
+                <td>
+                  <strong>${escapeHtml(r.name)}</strong>
+                  ${r.caseCount > 1 ? `<div class="muted-cell">${r.caseCount} 宗 Case</div>` : ""}
+                </td>
+                <td>${escapeHtml(r.salesText)}</td>
+                <td class="muted-cell">${escapeHtml(r.partnerText)}</td>
+                <td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>
+                <td class="muted-cell">${escapeHtml(r.lastText)}</td>
+                <td class="idle-days">${r.idleDays == null ? "—" : r.idleDays + " 日"}</td>
+                <td><button type="button" class="btn btn-ghost btn-sm" data-case-id="${escapeAttr(r.primaryCaseId)}">詳情</button></td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table></div>
+        ${rows.length > 80 ? `<p class="muted" style="margin-top:8px;font-size:.72rem">只顯示前 80 個客戶</p>` : ""}`
+        : `<div class="dash-stale-empty">近兩個月所有進行中客戶都有動態更新 👍</div>`}
+      `;
+      root.querySelectorAll("[data-case-id]").forEach((btn) => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.caseId;
+          if (id) openDrawer(id);
+        };
+      });
+    }
+
     function renderDashboard() {
       bindDashFlexControls();
       applyDashModuleOrder();
@@ -7589,6 +7737,7 @@
       const winHint = open.length ? `${Math.min(99, Math.round((meetN / Math.max(open.length, 1)) * 100))}%` : "";
       renderDashActionZone(filtered);
       renderDashActivityFeed(filtered);
+      renderDashStaleClients(filtered);
       document.getElementById("dashStats").innerHTML = [
         renderStatCard({ label: "公司 Cases", value: open.length, sub: `${closed.length} 宗 DQ／關閉`, tone: "purple", icon: "cases", trend: winHint }),
         renderStatCard({ label: "已約會面", value: apptN, sub: "含待確認／已確認", tone: "orange", icon: "meet" }),
