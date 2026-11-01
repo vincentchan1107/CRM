@@ -1687,6 +1687,154 @@
       font-size: .72rem;
       font-weight: 650;
     }
+    .dash-activity {
+      border: 1px solid #e4dff2;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #1a1630 0%, #241f3d 100%);
+      color: #e8e4f5;
+      overflow: hidden;
+    }
+    .dash-activity-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .dash-activity-toolbar .seg {
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.1);
+    }
+    .dash-activity-toolbar .seg button {
+      color: #b8b0d0;
+    }
+    .dash-activity-toolbar .seg button.active {
+      background: rgba(167, 139, 250, .28);
+      color: #fff;
+    }
+    .dash-activity-meta {
+      font-size: .7rem;
+      font-weight: 700;
+      color: #a89fc4;
+      letter-spacing: .02em;
+    }
+    .dash-activity-prompt {
+      padding: 10px 12px 4px;
+      font: 700 .72rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #c4b5fd;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dash-activity-prompt i {
+      display: inline-block;
+      width: 7px;
+      height: 13px;
+      background: #d4b878;
+      animation: activity-cursor 1s steps(2) infinite;
+    }
+    @keyframes activity-cursor {
+      50% { opacity: 0; }
+    }
+    .dash-activity-list {
+      max-height: 280px;
+      overflow: auto;
+      padding: 6px 12px 10px;
+      scrollbar-width: thin;
+      scrollbar-color: #4b4468 transparent;
+    }
+    .dash-activity-row {
+      display: grid;
+      grid-template-columns: 28px 54px minmax(0, 1fr);
+      gap: 6px 8px;
+      padding: 8px 0;
+      border-top: 1px solid rgba(255,255,255,.06);
+      font-size: .78rem;
+      line-height: 1.55;
+      animation: activity-arrive .4s ease both;
+    }
+    .dash-activity-row:first-child { border-top: 0; }
+    @keyframes activity-arrive {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .dash-activity-idx {
+      font: 700 .68rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #7c7399;
+      padding-top: 2px;
+    }
+    .dash-activity-time {
+      font: 650 .68rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #9aa3c7;
+      padding-top: 2px;
+    }
+    .dash-activity-main { min-width: 0; }
+    .dash-activity-kind {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .7rem;
+      font-weight: 800;
+      color: #d8c394;
+      margin-bottom: 2px;
+    }
+    .dash-activity-kind .pill {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: rgba(212, 184, 120, .16);
+      border: 1px solid rgba(212, 184, 120, .35);
+      color: #e7d5a4;
+      font-size: .64rem;
+    }
+    .dash-activity-company {
+      font-weight: 750;
+      color: #f3efff;
+      cursor: pointer;
+    }
+    .dash-activity-company:hover { color: #c4b5fd; text-decoration: underline; }
+    .dash-activity-body {
+      color: #b7b0cc;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      margin-top: 2px;
+    }
+    .dash-activity-sub {
+      margin-top: 3px;
+      font-size: .68rem;
+      color: #8d85a8;
+      font-weight: 650;
+    }
+    .dash-activity-empty {
+      padding: 28px 12px;
+      text-align: center;
+      color: #9a93ad;
+      font-size: .82rem;
+      font-weight: 650;
+    }
+    .dash-activity-foot {
+      border-top: 1px solid rgba(255,255,255,.08);
+      padding: 8px 12px;
+      font-size: .68rem;
+      color: #8f87ab;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .dash-activity-list.is-paused { outline: 1px dashed rgba(196, 181, 253, .25); outline-offset: -4px; }
+    body.motion-paused .dash-activity-prompt i,
+    body.motion-paused .dash-activity-row {
+      animation: none !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .dash-activity-prompt i,
+      .dash-activity-row {
+        animation: none !important;
+      }
+    }
     .dash-module { position: relative; }
     .dash-module-head {
       display: flex;
@@ -3268,6 +3416,13 @@
 
       <p class="muted dash-layout-hint">拖曳左側 ⠿ 可調整模組位置（會記住你的版面）</p>
       <div class="dash-modules" id="dashModules">
+        <div class="panel dash-module" data-dash-module="activity" id="dashActivityFeedWrap">
+          <div class="dash-module-head">
+            <button type="button" class="dash-module-drag" data-dash-drag aria-label="拖曳排序" title="拖曳排序">⠿</button>
+            <button type="button" class="dash-module-toggle" data-toggle-module="activity" aria-expanded="true">新消息動態 ▾</button>
+          </div>
+          <div class="dash-module-body" id="dashActivityFeed"></div>
+        </div>
         <div class="panel dash-module" data-dash-module="partner" id="dashPartnerPerfWrap">
           <div class="dash-module-head">
             <button type="button" class="dash-module-drag" data-dash-drag aria-label="拖曳排序" title="拖曳排序">⠿</button>
@@ -3665,7 +3820,8 @@
     let dashCompareOn = localStorage.getItem("crm_dash_compare") === "1";
     let dashMineSales = normalizeCompanySales(localStorage.getItem("crm_dash_mine_sales") || "") || COMPANY_SALES[0];
     let dashCollapsed = loadDashArr("crm_dash_collapsed", []);
-    const DEFAULT_DASH_MODULE_ORDER = ["partner", "salesTarget", "teamSales", "targetClosing", "stage", "funnel"];
+    const DEFAULT_DASH_MODULE_ORDER = ["activity", "partner", "salesTarget", "teamSales", "targetClosing", "stage", "funnel"];
+    let dashActivityPeriod = localStorage.getItem("crm_dash_activity_period") || "week"; // today | week
     let dashModuleOrder = (() => {
       const raw = loadDashArr("crm_dash_module_order", DEFAULT_DASH_MODULE_ORDER);
       const seen = new Set();
@@ -4635,12 +4791,15 @@
       motionPaused = !!on;
       localStorage.setItem("crm_motion_paused", motionPaused ? "1" : "0");
       syncMotionToggleUi();
+      if (motionPaused) stopDashActivityAutoScroll();
       if (!motionPaused) {
         const active = document.querySelector("section[id^='view-']:not(.hidden)");
         if (active) {
           if (active.id === "view-dashboard") replayDashboardMotion(active);
           else replayViewMotion(active);
         }
+        const listEl = document.getElementById("dashActivityList");
+        if (listEl) startDashActivityAutoScroll(listEl);
       }
     }
     function parseAnimNumber(text) {
@@ -6756,6 +6915,194 @@
       </article>`;
     }
 
+    function startOfWeekLocal(d = new Date()) {
+      const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const dow = (x.getDay() + 6) % 7; // Mon = 0
+      x.setDate(x.getDate() - dow);
+      return x;
+    }
+
+    function getDashActivityRange() {
+      const now = new Date();
+      const to = endOfDay(now);
+      if (dashActivityPeriod === "today") {
+        return {
+          mode: "today",
+          from: todayStart(),
+          to,
+          title: "今日更新",
+        };
+      }
+      const from = startOfWeekLocal(now);
+      return {
+        mode: "week",
+        from,
+        to,
+        title: `本週（${formatLocalDate(from)} 至 ${formatLocalDate(now)}）`,
+      };
+    }
+
+    function buildDashActivityItems(pool) {
+      const range = getDashActivityRange();
+      const allowed = new Set((pool || []).map((c) => c.id));
+      const items = [];
+      const push = (it) => {
+        if (!it?.when || Number.isNaN(it.when.getTime())) return;
+        if (it.when < range.from || it.when > range.to) return;
+        items.push(it);
+      };
+
+      for (const log of allLogsMerged()) {
+        if (log.case_id && !allowed.has(log.case_id)) continue;
+        const when = new Date(log.happened_at || log.created_at || 0);
+        const c = cases.find((x) => x.id === log.case_id);
+        const typeMeta = LOG_TYPES.find((t) => t.id === log.log_type) || { label: log.log_type || "更新" };
+        let content = String(log.content || "").trim();
+        if (log.log_type === "field_change") {
+          const lines = content.split("\n").filter(Boolean);
+          content = lines.slice(0, 3).join("\n");
+        }
+        push({
+          id: `log-${log.id || `${log.case_id}-${when.getTime()}`}`,
+          when,
+          kind: log.log_type || "remark",
+          kindLabel: typeMeta.label,
+          company: c ? companyKey(c) : (log.case_id || "—"),
+          sales: c ? (normalizeCompanySales(c.companySales) || "未指派") : "",
+          partner: c ? (normalizePartner(c.partner) || "") : "",
+          content: content || "（無內容）",
+          caseId: log.case_id || "",
+          actor: log.actor || "",
+        });
+      }
+
+      for (const c of pool || []) {
+        const created = caseCreatedDate(c);
+        if (created) {
+          const when = new Date(created.getFullYear(), created.getMonth(), created.getDate(), 9, 0, 0);
+          // prefer exact createdAt timestamp if available
+          const raw = c.createdAt ? new Date(c.createdAt) : when;
+          push({
+            id: `new-${c.id}`,
+            when: Number.isNaN(raw.getTime()) ? when : raw,
+            kind: "new_case",
+            kindLabel: "新案件",
+            company: companyKey(c),
+            sales: normalizeCompanySales(c.companySales) || "未指派",
+            partner: normalizePartner(c.partner) || "",
+            content: `新建案件 · ${stageMeta(c.stage).label}${c.amount ? ` · ${money(c.amount)}` : ""}`,
+            caseId: c.id,
+            actor: "",
+          });
+        }
+      }
+
+      // de-dupe by id, newest first
+      const seen = new Set();
+      return items
+        .sort((a, b) => b.when - a.when)
+        .filter((it) => {
+          if (seen.has(it.id)) return false;
+          seen.add(it.id);
+          return true;
+        })
+        .slice(0, 100);
+    }
+
+    let dashActivityScrollTimer = null;
+    function stopDashActivityAutoScroll() {
+      if (dashActivityScrollTimer) {
+        clearInterval(dashActivityScrollTimer);
+        dashActivityScrollTimer = null;
+      }
+    }
+    function startDashActivityAutoScroll(listEl) {
+      stopDashActivityAutoScroll();
+      if (!listEl || motionPaused || prefersReducedMotion()) return;
+      if (listEl.scrollHeight <= listEl.clientHeight + 8) return;
+      dashActivityScrollTimer = setInterval(() => {
+        if (!listEl.isConnected || listEl.classList.contains("is-paused")) return;
+        const max = listEl.scrollHeight - listEl.clientHeight;
+        if (max <= 0) return;
+        if (listEl.scrollTop >= max - 1) listEl.scrollTop = 0;
+        else listEl.scrollTop += 1;
+      }, 40);
+    }
+
+    function renderDashActivityFeed(filtered) {
+      const root = document.getElementById("dashActivityFeed");
+      if (!root) return;
+      const range = getDashActivityRange();
+      const items = buildDashActivityItems(filtered || cases.filter(caseMatchesDashFilters));
+      const todayN = items.filter((it) => sameLocalDay(it.when, new Date())).length;
+
+      root.innerHTML = `
+        <div class="dash-activity" id="dashActivityTerminal">
+          <div class="dash-activity-toolbar">
+            <div class="seg" id="dashActivitySeg" title="動態時間範圍">
+              <button type="button" data-activity-period="today">今日</button>
+              <button type="button" data-activity-period="week">本週</button>
+            </div>
+            <span class="dash-activity-meta">${items.length} 則 · 今日 ${todayN} · ${escapeHtml(range.title)}</span>
+          </div>
+          <div class="dash-activity-prompt">achiever / activity-stream <i aria-hidden="true"></i></div>
+          <div class="dash-activity-list" id="dashActivityList" role="log" aria-label="新消息動態">
+            ${items.length ? items.map((it, idx) => {
+              const hh = String(it.when.getHours()).padStart(2, "0");
+              const mm = String(it.when.getMinutes()).padStart(2, "0");
+              const dayLbl = sameLocalDay(it.when, new Date())
+                ? `${hh}:${mm}`
+                : `${it.when.getMonth() + 1}/${it.when.getDate()} ${hh}:${mm}`;
+              const body = String(it.content || "").slice(0, 280);
+              const subBits = [it.sales, it.partner, it.actor].filter(Boolean).join(" · ");
+              return `<article class="dash-activity-row" style="animation-delay:${Math.min(idx, 12) * 35}ms">
+                <div class="dash-activity-idx">${String(idx + 1).padStart(2, "0")}</div>
+                <div class="dash-activity-time">${escapeHtml(dayLbl)}</div>
+                <div class="dash-activity-main">
+                  <div class="dash-activity-kind"><span class="pill">${escapeHtml(it.kindLabel)}</span></div>
+                  <button type="button" class="dash-activity-company" data-case-id="${escapeAttr(it.caseId || "")}" ${it.caseId ? "" : "disabled"}>
+                    ${escapeHtml(it.company)}
+                  </button>
+                  <div class="dash-activity-body">${escapeHtml(body)}</div>
+                  ${subBits ? `<div class="dash-activity-sub">${escapeHtml(subBits)}</div>` : ""}
+                </div>
+              </article>`;
+            }).join("") : `<div class="dash-activity-empty">呢段時間未有更新訊息<br/><span style="opacity:.8">改案件、會面、跟進或新 Lead 後會出現喺呢度</span></div>`}
+          </div>
+          <div class="dash-activity-foot">
+            <span>顯示當天至當星期更新 · 滑鼠移入可暫停自動捲動</span>
+            <span>共 ${items.length} 則</span>
+          </div>
+        </div>
+      `;
+
+      root.querySelectorAll("#dashActivitySeg button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.activityPeriod === dashActivityPeriod);
+        b.onclick = () => {
+          dashActivityPeriod = b.dataset.activityPeriod || "week";
+          localStorage.setItem("crm_dash_activity_period", dashActivityPeriod);
+          renderDashActivityFeed(filtered);
+        };
+      });
+
+      root.querySelectorAll("[data-case-id]").forEach((btn) => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.caseId;
+          if (id) openDrawer(id);
+        };
+      });
+
+      const listEl = root.querySelector("#dashActivityList");
+      if (listEl) {
+        listEl.onmouseenter = () => listEl.classList.add("is-paused");
+        listEl.onmouseleave = () => listEl.classList.remove("is-paused");
+        listEl.onfocusin = () => listEl.classList.add("is-paused");
+        listEl.onfocusout = () => listEl.classList.remove("is-paused");
+        startDashActivityAutoScroll(listEl);
+      }
+    }
+
     function renderDashboard() {
       bindDashFlexControls();
       applyDashModuleOrder();
@@ -6782,6 +7129,7 @@
       const rangeWeighted = inRange.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
       const winHint = open.length ? `${Math.min(99, Math.round((meetN / Math.max(open.length, 1)) * 100))}%` : "";
       renderDashActionZone(filtered);
+      renderDashActivityFeed(filtered);
       document.getElementById("dashStats").innerHTML = [
         renderStatCard({ label: "公司 Cases", value: open.length, sub: `${closed.length} 宗 DQ／關閉`, tone: "purple", icon: "cases", trend: winHint }),
         renderStatCard({ label: "已約會面", value: apptN, sub: "含待確認／已確認", tone: "orange", icon: "meet" }),
