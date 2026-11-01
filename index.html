@@ -2071,9 +2071,63 @@
     @media (max-width: 700px) { .money-compare { grid-template-columns: 1fr; } }
     .money-compare .mc {
       background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; min-width: 0;
+      transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .money-compare .mc:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 26px rgba(80, 55, 160, 0.1);
+      border-color: #ddd4f1;
     }
     .money-compare .mc .lbl { font-size: .68rem; font-weight: 700; color: var(--muted); }
-    .money-compare .mc .val { font-size: 1.05rem; font-weight: 800; margin-top: 2px; }
+    .money-compare .mc .val {
+      font-size: 1.05rem; font-weight: 800; margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat .value,
+    .dash-action-card .val {
+      font-variant-numeric: tabular-nums;
+    }
+    .count-pop {
+      animation: count-pop .42s ease;
+    }
+    @keyframes count-pop {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+    .sales-line-chart.is-drawing .sales-line-path {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: line-draw 1.15s cubic-bezier(.22, 1, .36, 1) forwards;
+      animation-delay: calc(var(--line-i, 0) * 110ms);
+    }
+    @keyframes line-draw {
+      to { stroke-dashoffset: 0; }
+    }
+    .sales-line-chart.is-drawing .sales-line-point {
+      opacity: 0;
+      animation: point-pop .4s ease forwards;
+      animation-delay: calc(.55s + var(--line-i, 0) * 110ms + var(--pt-i, 0) * 35ms);
+    }
+    @keyframes point-pop {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    body.motion-paused .sales-line-path,
+    body.motion-paused .sales-line-point {
+      animation: none !important;
+      stroke-dashoffset: 0 !important;
+      opacity: 1 !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .sales-line-path, .sales-line-point {
+        animation: none !important;
+        stroke-dashoffset: 0 !important;
+        opacity: 1 !important;
+      }
+      .money-compare .mc { transition: none !important; }
+      .money-compare .mc:hover { transform: none !important; }
+    }
     .money-compare .mc input {
       width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: .85rem; font-weight: 700;
     }
@@ -4583,8 +4637,97 @@
       syncMotionToggleUi();
       if (!motionPaused) {
         const active = document.querySelector("section[id^='view-']:not(.hidden)");
-        if (active) replayViewMotion(active);
+        if (active) {
+          if (active.id === "view-dashboard") replayDashboardMotion(active);
+          else replayViewMotion(active);
+        }
       }
+    }
+    function parseAnimNumber(text) {
+      const s = String(text || "").trim();
+      if (!s || s === "—" || s === "-" || s === "未設定") return null;
+      if (/^(HK\$|\$)[\d,]+$/.test(s)) {
+        return { kind: "money", target: Number(s.replace(/[^\d.-]/g, "")) || 0 };
+      }
+      if (/^-?\d+$/.test(s)) return { kind: "int", target: Number(s) };
+      if (/^-?\d+%$/.test(s)) return { kind: "pct", target: Number(s.replace("%", "")) };
+      return null;
+    }
+    function formatAnimNumber(n, parsed) {
+      if (parsed.kind === "money") return money(Math.round(n));
+      if (parsed.kind === "pct") return `${Math.round(n)}%`;
+      return String(Math.round(n));
+    }
+    function animateCountUps(root) {
+      if (!root || motionPaused || prefersReducedMotion()) return;
+      const nodes = root.querySelectorAll(".stat .value, .dash-action-card .val, .money-compare .mc .val");
+      nodes.forEach((el, idx) => {
+        if (el.querySelector("input")) return;
+        if (el.dataset.countBusy === "1") return;
+        const finalText = (el.dataset.countFinal || el.textContent || "").trim();
+        if (!finalText) return;
+        el.dataset.countFinal = finalText;
+        const parsed = parseAnimNumber(finalText);
+        if (!parsed || !parsed.target) {
+          // still pop tiny values like 0 with a soft flash
+          if (parsed && parsed.target === 0) {
+            el.classList.add("count-pop");
+            setTimeout(() => el.classList.remove("count-pop"), 500);
+          }
+          return;
+        }
+        el.dataset.countBusy = "1";
+        const duration = 950;
+        const delay = Math.min(idx, 12) * 55;
+        const startAt = performance.now() + delay;
+        el.textContent = formatAnimNumber(0, parsed);
+        const tick = (now) => {
+          if (motionPaused || prefersReducedMotion()) {
+            el.textContent = finalText;
+            el.dataset.countBusy = "0";
+            return;
+          }
+          if (now < startAt) {
+            requestAnimationFrame(tick);
+            return;
+          }
+          const t = Math.min(1, (now - startAt) / duration);
+          const eased = 1 - Math.pow(1 - t, 3);
+          el.textContent = formatAnimNumber(parsed.target * eased, parsed);
+          if (t < 1) requestAnimationFrame(tick);
+          else {
+            el.textContent = finalText;
+            el.dataset.countBusy = "0";
+            el.classList.add("count-pop");
+            setTimeout(() => el.classList.remove("count-pop"), 420);
+          }
+        };
+        requestAnimationFrame(tick);
+      });
+    }
+    function animateSalesLineCharts(root) {
+      if (!root || motionPaused || prefersReducedMotion()) return;
+      root.querySelectorAll(".sales-line-chart").forEach((chart) => {
+        chart.classList.remove("is-drawing");
+        void chart.offsetWidth;
+        chart.classList.add("is-drawing");
+        // ensure final state after animation window
+        setTimeout(() => {
+          chart.querySelectorAll(".sales-line-path").forEach((p) => {
+            p.style.strokeDashoffset = "0";
+          });
+          chart.querySelectorAll(".sales-line-point").forEach((p) => {
+            p.style.opacity = "1";
+          });
+        }, 1800);
+      });
+    }
+    function replayDashboardMotion(root) {
+      const host = root || document.getElementById("view-dashboard");
+      if (!host) return;
+      replayViewMotion(host);
+      animateCountUps(host);
+      animateSalesLineCharts(host);
     }
     function replayViewMotion(root) {
       if (!root || motionPaused || prefersReducedMotion()) return;
@@ -4599,6 +4742,7 @@
         ".dash-action-card",
         ".grid-stats > .stat",
         "#dashCompareStats > .stat",
+        ".money-compare > .mc",
         ".dash-flex-toolbar",
         ".dash-period",
         ".dash-filters",
@@ -4659,7 +4803,10 @@
       location.hash = (name === "dashboard" || name === "home") ? "" : (name === "mgmt" ? `mgmt-${mgmtTab}` : name);
       const viewRoot = document.getElementById(`view-${name}`);
       // wait a frame so render content exists before staggering
-      requestAnimationFrame(() => replayViewMotion(viewRoot));
+      requestAnimationFrame(() => {
+        if (name === "dashboard") replayDashboardMotion(viewRoot);
+        else replayViewMotion(viewRoot);
+      });
     }
 
     async function checkDb() {
@@ -6677,6 +6824,13 @@
       renderDashTargetClosing(filtered);
       // keep collapse state after chart innerHTML rewrites module bodies
       syncDashCollapsedUi();
+      // KPI / chart motion after content rewrite
+      requestAnimationFrame(() => {
+        const dash = document.getElementById("view-dashboard");
+        if (!dash || dash.classList.contains("hidden")) return;
+        animateCountUps(dash);
+        animateSalesLineCharts(dash);
+      });
     }
 
     function caseCreatedDate(c) {
@@ -7141,14 +7295,14 @@
               return `<line class="grid-line" x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" />
                 ${showLbl ? `<text class="axis-label" x="${W - padR + 6}" y="${y + 3}" text-anchor="start">${escapeHtml(moneyAxisLabel(t))}</text>` : ""}`;
             }).join("")}
-            ${lineLayers.map((ln) => `
-              ${ln.path ? `<path d="${ln.path}" fill="none" stroke="${ln.color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />` : ""}
-              ${ln.pts.map((p) => {
-                const tipAttrs = ` class="point-hit" data-point-tip="1" data-tip-name="${escapeAttr(ln.name)}" data-tip-amount="${escapeAttr(money(p.v))}" data-tip-date="${escapeAttr(p.dateLabel)}" data-tip-color="${escapeAttr(ln.color)}" data-tip-x="${p.x}" data-tip-y="${p.y}" data-tip-vb-w="${W}" data-tip-vb-h="${H}"`;
+            ${lineLayers.map((ln, li) => `
+              ${ln.path ? `<path class="sales-line-path" pathLength="1" style="--line-i:${li}" d="${ln.path}" fill="none" stroke="${ln.color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />` : ""}
+              ${ln.pts.map((p, pi) => {
+                const tipAttrs = ` class="point-hit sales-line-point" style="--line-i:${li};--pt-i:${pi}" data-point-tip="1" data-tip-name="${escapeAttr(ln.name)}" data-tip-amount="${escapeAttr(money(p.v))}" data-tip-date="${escapeAttr(p.dateLabel)}" data-tip-color="${escapeAttr(ln.color)}" data-tip-x="${p.x}" data-tip-y="${p.y}" data-tip-vb-w="${W}" data-tip-vb-h="${H}"`;
                 return `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="#fff" stroke="${ln.color}" stroke-width="2"${tipAttrs}>
                   <title>${escapeHtml(ln.name)} · ${escapeHtml(p.dateLabel)}: ${money(p.v)}</title>
                 </circle>
-                <circle cx="${p.x}" cy="${p.y}" r="11" fill="transparent"${tipAttrs}></circle>`;
+                <circle cx="${p.x}" cy="${p.y}" r="11" fill="transparent" class="point-hit" data-point-tip="1" data-tip-name="${escapeAttr(ln.name)}" data-tip-amount="${escapeAttr(money(p.v))}" data-tip-date="${escapeAttr(p.dateLabel)}" data-tip-color="${escapeAttr(ln.color)}" data-tip-x="${p.x}" data-tip-y="${p.y}" data-tip-vb-w="${W}" data-tip-vb-h="${H}"></circle>`;
               }).join("")}
             `).join("")}
             ${dates.map((d, i) => `<text class="x-label" x="${xAt(i)}" y="${H - 8}" text-anchor="middle">${escapeHtml(String(d.label || ""))}</text>`).join("")}
@@ -7590,6 +7744,8 @@
       ) + body;
       bindTeamSalesPeriodUi();
       bindSalesLinePointTips(root);
+      animateCountUps(root);
+      animateSalesLineCharts(root);
     }
 
     function renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt, filtered }) {
