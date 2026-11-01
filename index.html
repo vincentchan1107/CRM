@@ -1589,6 +1589,52 @@
       align-items: center;
       margin: 4px 0 10px;
     }
+    .dash-category-seg {
+      order: -1;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      margin: 0 0 2px;
+    }
+    .dash-category-seg .lbl {
+      font-size: .72rem;
+      font-weight: 800;
+      color: var(--muted);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-right: 2px;
+    }
+    #dashCategorySeg.seg {
+      background: #efeefe;
+      border: 1px solid #ddd7fb;
+      padding: 4px;
+      border-radius: 999px;
+    }
+    #dashCategorySeg.seg button {
+      min-width: 64px;
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+    #dashCategorySeg.seg button.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 6px 14px rgba(107,70,254,.22);
+    }
+    .dash-module.is-cat-hidden,
+    .dash-filter-block.is-cat-hidden {
+      display: none !important;
+    }
+    #view-dashboard[data-dash-category="sales"] .dash-layout-hint::before {
+      content: "SALES 視圖 · ";
+    }
+    #view-dashboard[data-dash-category="partner"] .dash-layout-hint::before {
+      content: "PARTNER 視圖 · ";
+    }
+    #view-dashboard[data-dash-category="lead"] .dash-layout-hint::before {
+      content: "LEAD 視圖 · ";
+    }
     .dash-compare-toggle {
       display: inline-flex;
       align-items: center;
@@ -3481,6 +3527,15 @@
     <!-- DASHBOARD (default home) -->
     <section id="view-dashboard">
       <div class="dash-flex-toolbar">
+        <div class="dash-category-seg" title="Dashboard 類別視圖">
+          <span class="lbl">類別</span>
+          <div class="seg" id="dashCategorySeg">
+            <button type="button" data-dash-category="all" class="active">ALL</button>
+            <button type="button" data-dash-category="sales">SALES</button>
+            <button type="button" data-dash-category="partner">PARTNER</button>
+            <button type="button" data-dash-category="lead">LEAD</button>
+          </div>
+        </div>
         <div class="seg" id="dashRoleSeg" title="視圖角色">
           <button type="button" data-dash-role="team" class="active">團隊</button>
           <button type="button" data-dash-role="mine">我的</button>
@@ -3519,11 +3574,11 @@
       </div>
 
       <div class="dash-filters dash-filters-multi" id="dashFilters">
-        <div class="dash-filter-block">
+        <div class="dash-filter-block" data-dash-filter-block="sales">
           <div class="dash-filter-label">本公司銷售員（可多選）</div>
           <div class="dash-chip-row" id="dashSalesChips"></div>
         </div>
-        <div class="dash-filter-block">
+        <div class="dash-filter-block" data-dash-filter-block="partner">
           <div class="dash-filter-label">Partner（可多選）</div>
           <div class="dash-chip-row" id="dashPartnerChips"></div>
         </div>
@@ -3938,6 +3993,17 @@
     let dashCompareOn = localStorage.getItem("crm_dash_compare") === "1";
     let dashMineSales = normalizeCompanySales(localStorage.getItem("crm_dash_mine_sales") || "") || COMPANY_SALES[0];
     let dashCollapsed = loadDashArr("crm_dash_collapsed", []);
+    const DASH_CATEGORIES = ["all", "sales", "partner", "lead"];
+    let dashCategory = DASH_CATEGORIES.includes(localStorage.getItem("crm_dash_category"))
+      ? localStorage.getItem("crm_dash_category")
+      : "all";
+    // which modules belong to each category lens (ALL = everything)
+    const DASH_CATEGORY_MODULES = {
+      all: ["activity", "partner", "salesTarget", "teamSales", "targetClosing", "stage", "funnel"],
+      sales: ["activity", "salesTarget", "teamSales", "targetClosing"],
+      partner: ["activity", "partner"],
+      lead: ["activity", "stage", "funnel", "targetClosing"],
+    };
     const DEFAULT_DASH_MODULE_ORDER = ["activity", "partner", "salesTarget", "teamSales", "targetClosing", "stage", "funnel"];
     let dashActivityPeriod = localStorage.getItem("crm_dash_activity_period") || "week"; // today | week
     let dashModuleOrder = (() => {
@@ -4401,8 +4467,32 @@
       document.querySelectorAll("#dashMetricSeg [data-dash-metric]").forEach((b) => {
         b.classList.toggle("active", b.dataset.dashMetric === dashMetric);
       });
+      document.querySelectorAll("#dashCategorySeg [data-dash-category]").forEach((b) => {
+        b.classList.toggle("active", b.dataset.dashCategory === dashCategory);
+      });
       const cmp = document.getElementById("dashCompareToggle");
       if (cmp) cmp.checked = !!dashCompareOn;
+    }
+    function setDashCategory(cat, { persist = true } = {}) {
+      dashCategory = DASH_CATEGORIES.includes(cat) ? cat : "all";
+      if (persist) localStorage.setItem("crm_dash_category", dashCategory);
+    }
+    function applyDashCategoryUi() {
+      const allowed = new Set(DASH_CATEGORY_MODULES[dashCategory] || DASH_CATEGORY_MODULES.all);
+      document.querySelectorAll("#dashModules [data-dash-module]").forEach((mod) => {
+        const key = mod.dataset.dashModule;
+        mod.classList.toggle("is-cat-hidden", !allowed.has(key));
+      });
+      // filter chips: SALES lens → sales chips; PARTNER → partner chips; LEAD/ALL → both
+      const showSales = dashCategory === "all" || dashCategory === "sales" || dashCategory === "lead";
+      const showPartner = dashCategory === "all" || dashCategory === "partner" || dashCategory === "lead";
+      document.querySelectorAll("[data-dash-filter-block]").forEach((block) => {
+        const kind = block.dataset.dashFilterBlock;
+        const show = kind === "sales" ? showSales : (kind === "partner" ? showPartner : true);
+        block.classList.toggle("is-cat-hidden", !show);
+      });
+      const dashRoot = document.getElementById("view-dashboard");
+      if (dashRoot) dashRoot.dataset.dashCategory = dashCategory;
     }
     function syncDashCollapsedUi() {
       document.querySelectorAll("[data-dash-module]").forEach((mod) => {
@@ -4758,6 +4848,17 @@
       });
     }
     function bindDashFlexControls() {
+      const catSeg = document.getElementById("dashCategorySeg");
+      if (catSeg && catSeg.dataset.bound !== "1") {
+        catSeg.dataset.bound = "1";
+        catSeg.addEventListener("click", (e) => {
+          const btn = e.target.closest("[data-dash-category]");
+          if (!btn) return;
+          setDashCategory(btn.dataset.dashCategory || "all");
+          dashDrill = null;
+          renderDashboard();
+        });
+      }
       const roleSeg = document.getElementById("dashRoleSeg");
       if (roleSeg && roleSeg.dataset.bound !== "1") {
         roleSeg.dataset.bound = "1";
@@ -7241,6 +7342,7 @@
       syncDashFilterUi();
       renderDashFilterChips();
       syncDashRoleMetricUi();
+      applyDashCategoryUi();
       syncDashCollapsedUi();
       const dashRoot = document.getElementById("view-dashboard");
       if (dashRoot) dashRoot.dataset.dashRole = dashRole;
@@ -11133,6 +11235,7 @@
     document.getElementById("dashFilterReset").onclick = () => {
       applyDashRolePreset("team");
       applyDashRoleLayout("team");
+      setDashCategory("all");
       dashMetric = "count";
       dashCompareOn = false;
       localStorage.setItem("crm_dash_metric", dashMetric);
