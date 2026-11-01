@@ -2591,9 +2591,62 @@
     }
     .year-summary .ys .lbl { font-size: .68rem; font-weight: 700; color: var(--muted); }
     .year-summary .ys .val { font-size: 1.05rem; font-weight: 800; margin-top: 2px; }
+    .sales-live-chart {
+      margin-top: 12px;
+      border: 1px solid #e4dff2;
+      border-radius: 18px;
+      padding: 12px 12px 10px;
+      background:
+        radial-gradient(520px 160px at 12% 0%, rgba(167, 139, 250, .18), transparent 60%),
+        radial-gradient(420px 140px at 90% 100%, rgba(39, 194, 129, .12), transparent 55%),
+        #fff;
+      box-shadow: 0 10px 28px rgba(80, 55, 160, 0.06);
+      position: relative;
+      overflow: hidden;
+    }
+    .sales-live-chart::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: .45;
+      background-image: radial-gradient(circle at 1px 1px, rgba(107, 70, 254, .12) 1px, transparent 0);
+      background-size: 14px 14px;
+    }
+    .sales-live-head {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .sales-live-head .eyebrow { margin-bottom: 2px; }
+    .sales-live-head strong {
+      display: block;
+      font-size: .95rem;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .sales-live-spark {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #27c281;
+      box-shadow: 0 0 0 0 rgba(39, 194, 129, .45);
+      animation: sales-live-spark 1.8s ease-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes sales-live-spark {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(39, 194, 129, .45); }
+      50% { transform: scale(1.15); box-shadow: 0 0 0 8px rgba(39, 194, 129, 0); }
+    }
     .year-month-bars {
+      position: relative;
+      z-index: 1;
       display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px;
-      width: 100%; min-height: 120px; margin-top: 12px; align-items: end;
+      width: 100%; min-height: 120px; margin-top: 8px; align-items: end;
     }
     @media (max-width: 700px) {
       .year-month-bars { grid-template-columns: repeat(6, minmax(0, 1fr)); }
@@ -2601,6 +2654,12 @@
     .year-month-bars .ymb {
       min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px;
       padding: 6px 2px; border-radius: 12px; background: rgba(247,244,252,.7);
+      transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+    .year-month-bars .ymb:hover {
+      transform: translateY(-2px);
+      background: #fff;
+      box-shadow: 0 8px 18px rgba(80, 55, 160, 0.1);
     }
     .year-month-bars .ymb.current { outline: 2px solid #c4b5fd; background: #efeefe; }
     .year-month-bars .ymb .pair {
@@ -2610,11 +2669,106 @@
       flex: 1 1 0; max-width: 14px; min-width: 6px; height: 100%; background: #efe8f8;
       border-radius: 999px; display: flex; align-items: flex-end; overflow: hidden;
     }
-    .year-month-bars .ymb .pair > span > i { display: block; width: 100%; min-height: 2px; border-radius: 999px; }
-    .year-month-bars .ymb .pair > span.t > i { background: linear-gradient(180deg, #8b6fff, #6b46fe); }
-    .year-month-bars .ymb .pair > span.a > i { background: linear-gradient(180deg, #5ee4b0, #27c281); }
+    .year-month-bars .ymb .pair > span > i {
+      display: block;
+      width: 100%;
+      min-height: 2px;
+      border-radius: 999px;
+      height: 0;
+      transform-origin: bottom center;
+      transition: height .85s cubic-bezier(.22, 1, .36, 1);
+      transition-delay: calc(var(--bar-i, 0) * 45ms);
+    }
+    .year-month-bars.is-ready .ymb .pair > span > i {
+      height: var(--h, 0%);
+    }
+    .year-month-bars .ymb .pair > span.t > i {
+      background: linear-gradient(180deg, #8b6fff, #6b46fe);
+      box-shadow: 0 0 10px rgba(107, 70, 254, .28);
+    }
+    .year-month-bars .ymb .pair > span.a > i {
+      background: linear-gradient(180deg, #5ee4b0, #27c281);
+      box-shadow: 0 0 10px rgba(39, 194, 129, .28);
+    }
+    .year-month-bars.is-ready .ymb.has-actual .pair > span.a > i {
+      animation: sales-bar-glow 2.4s ease-in-out infinite;
+      animation-delay: calc(var(--bar-i, 0) * 80ms);
+    }
+    @keyframes sales-bar-glow {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.18); }
+    }
     .year-month-bars .ymb .m { font-size: .62rem; font-weight: 800; color: var(--ink-soft); }
     .year-month-bars .ymb .p { font-size: .58rem; font-weight: 700; color: var(--muted); }
+    .sales-eq {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 42px;
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #1a1630, #241f3d);
+      border: 1px solid rgba(255,255,255,.06);
+      overflow: hidden;
+    }
+    .sales-eq > i {
+      flex: 1 1 0;
+      min-width: 0;
+      border-radius: 2px 2px 0 0;
+      background: linear-gradient(180deg, #ffb086, #ff8a4c);
+      box-shadow: 0 0 8px rgba(255, 138, 76, .35);
+      height: var(--eq-h, 28%);
+      transform-origin: bottom center;
+      animation: sales-eq-pulse 1.15s ease-in-out infinite;
+      animation-delay: calc(var(--eq-i, 0) * 55ms);
+    }
+    .sales-eq > i.cool {
+      background: linear-gradient(180deg, #8b6fff, #6b46fe);
+      box-shadow: 0 0 8px rgba(107, 70, 254, .35);
+    }
+    .sales-eq > i.hot {
+      background: linear-gradient(180deg, #5ee4b0, #27c281);
+      box-shadow: 0 0 8px rgba(39, 194, 129, .35);
+    }
+    @keyframes sales-eq-pulse {
+      0%, 100% { transform: scaleY(1); opacity: .95; }
+      50% { transform: scaleY(0.45); opacity: .7; }
+    }
+    .sales-eq-label {
+      position: absolute;
+      left: 10px;
+      top: 6px;
+      font-size: .58rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+      color: rgba(232, 228, 245, .72);
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    body.motion-paused .sales-live-spark,
+    body.motion-paused .year-month-bars .ymb .pair > span > i,
+    body.motion-paused .sales-eq > i {
+      animation: none !important;
+    }
+    body.motion-paused .year-month-bars .ymb .pair > span > i {
+      transition: none !important;
+      height: var(--h, 0%) !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .sales-live-spark,
+      .year-month-bars .ymb .pair > span > i,
+      .sales-eq > i {
+        animation: none !important;
+      }
+      .year-month-bars .ymb .pair > span > i {
+        transition: none !important;
+        height: var(--h, 0%) !important;
+      }
+      .year-month-bars .ymb:hover { transform: none; }
+    }
     .year-fill-box {
       display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-top: 10px;
       padding: 10px 12px; border: 1px dashed var(--line); border-radius: 14px; background: #faf8ff;
@@ -4800,6 +4954,10 @@
         }
         const listEl = document.getElementById("dashActivityList");
         if (listEl) startDashActivityAutoScroll(listEl);
+        const salesPanel = document.getElementById("salesKpiPanel");
+        if (salesPanel && !document.getElementById("view-mgmt")?.classList.contains("hidden")) {
+          activateSalesLiveChart(salesPanel);
+        }
       }
     }
     function parseAnimNumber(text) {
@@ -9692,23 +9850,41 @@
           <div class="ys"><div class="lbl">全年會面</div><div class="val">${yearMeetN}</div><div class="muted" style="font-size:.68rem">目標 ${ (kpi.meetTarget || 0) * 12 } 宗／年</div></div>
         </div>
 
-        <div class="chart-legend" style="margin-top:10px">
-          <span><i style="background:#6b46fe"></i>Closing 目標 $</span>
-          <span><i style="background:#27c281"></i>實際 Closing $</span>
-        </div>
-        <div class="year-month-bars">
-          ${monthRows.map((r) => {
-            const tH = Math.max(r.t ? 4 : 0, (r.t / maxBar) * 100);
-            const aH = Math.max(r.a ? 4 : 0, (r.a / maxBar) * 100);
-            return `<div class="ymb${r.key === cur ? " current" : ""}" title="${escapeAttr(r.label)} · 目標 ${money(r.t)} · 實際 ${money(r.a)}">
-              <div class="p">${r.t ? r.p + "%" : "—"}</div>
-              <div class="pair">
-                <span class="t"><i style="height:${tH}%"></i></span>
-                <span class="a"><i style="height:${aH}%"></i></span>
-              </div>
-              <div class="m">${r.month}月</div>
-            </div>`;
-          }).join("")}
+        <div class="sales-live-chart" data-sales-chart="${escapeAttr(name)}">
+          <div class="sales-live-head">
+            <div>
+              <div class="eyebrow">LIVE BAR CHART</div>
+              <strong>${escapeHtml(name)} · ${year} 年 Closing</strong>
+            </div>
+            <span class="sales-live-spark" title="動態圖表" aria-hidden="true"></span>
+          </div>
+          <div class="chart-legend">
+            <span><i style="background:#6b46fe"></i>Closing 目標 $</span>
+            <span><i style="background:#27c281"></i>實際 Closing $</span>
+          </div>
+          <div class="year-month-bars" id="salesYearMonthBars">
+            ${monthRows.map((r, idx) => {
+              const tH = Math.max(r.t ? 4 : 0, (r.t / maxBar) * 100);
+              const aH = Math.max(r.a ? 4 : 0, (r.a / maxBar) * 100);
+              return `<div class="ymb${r.key === cur ? " current" : ""}${r.a > 0 ? " has-actual" : ""}" style="--bar-i:${idx}" title="${escapeAttr(r.label)} · 目標 ${money(r.t)} · 實際 ${money(r.a)}">
+                <div class="p">${r.t ? r.p + "%" : "—"}</div>
+                <div class="pair">
+                  <span class="t"><i style="--h:${tH}%;--bar-i:${idx}"></i></span>
+                  <span class="a"><i style="--h:${aH}%;--bar-i:${idx}"></i></span>
+                </div>
+                <div class="m">${r.month}月</div>
+              </div>`;
+            }).join("")}
+          </div>
+          <div class="sales-eq" aria-hidden="true">
+            <span class="sales-eq-label">${escapeHtml(name)} signal</span>
+            ${monthRows.map((r, idx) => {
+              const ratio = maxBar ? (r.a / maxBar) : 0;
+              const h = Math.max(12, Math.round(18 + ratio * 78));
+              const cls = r.a <= 0 ? "cool" : (r.p >= 100 ? "hot" : "");
+              return `<i class="${cls}" style="--eq-h:${h}%;--eq-i:${idx}"></i>`;
+            }).join("")}
+          </div>
         </div>
 
         <div class="year-fill-box">
@@ -9889,11 +10065,27 @@
       `;
     }
 
+    function activateSalesLiveChart(panel) {
+      const bars = panel?.querySelector("#salesYearMonthBars") || panel?.querySelector(".year-month-bars");
+      if (!bars) return;
+      bars.classList.remove("is-ready");
+      void bars.offsetWidth;
+      const play = () => {
+        if (motionPaused || prefersReducedMotion()) {
+          bars.classList.add("is-ready");
+          return;
+        }
+        requestAnimationFrame(() => bars.classList.add("is-ready"));
+      };
+      play();
+    }
+
     function bindSalesKpiEditor(name) {
       const panel = document.getElementById("salesKpiPanel");
       const refreshDash = () => {
         if (!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashboard();
       };
+      activateSalesLiveChart(panel);
       document.getElementById("btnSaveSalesKpi").onclick = () => {
         const kpi = {};
         panel.querySelectorAll("#salesKpiForm [data-kpi]").forEach((input) => {
