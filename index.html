@@ -1475,7 +1475,154 @@
     }
     @media (min-width: 960px) {
       .dash-charts { grid-template-columns: repeat(2, 1fr); }
-      #dashChartStage { grid-column: 1 / -1; }
+      #dashChartStageWrap { grid-column: 1 / -1; }
+    }
+    .dash-flex-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 4px 0 10px;
+    }
+    .dash-compare-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .75rem;
+      font-weight: 700;
+      color: var(--ink-soft);
+      cursor: pointer;
+      user-select: none;
+    }
+    .dash-action-zone {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1fr;
+      margin: 0 0 8px;
+    }
+    @media (min-width: 800px) {
+      .dash-action-zone { grid-template-columns: repeat(3, 1fr); }
+    }
+    .dash-action-card {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 16px;
+      padding: 12px 14px;
+      cursor: pointer;
+      text-align: left;
+      box-shadow: var(--shadow);
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .dash-action-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(80, 55, 160, 0.12);
+    }
+    .dash-action-card .lbl {
+      font-size: .7rem;
+      font-weight: 800;
+      color: var(--muted);
+      letter-spacing: .02em;
+    }
+    .dash-action-card .val {
+      font-family: var(--font-display);
+      font-size: 1.45rem;
+      font-weight: 800;
+      margin-top: 2px;
+      color: var(--ink);
+    }
+    .dash-action-card .sub {
+      font-size: .72rem;
+      font-weight: 650;
+      color: var(--ink-soft);
+      margin-top: 2px;
+    }
+    .dash-action-card.warn {
+      border-color: #fecdd3;
+      background: linear-gradient(180deg, #fff7f8, #fff);
+    }
+    .dash-action-card.warn .val { color: #9f1239; }
+    .dash-filters-multi {
+      display: grid;
+      gap: 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-top: 8px;
+    }
+    .dash-filter-block { min-width: 0; }
+    .dash-filter-label {
+      font-size: .68rem;
+      font-weight: 800;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .dash-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .dash-chip {
+      border: 1px solid var(--line);
+      background: #f6f3fb;
+      color: var(--ink-soft);
+      border-radius: 999px;
+      padding: 5px 11px;
+      font-size: .72rem;
+      font-weight: 750;
+      cursor: pointer;
+    }
+    .dash-chip.on {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .dash-module { position: relative; }
+    .dash-module-toggle {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      font-size: .95rem;
+      font-weight: 800;
+      color: var(--ink);
+      padding: 2px 0 8px;
+      cursor: pointer;
+    }
+    .dash-module.collapsed .dash-module-body { display: none; }
+    .dash-module.collapsed .dash-module-toggle { padding-bottom: 0; color: var(--ink-soft); }
+    .dash-delta {
+      font-weight: 800;
+      font-size: .72rem;
+      margin-left: 2px;
+    }
+    .dash-delta.up { color: #15803d; }
+    .dash-delta.down { color: #9f1239; }
+    .dash-delta.flat { color: var(--muted); }
+    .drill-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .drill-head-actions {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+    #view-dashboard[data-dash-role="mine"] #dashPartnerPerfWrap {
+      order: 5;
+    }
+    #view-dashboard[data-dash-role="mgmt"] #dashPartnerPerfWrap,
+    #view-dashboard[data-dash-role="mgmt"] #dashChartSalesTargetWrap {
+      order: -1;
+    }
+    #dashModules {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 8px;
     }
     .chart-panel { min-height: 280px; }
     #dashChartStage { min-height: 320px; }
@@ -2845,7 +2992,29 @@
 
     <!-- DASHBOARD (default home) -->
     <section id="view-dashboard">
+      <div class="dash-flex-toolbar">
+        <div class="seg" id="dashRoleSeg" title="視圖角色">
+          <button type="button" data-dash-role="team" class="active">團隊</button>
+          <button type="button" data-dash-role="mine">我的</button>
+          <button type="button" data-dash-role="mgmt">管理</button>
+        </div>
+        <div class="seg" id="dashMetricSeg" title="圖表指標">
+          <button type="button" data-dash-metric="count" class="active">宗數</button>
+          <button type="button" data-dash-metric="amount">金額</button>
+          <button type="button" data-dash-metric="weighted">加權</button>
+          <button type="button" data-dash-metric="rate">達成率</button>
+        </div>
+        <label class="dash-compare-toggle">
+          <input type="checkbox" id="dashCompareToggle" /> 對比上期
+        </label>
+        <button type="button" class="btn btn-ghost btn-sm" id="dashFilterReset">重設篩選</button>
+        <button type="button" class="btn btn-ink btn-sm" id="dashOpenBoardFiltered">用呢個篩選開 Board</button>
+      </div>
+
+      <div class="dash-action-zone" id="dashActionZone"></div>
       <div class="grid-stats" id="dashStats"></div>
+      <div class="grid-stats hidden" id="dashCompareStats"></div>
+
       <div class="dash-period" id="dashPeriodBar">
         <div class="seg" id="dashPeriodSeg">
           <button type="button" data-period="month">當月</button>
@@ -2860,23 +3029,47 @@
           <button type="button" class="btn btn-teal btn-sm" id="dashApplyCustom">套用</button>
         </div>
       </div>
-      <div class="dash-filters" id="dashFilters">
-        <label>本公司銷售員
-          <select id="dashSalesFilter"><option value="all">全部</option></select>
-        </label>
-        <label>Partner
-          <select id="dashPartnerFilter"><option value="all">全部</option></select>
-        </label>
-        <button type="button" class="btn btn-ghost btn-sm" id="dashFilterReset">重設篩選</button>
+
+      <div class="dash-filters dash-filters-multi" id="dashFilters">
+        <div class="dash-filter-block">
+          <div class="dash-filter-label">本公司銷售員（可多選）</div>
+          <div class="dash-chip-row" id="dashSalesChips"></div>
+        </div>
+        <div class="dash-filter-block">
+          <div class="dash-filter-label">Partner（可多選）</div>
+          <div class="dash-chip-row" id="dashPartnerChips"></div>
+        </div>
+        <!-- keep hidden selects for backward-compatible sync helpers -->
+        <select id="dashSalesFilter" class="hidden" aria-hidden="true"><option value="all">全部</option></select>
+        <select id="dashPartnerFilter" class="hidden" aria-hidden="true"><option value="all">全部</option></select>
       </div>
-      <div style="display:grid;gap:12px;grid-template-columns:1fr;margin-top:8px">
-        <div class="panel" id="dashPartnerPerf"></div>
-        <div class="panel" id="dashChartSalesTarget"></div>
-        <div class="panel" id="dashTeamSales"></div>
-        <div class="panel" id="dashTargetClosing"></div>
+
+      <div class="dash-modules" id="dashModules">
+        <div class="panel dash-module" data-dash-module="partner" id="dashPartnerPerfWrap">
+          <button type="button" class="dash-module-toggle" data-toggle-module="partner" aria-expanded="true">Partner 表現 ▾</button>
+          <div class="dash-module-body" id="dashPartnerPerf"></div>
+        </div>
+        <div class="panel dash-module" data-dash-module="salesTarget" id="dashChartSalesTargetWrap">
+          <button type="button" class="dash-module-toggle" data-toggle-module="salesTarget" aria-expanded="true">銷售員目標 vs Closing ▾</button>
+          <div class="dash-module-body" id="dashChartSalesTarget"></div>
+        </div>
+        <div class="panel dash-module" data-dash-module="teamSales" id="dashTeamSalesWrap">
+          <button type="button" class="dash-module-toggle" data-toggle-module="teamSales" aria-expanded="true">團隊 Sales 線圖 ▾</button>
+          <div class="dash-module-body" id="dashTeamSales"></div>
+        </div>
+        <div class="panel dash-module" data-dash-module="targetClosing" id="dashTargetClosingWrap">
+          <button type="button" class="dash-module-toggle" data-toggle-module="targetClosing" aria-expanded="true">Target Closing ▾</button>
+          <div class="dash-module-body" id="dashTargetClosing"></div>
+        </div>
         <div class="dash-charts" id="dashCharts">
-          <div class="panel chart-panel" id="dashChartStage"></div>
-          <div class="panel chart-panel" id="dashChartFunnel"></div>
+          <div class="panel chart-panel dash-module" data-dash-module="stage" id="dashChartStageWrap">
+            <button type="button" class="dash-module-toggle" data-toggle-module="stage" aria-expanded="true">Stage Pipeline ▾</button>
+            <div class="dash-module-body" id="dashChartStage"></div>
+          </div>
+          <div class="panel chart-panel dash-module" data-dash-module="funnel" id="dashChartFunnelWrap">
+            <button type="button" class="dash-module-toggle" data-toggle-module="funnel" aria-expanded="true">轉換漏斗 ▾</button>
+            <div class="dash-module-body" id="dashChartFunnel"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -3208,8 +3401,31 @@
     let agendaTo = localStorage.getItem("crm_agenda_to") || "";
     let agendaSalesFilter = localStorage.getItem("crm_agenda_sales") || "all";
     let agendaView = localStorage.getItem("crm_agenda_view") || "list";
-    let dashSalesFilter = localStorage.getItem("crm_dash_sales") || "all";
-    let dashPartnerFilter = localStorage.getItem("crm_dash_partner") || "all";
+    let dashSalesFilter = localStorage.getItem("crm_dash_sales") || "all"; // legacy single
+    let dashPartnerFilter = localStorage.getItem("crm_dash_partner") || "all"; // legacy single
+    function loadDashArr(key, fallback) {
+      try {
+        const raw = JSON.parse(localStorage.getItem(key) || "null");
+        if (Array.isArray(raw)) return raw;
+      } catch (_) {}
+      return fallback;
+    }
+    let dashSalesSel = loadDashArr("crm_dash_sales_sel", null); // null = all
+    let dashPartnerSel = loadDashArr("crm_dash_partner_sel", null); // null = all
+    // migrate legacy single filters once
+    if (!localStorage.getItem("crm_dash_sales_sel") && dashSalesFilter && dashSalesFilter !== "all") {
+      dashSalesSel = [dashSalesFilter];
+      localStorage.setItem("crm_dash_sales_sel", JSON.stringify(dashSalesSel));
+    }
+    if (!localStorage.getItem("crm_dash_partner_sel") && dashPartnerFilter && dashPartnerFilter !== "all") {
+      dashPartnerSel = [dashPartnerFilter];
+      localStorage.setItem("crm_dash_partner_sel", JSON.stringify(dashPartnerSel));
+    }
+    let dashRole = localStorage.getItem("crm_dash_role") || "team"; // team | mine | mgmt
+    let dashMetric = localStorage.getItem("crm_dash_metric") || "count"; // count | amount | weighted | rate
+    let dashCompareOn = localStorage.getItem("crm_dash_compare") === "1";
+    let dashMineSales = normalizeCompanySales(localStorage.getItem("crm_dash_mine_sales") || "") || COMPANY_SALES[0];
+    let dashCollapsed = loadDashArr("crm_dash_collapsed", []);
     let boardSalesFilter = localStorage.getItem("crm_board_sales") || "all";
     let boardPartnerFilter = localStorage.getItem("crm_board_partner") || "all";
     let boardFollowFilter = localStorage.getItem("crm_board_follow") || "all";
@@ -3542,15 +3758,447 @@
       else el.value = "all";
       return el.value;
     }
+    function dashSalesOptions() {
+      return [...COMPANY_SALES, "未指派"];
+    }
+    function dashSalesIsAll() {
+      if (!dashSalesSel || !dashSalesSel.length) return true;
+      const opts = dashSalesOptions();
+      return opts.every((n) => dashSalesSel.includes(n));
+    }
+    function dashPartnerIsAll() {
+      if (!dashPartnerSel || !dashPartnerSel.length) return true;
+      const opts = partnerOptionsFromCases();
+      return opts.length > 0 && opts.every((p) => dashPartnerSel.includes(p));
+    }
+    function dashSalesSelected(name) {
+      if (dashSalesIsAll()) return true;
+      return dashSalesSel.includes(name);
+    }
+    function dashPartnerSelected(name) {
+      if (dashPartnerIsAll()) return true;
+      return dashPartnerSel.includes(name);
+    }
     function caseMatchesDashFilters(c) {
-      if (dashSalesFilter && dashSalesFilter !== "all") {
+      if (!dashSalesIsAll()) {
         const s = normalizeCompanySales(c.companySales) || "未指派";
-        if (s !== dashSalesFilter) return false;
+        if (!dashSalesSel.includes(s)) return false;
       }
-      if (dashPartnerFilter && dashPartnerFilter !== "all") {
-        if ((normalizePartner(c.partner) || "") !== dashPartnerFilter) return false;
+      if (!dashPartnerIsAll()) {
+        const p = normalizePartner(c.partner) || "";
+        if (!dashPartnerSel.includes(p)) return false;
       }
       return true;
+    }
+    function applyDashRolePreset(role, { persist = true } = {}) {
+      dashRole = ["team", "mine", "mgmt"].includes(role) ? role : "team";
+      if (dashRole === "team" || dashRole === "mgmt") {
+        dashSalesSel = null;
+        dashPartnerSel = null;
+      } else if (dashRole === "mine") {
+        dashSalesSel = [dashMineSales];
+        dashPartnerSel = null;
+      }
+      if (persist) {
+        localStorage.setItem("crm_dash_role", dashRole);
+        localStorage.setItem("crm_dash_sales_sel", JSON.stringify(dashSalesSel));
+        localStorage.setItem("crm_dash_partner_sel", JSON.stringify(dashPartnerSel));
+      }
+    }
+    function saveDashMultiFilters() {
+      localStorage.setItem("crm_dash_sales_sel", JSON.stringify(dashSalesSel));
+      localStorage.setItem("crm_dash_partner_sel", JSON.stringify(dashPartnerSel));
+      // keep legacy keys roughly in sync for old code paths
+      dashSalesFilter = dashSalesIsAll() ? "all" : (dashSalesSel.length === 1 ? dashSalesSel[0] : "all");
+      dashPartnerFilter = dashPartnerIsAll() ? "all" : (dashPartnerSel.length === 1 ? dashPartnerSel[0] : "all");
+      localStorage.setItem("crm_dash_sales", dashSalesFilter);
+      localStorage.setItem("crm_dash_partner", dashPartnerFilter);
+      localStorage.setItem("crm_dash_role", dashRole === "mine" && dashSalesSel?.length === 1 ? "mine" : (dashSalesIsAll() && dashPartnerIsAll() ? dashRole : "team"));
+    }
+    function renderDashFilterChips() {
+      const salesRoot = document.getElementById("dashSalesChips");
+      const partnerRoot = document.getElementById("dashPartnerChips");
+      if (salesRoot) {
+        const opts = dashSalesOptions();
+        const selected = dashSalesIsAll() ? new Set(opts) : new Set(dashSalesSel || []);
+        salesRoot.innerHTML = opts.map((n) =>
+          `<button type="button" class="dash-chip ${selected.has(n) ? "on" : ""}" data-dash-sales-chip="${escapeAttr(n)}">${escapeHtml(n)}</button>`
+        ).join("");
+        salesRoot.querySelectorAll("[data-dash-sales-chip]").forEach((btn) => {
+          btn.onclick = () => {
+            const name = btn.dataset.dashSalesChip;
+            let next = dashSalesIsAll() ? [...opts] : [...(dashSalesSel || [])];
+            if (next.includes(name)) next = next.filter((x) => x !== name);
+            else next.push(name);
+            if (!next.length) next = [...opts];
+            dashSalesSel = next.length === opts.length ? null : next;
+            dashRole = dashSalesIsAll() ? (dashRole === "mgmt" ? "mgmt" : "team") : (next.length === 1 ? "mine" : "team");
+            if (next.length === 1 && next[0] !== "未指派") {
+              dashMineSales = next[0];
+              localStorage.setItem("crm_dash_mine_sales", dashMineSales);
+            }
+            saveDashMultiFilters();
+            dashDrill = null;
+            renderDashboard();
+          };
+        });
+      }
+      if (partnerRoot) {
+        const opts = partnerOptionsFromCases();
+        const selected = dashPartnerIsAll() ? new Set(opts) : new Set(dashPartnerSel || []);
+        partnerRoot.innerHTML = opts.map((p) =>
+          `<button type="button" class="dash-chip ${selected.has(p) ? "on" : ""}" data-dash-partner-chip="${escapeAttr(p)}">${escapeHtml(p)}</button>`
+        ).join("") || `<span class="muted" style="font-size:.75rem">暫無 Partner</span>`;
+        partnerRoot.querySelectorAll("[data-dash-partner-chip]").forEach((btn) => {
+          btn.onclick = () => {
+            const name = btn.dataset.dashPartnerChip;
+            const optsNow = partnerOptionsFromCases();
+            let next = dashPartnerIsAll() ? [...optsNow] : [...(dashPartnerSel || [])];
+            if (next.includes(name)) next = next.filter((x) => x !== name);
+            else next.push(name);
+            if (!next.length) next = [...optsNow];
+            dashPartnerSel = next.length === optsNow.length ? null : next;
+            saveDashMultiFilters();
+            dashDrill = null;
+            renderDashboard();
+          };
+        });
+      }
+    }
+    function syncDashRoleMetricUi() {
+      document.querySelectorAll("#dashRoleSeg [data-dash-role]").forEach((b) => {
+        b.classList.toggle("active", b.dataset.dashRole === dashRole);
+      });
+      document.querySelectorAll("#dashMetricSeg [data-dash-metric]").forEach((b) => {
+        b.classList.toggle("active", b.dataset.dashMetric === dashMetric);
+      });
+      const cmp = document.getElementById("dashCompareToggle");
+      if (cmp) cmp.checked = !!dashCompareOn;
+    }
+    function syncDashCollapsedUi() {
+      document.querySelectorAll("[data-dash-module]").forEach((mod) => {
+        const key = mod.dataset.dashModule;
+        const collapsed = dashCollapsed.includes(key);
+        mod.classList.toggle("collapsed", collapsed);
+        const btn = mod.querySelector("[data-toggle-module]");
+        if (btn) {
+          btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+          const label = btn.textContent.replace(/[▾▸]\s*$/, "").trim();
+          btn.textContent = `${label} ${collapsed ? "▸" : "▾"}`;
+        }
+      });
+    }
+    function metricLabel() {
+      return ({ count: "宗數", amount: "金額", weighted: "加權 Forecast", rate: "達成率" })[dashMetric] || "宗數";
+    }
+    function metricValueForCases(list, { targetAmt = 0 } = {}) {
+      const arr = list || [];
+      if (dashMetric === "amount") return arr.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+      if (dashMetric === "weighted") {
+        return arr.reduce((s, c) => s + (Number(c.amount) || 0) * ((Number(c.successRate) || 0) / 100), 0);
+      }
+      if (dashMetric === "rate") {
+        const closed = arr.filter((c) => c.stage === "confirmation" || c.closeReason === "won" || isWon(c));
+        const closedAmt = closed.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+        if (targetAmt > 0) return Math.round((closedAmt / targetAmt) * 100);
+        const openOrAll = arr.length || 1;
+        return Math.round((closed.length / openOrAll) * 100);
+      }
+      return arr.length;
+    }
+    function formatDashMetric(v) {
+      if (dashMetric === "count") return String(v || 0);
+      if (dashMetric === "rate") return `${v || 0}%`;
+      return money(v || 0);
+    }
+    function metricForList(list, { totalForRate = 0, targetAmt = 0 } = {}) {
+      const arr = list || [];
+      if (dashMetric === "rate") {
+        if (targetAmt > 0) return metricValueForCases(arr, { targetAmt });
+        const base = totalForRate > 0 ? totalForRate : Math.max(arr.length, 1);
+        return Math.round((arr.length / base) * 100);
+      }
+      return metricValueForCases(arr, { targetAmt });
+    }
+    function applyDashRoleLayout(role) {
+      if (role === "mine") dashCollapsed = ["partner", "teamSales"];
+      else if (role === "mgmt") dashCollapsed = [];
+      else dashCollapsed = ["funnel"];
+      localStorage.setItem("crm_dash_collapsed", JSON.stringify(dashCollapsed));
+    }
+    function toggleDashModule(key) {
+      if (!key) return;
+      if (dashCollapsed.includes(key)) dashCollapsed = dashCollapsed.filter((k) => k !== key);
+      else dashCollapsed = [...dashCollapsed, key];
+      localStorage.setItem("crm_dash_collapsed", JSON.stringify(dashCollapsed));
+      syncDashCollapsedUi();
+    }
+    function openBoardWithDashFilters() {
+      if (!dashSalesIsAll() && dashSalesSel?.length === 1) {
+        boardSalesFilter = dashSalesSel[0];
+      } else {
+        boardSalesFilter = "all";
+      }
+      if (!dashPartnerIsAll() && dashPartnerSel?.length === 1) {
+        boardPartnerFilter = dashPartnerSel[0];
+      } else {
+        boardPartnerFilter = "all";
+      }
+      localStorage.setItem("crm_board_sales", boardSalesFilter);
+      localStorage.setItem("crm_board_partner", boardPartnerFilter);
+      syncBoardFilterUi();
+      const tips = [];
+      if (!dashSalesIsAll() && (dashSalesSel?.length || 0) > 1) tips.push("Board 只支援單一 Sales，已顯示全部");
+      if (!dashPartnerIsAll() && (dashPartnerSel?.length || 0) > 1) tips.push("Board 只支援單一 Partner，已顯示全部");
+      showView("board");
+      if (tips.length) toast(tips.join("；"));
+    }
+    function dashMonthBounds(offset = 0) {
+      const now = new Date();
+      const from = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+      const to = endOfDay(new Date(now.getFullYear(), now.getMonth() + offset + 1, 0));
+      return {
+        from,
+        to,
+        label: `${from.getFullYear()}年${from.getMonth() + 1}月`,
+      };
+    }
+    function dashPeriodKpis(pool, from, to) {
+      const list = pool || [];
+      const leads = list.filter((c) => {
+        const d = caseCreatedDate(c);
+        return d && d >= from && d <= to;
+      });
+      const meets = list.filter((c) => meetingDatesForCase(c).some((d) => d >= from && d <= to));
+      const closed = list.filter((c) => {
+        const d = caseClosingDate(c);
+        return d && d >= from && d <= to;
+      });
+      const closedAmt = closed.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+      const conversion = leads.length ? Math.round((closed.length / leads.length) * 100) : 0;
+      return {
+        leadN: leads.length,
+        meetN: meets.length,
+        closedN: closed.length,
+        closedAmt,
+        conversion,
+      };
+    }
+    function compareDeltaHtml(cur, prev, { moneyish = false, pctish = false } = {}) {
+      const diff = (Number(cur) || 0) - (Number(prev) || 0);
+      if (!diff) return `<span class="dash-delta flat">持平</span>`;
+      const up = diff > 0;
+      const abs = Math.abs(diff);
+      const shown = pctish ? `${abs}%` : (moneyish ? money(abs) : String(abs));
+      return `<span class="dash-delta ${up ? "up" : "down"}">${up ? "▲" : "▼"} ${shown}</span>`;
+    }
+    function renderDashCompareStats(filtered) {
+      const root = document.getElementById("dashCompareStats");
+      if (!root) return;
+      if (!dashCompareOn) {
+        root.classList.add("hidden");
+        root.innerHTML = "";
+        return;
+      }
+      root.classList.remove("hidden");
+      const cur = dashMonthBounds(0);
+      const prev = dashMonthBounds(-1);
+      const a = dashPeriodKpis(filtered, cur.from, cur.to);
+      const b = dashPeriodKpis(filtered, prev.from, prev.to);
+      const card = ({ label, value, prevLabel, delta, tone, icon }) => `<article class="stat">
+        <div class="stat-top">
+          <span class="stat-ico ${tone}" aria-hidden="true"><svg viewBox="0 0 24 24">${STAT_ICONS[icon] || STAT_ICONS.cases}</svg></span>
+        </div>
+        <div class="label">${escapeHtml(label)}</div>
+        <div class="value">${typeof value === "number" ? value : escapeHtml(String(value))}</div>
+        <div class="muted" style="font-size:.72rem;margin-top:4px">${prevLabel} · ${delta}</div>
+      </article>`;
+      root.innerHTML = [
+        card({
+          label: `Lead（${cur.label}）`,
+          value: a.leadN,
+          prevLabel: `上期 ${b.leadN}`,
+          delta: compareDeltaHtml(a.leadN, b.leadN),
+          tone: "purple",
+          icon: "cases",
+        }),
+        card({
+          label: `會面（${cur.label}）`,
+          value: a.meetN,
+          prevLabel: `上期 ${b.meetN}`,
+          delta: compareDeltaHtml(a.meetN, b.meetN),
+          tone: "orange",
+          icon: "meet",
+        }),
+        card({
+          label: `簽單額（${cur.label}）`,
+          value: money(a.closedAmt),
+          prevLabel: `上期 ${money(b.closedAmt)}`,
+          delta: compareDeltaHtml(a.closedAmt, b.closedAmt, { moneyish: true }),
+          tone: "mint",
+          icon: "money",
+        }),
+        card({
+          label: `轉換率（${cur.label}）`,
+          value: `${a.conversion}%`,
+          prevLabel: `上期 ${b.conversion}% · 簽單 ${a.closedN} 宗`,
+          delta: compareDeltaHtml(a.conversion, b.conversion, { pctish: true }),
+          tone: "sky",
+          icon: "chart",
+        }),
+      ].join("");
+    }
+    function renderDashActionZone(filtered) {
+      const root = document.getElementById("dashActionZone");
+      if (!root) return;
+      const pool = filtered || [];
+      const overdue = pool.filter(isFollowUpOverdue);
+      const now = new Date();
+      const todayAppt = pool
+        .filter((c) => {
+          if (!c.appointmentAt) return false;
+          const d = new Date(c.appointmentAt);
+          return !Number.isNaN(d.getTime()) && sameLocalDay(d, now);
+        })
+        .sort((a, b) => new Date(a.appointmentAt) - new Date(b.appointmentAt));
+      const dayStart = todayStart();
+      const day7 = endOfDay(new Date(dayStart.getFullYear(), dayStart.getMonth(), dayStart.getDate() + 7));
+      const closing7 = pool
+        .filter((c) => {
+          if (c.stage === "closed" && c.closeReason !== "won") return false;
+          const d = caseTargetClosingDateOnly(c);
+          return d && d >= dayStart && d <= day7;
+        })
+        .sort((a, b) => {
+          const da = caseTargetClosingDateOnly(a)?.getTime() || 0;
+          const db = caseTargetClosingDateOnly(b)?.getTime() || 0;
+          return da - db;
+        });
+      const cards = [
+        {
+          key: "overdue",
+          warn: true,
+          label: "逾期跟進",
+          val: overdue.length,
+          sub: overdue.length ? "點擊查看／跟進" : "暫時沒有逾期",
+          list: overdue,
+          title: "逾期跟進案件",
+        },
+        {
+          key: "today",
+          warn: false,
+          label: "今日約見",
+          val: todayAppt.length,
+          sub: todayAppt.length ? "今日有約見要準備" : "今日暫無約見",
+          list: todayAppt,
+          title: "今日約見",
+        },
+        {
+          key: "closing7",
+          warn: false,
+          label: "7 日內 Target Closing",
+          val: closing7.length,
+          sub: closing7.length
+            ? `合計 ${money(closing7.reduce((s, c) => s + (Number(c.amount) || 0), 0))}`
+            : "未來 7 日暫無",
+          list: closing7,
+          title: "7 日內 Target Closing",
+        },
+      ];
+      let html = cards.map((c) => `
+        <button type="button" class="dash-action-card${c.warn && c.val ? " warn" : ""}" data-dash-action="${c.key}">
+          <div class="lbl">${escapeHtml(c.label)}</div>
+          <div class="val">${c.val}</div>
+          <div class="sub">${escapeHtml(c.sub)}</div>
+        </button>`).join("");
+      if (dashDrill && dashDrill.type === "action") {
+        const hit = cards.find((c) => c.key === dashDrill.key);
+        html += renderDrillList(hit ? hit.list : (dashDrill.list || []), dashDrill.title || "行動清單");
+      }
+      root.innerHTML = html;
+      root.querySelectorAll("[data-dash-action]").forEach((btn) => {
+        btn.onclick = () => {
+          const key = btn.dataset.dashAction;
+          const hit = cards.find((c) => c.key === key);
+          if (!hit) return;
+          if (key === "overdue" && hit.list.length) {
+            // Prefer dedicated modal when no sales/partner filter narrows the set oddly
+            if (dashSalesIsAll() && dashPartnerIsAll()) {
+              openOverdueFollowUpModal("dashboard");
+              return;
+            }
+          }
+          if (dashDrill && dashDrill.type === "action" && dashDrill.key === key) dashDrill = null;
+          else dashDrill = { type: "action", key, title: hit.title, list: hit.list };
+          renderDashboard();
+        };
+      });
+      root.querySelectorAll("[data-clear-drill]").forEach((b) => {
+        b.onclick = () => { dashDrill = null; renderDashboard(); };
+      });
+      root.querySelectorAll("[data-case-id]").forEach((el) => {
+        el.onclick = (e) => {
+          e.stopPropagation();
+          openDrawer(el.dataset.caseId);
+        };
+      });
+      root.querySelectorAll("[data-open-board-from-drill]").forEach((b) => {
+        b.onclick = (e) => {
+          e.stopPropagation();
+          openBoardWithDashFilters();
+        };
+      });
+    }
+    function bindDashFlexControls() {
+      const roleSeg = document.getElementById("dashRoleSeg");
+      if (roleSeg && roleSeg.dataset.bound !== "1") {
+        roleSeg.dataset.bound = "1";
+        roleSeg.addEventListener("click", (e) => {
+          const btn = e.target.closest("[data-dash-role]");
+          if (!btn) return;
+          applyDashRolePreset(btn.dataset.dashRole || "team");
+          applyDashRoleLayout(dashRole);
+          saveDashMultiFilters();
+          dashDrill = null;
+          renderDashboard();
+        });
+      }
+      const metricSeg = document.getElementById("dashMetricSeg");
+      if (metricSeg && metricSeg.dataset.bound !== "1") {
+        metricSeg.dataset.bound = "1";
+        metricSeg.addEventListener("click", (e) => {
+          const btn = e.target.closest("[data-dash-metric]");
+          if (!btn) return;
+          dashMetric = btn.dataset.dashMetric || "count";
+          localStorage.setItem("crm_dash_metric", dashMetric);
+          dashDrill = null;
+          renderDashboard();
+        });
+      }
+      const cmp = document.getElementById("dashCompareToggle");
+      if (cmp && cmp.dataset.bound !== "1") {
+        cmp.dataset.bound = "1";
+        cmp.addEventListener("change", () => {
+          dashCompareOn = !!cmp.checked;
+          localStorage.setItem("crm_dash_compare", dashCompareOn ? "1" : "0");
+          renderDashboard();
+        });
+      }
+      const openBoard = document.getElementById("dashOpenBoardFiltered");
+      if (openBoard && openBoard.dataset.bound !== "1") {
+        openBoard.dataset.bound = "1";
+        openBoard.addEventListener("click", () => openBoardWithDashFilters());
+      }
+      const modules = document.getElementById("dashModules");
+      if (modules && modules.dataset.bound !== "1") {
+        modules.dataset.bound = "1";
+        modules.addEventListener("click", (e) => {
+          const btn = e.target.closest("[data-toggle-module]");
+          if (!btn) return;
+          e.preventDefault();
+          toggleDashModule(btn.dataset.toggleModule);
+        });
+      }
     }
     function caseMatchesBoardFilters(c) {
       if (boardSalesFilter && boardSalesFilter !== "all") {
@@ -3991,7 +4639,7 @@
         toast("暫時沒有逾期跟進客戶");
         return;
       }
-      const fromLabel = source === "board" ? "Case Management" : "客戶管理";
+      const fromLabel = source === "board" ? "Case Management" : (source === "dashboard" ? "Dashboard" : "客戶管理");
       root.innerHTML = `<div class="overdue-modal-bg" role="presentation">
         <div class="overdue-modal" role="dialog" aria-modal="true" aria-label="逾期跟進通知">
           <div class="om-head">
@@ -5607,8 +6255,14 @@
     }
 
     function renderDashboard() {
+      bindDashFlexControls();
       syncDashPeriodUi();
       syncDashFilterUi();
+      renderDashFilterChips();
+      syncDashRoleMetricUi();
+      syncDashCollapsedUi();
+      const dashRoot = document.getElementById("view-dashboard");
+      if (dashRoot) dashRoot.dataset.dashRole = dashRole;
       const filtered = cases.filter(caseMatchesDashFilters);
       const open = filtered.filter((c) => c.stage !== "closed");
       const closed = filtered.filter((c) => c.stage === "closed");
@@ -5624,12 +6278,14 @@
       const rangeAmt = inRange.reduce((s, c) => s + (c.amount || 0), 0);
       const rangeWeighted = inRange.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
       const winHint = open.length ? `${Math.min(99, Math.round((meetN / Math.max(open.length, 1)) * 100))}%` : "";
+      renderDashActionZone(filtered);
       document.getElementById("dashStats").innerHTML = [
         renderStatCard({ label: "公司 Cases", value: open.length, sub: `${closed.length} 宗 DQ／關閉`, tone: "purple", icon: "cases", trend: winHint }),
         renderStatCard({ label: "已約會面", value: apptN, sub: "含待確認／已確認", tone: "orange", icon: "meet" }),
         renderStatCard({ label: "已完成會面", value: meetN, sub: "會後可寫 comment", tone: "mint", icon: "check" }),
-        renderStatCard({ label: "所選期間案件", value: inRange.length, sub: `${money(rangeAmt)} · 加權 ${money(rangeWeighted)}`, tone: "sky", icon: "chart" }),
+        renderStatCard({ label: "所選期間案件", value: inRange.length, sub: `${money(rangeAmt)} · 加權 ${money(rangeWeighted)} · 指標 ${metricLabel()}`, tone: "sky", icon: "chart" }),
       ].join("");
+      renderDashCompareStats(filtered);
 
       let maxAmt = 1;
       const months = range.months.map((m) => {
@@ -5663,6 +6319,8 @@
       renderDashPartnerPerf(filtered);
       renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt, filtered });
       renderDashTargetClosing(filtered);
+      // keep collapse state after chart innerHTML rewrites module bodies
+      syncDashCollapsedUi();
     }
 
     function caseCreatedDate(c) {
@@ -6189,19 +6847,20 @@
         const style = it.color ? `background:linear-gradient(90deg, ${it.bg || "#efeaff"}, ${it.color})` : "";
         const clickable = it.drillKey ? " clickable" : "";
         const data = it.drillKey ? ` data-drill-type="${escapeAttr(it.drillType || "")}" data-drill-key="${escapeAttr(it.drillKey)}" data-drill-title="${escapeAttr(it.fullLabel || it.label)}"` : "";
-        return `<div class="chart-row${clickable}" title="${escapeHtml(it.fullLabel || it.label)}：${it.value}"${data}>
+        const shown = it.display != null ? it.display : it.value;
+        return `<div class="chart-row${clickable}" title="${escapeHtml(it.fullLabel || it.label)}：${escapeHtml(String(shown))}"${data}>
           <div class="name">${escapeHtml(it.label)}</div>
           <div class="chart-bar ${it.tone || ""}"><i style="width:${w}%;${style}"></i></div>
-          <div class="count">${it.value}</div>
+          <div class="count">${escapeHtml(String(shown))}</div>
         </div>${it.sub ? `<div class="muted" style="font-size:.68rem;margin:-2px 0 2px 106px">${escapeHtml(it.sub)}</div>` : ""}`;
       }).join("");
     }
 
     function renderDrillList(list, title) {
       if (!list || !list.length) {
-        return `<div class="drill-panel"><div class="drill-head"><strong>${escapeHtml(title)}</strong><button type="button" class="btn btn-ghost btn-sm" data-clear-drill>關閉</button></div><div class="breakdown-empty">呢度暫時未有案件</div></div>`;
+        return `<div class="drill-panel"><div class="drill-head"><strong>${escapeHtml(title)}</strong><div class="drill-head-actions"><button type="button" class="btn btn-ink btn-sm" data-open-board-from-drill>開 Board</button><button type="button" class="btn btn-ghost btn-sm" data-clear-drill>關閉</button></div></div><div class="breakdown-empty">呢度暫時未有案件</div></div>`;
       }
-      return `<div class="drill-panel"><div class="drill-head"><strong>${escapeHtml(title)} · ${list.length} 宗</strong><button type="button" class="btn btn-ghost btn-sm" data-clear-drill>關閉</button></div>
+      return `<div class="drill-panel"><div class="drill-head"><strong>${escapeHtml(title)} · ${list.length} 宗</strong><div class="drill-head-actions"><button type="button" class="btn btn-ink btn-sm" data-open-board-from-drill>開 Board</button><button type="button" class="btn btn-ghost btn-sm" data-clear-drill>關閉</button></div></div>
         ${list.map((c) => {
           const s = stageMeta(c.stage);
           return `<div class="breakdown-item" data-case-id="${escapeAttr(c.id)}" style="cursor:pointer">
@@ -6271,6 +6930,12 @@
       });
       (root || document).querySelectorAll("[data-clear-drill]").forEach((b) => {
         b.onclick = () => { dashDrill = null; renderDashboard(); };
+      });
+      (root || document).querySelectorAll("[data-open-board-from-drill]").forEach((b) => {
+        b.onclick = (e) => {
+          e.stopPropagation();
+          openBoardWithDashFilters();
+        };
       });
       (root || document).querySelectorAll("[data-case-id]").forEach((el) => {
         if (el.closest(".month-row")) return;
@@ -6506,7 +7171,7 @@
       const monthKeys = (salesRange.months || []).map((m) => m.key);
       const timeBuckets = buildTeamSalesTimeBuckets(salesRange);
       const pool = filtered || cases;
-      const salesRows = COMPANY_SALES.filter((name) => dashSalesFilter === "all" || name === dashSalesFilter).map((name, idx) => {
+      const salesRows = COMPANY_SALES.filter((name) => dashSalesSelected(name)).map((name, idx) => {
         const list = pool.filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed");
         const closedAmt = salesClosedAmountInRange(name, salesRange.from, salesRange.to);
         const targetAmt = salesClosingTargetSum(name, monthKeys);
@@ -6588,17 +7253,23 @@
         list: pool.filter((c) => c.stage === s.id),
       }));
       const stageTotal = stageCounts.reduce((s, x) => s + x.n, 0) || 1;
-      const stageItems = stageCounts.map((s) => ({
-        label: s.short,
-        fullLabel: s.label,
-        value: s.n,
-        color: s.color,
-        bg: s.bg,
-        drillType: "stage",
-        drillKey: s.id,
-        sub: s.n ? money(s.list.reduce((sum, c) => sum + (c.amount || 0), 0)) : "",
-      }));
-      let stageHtml = chartHeadHtml("Stage Pipeline", `篩選後階段分佈 · 共 ${stageTotal} 宗`) + renderHBars(stageItems);
+      const stageItems = stageCounts.map((s) => {
+        const metricVal = metricForList(s.list, { totalForRate: stageTotal });
+        return {
+          label: s.short,
+          fullLabel: s.label,
+          value: metricVal,
+          display: formatDashMetric(metricVal),
+          color: s.color,
+          bg: s.bg,
+          drillType: "stage",
+          drillKey: s.id,
+          sub: dashMetric === "count"
+            ? (s.n ? money(s.list.reduce((sum, c) => sum + (c.amount || 0), 0)) : "")
+            : `${s.n} 宗`,
+        };
+      });
+      let stageHtml = chartHeadHtml("Stage Pipeline", `篩選後階段分佈 · 共 ${stageTotal} 宗 · 指標 ${metricLabel()}`) + renderHBars(stageItems);
       if (dashDrill && dashDrill.type === "stage") {
         const hit = stageCounts.find((s) => s.id === dashDrill.key);
         stageHtml += renderDrillList(hit ? hit.list : [], hit ? hit.label : "Stage");
@@ -6611,10 +7282,7 @@
         const monthKeys = (range.months || []).map((m) => m.key);
         const periodFrom = range.from;
         const periodTo = range.to;
-        const salesTargetRows = COMPANY_SALES.filter((name) => {
-          if (dashSalesFilter !== "all" && name !== dashSalesFilter) return false;
-          return true;
-        }).map((name) => {
+        const salesTargetRows = COMPANY_SALES.filter((name) => dashSalesSelected(name)).map((name) => {
           const targetAmt = salesClosingTargetSum(name, monthKeys);
           // If period months don't match plan keys well, also include targets for monthKeys from range.months
           const closedAmt = salesClosedAmountInRange(name, periodFrom, periodTo);
@@ -6699,13 +7367,15 @@
       let funnelBody = `<div class="funnel-stack">
           ${funnel.map((f) => {
             const rate = Math.round((f.n / top) * 100);
+            const metricVal = metricForList(f.list, { totalForRate: top });
+            const shown = formatDashMetric(metricVal);
             return `<div class="funnel-step" data-drill-type="funnel" data-drill-key="${f.key}" data-drill-title="${escapeAttr(f.label)}" style="width:${f.width}%;background:linear-gradient(135deg, ${f.bg}, ${f.color});cursor:pointer">
               <div>
                 <div class="flabel">${escapeHtml(f.label)}</div>
-                <div class="fsub">${escapeHtml(f.sub)}</div>
+                <div class="fsub">${escapeHtml(f.sub)}${dashMetric === "count" ? "" : ` · ${f.n} 宗`}</div>
               </div>
               <div style="text-align:right">
-                <div class="fval">${f.n}</div>
+                <div class="fval">${escapeHtml(String(shown))}</div>
                 <div class="fsub">${rate}%</div>
               </div>
             </div>`;
@@ -6723,7 +7393,7 @@
         funnelBody += renderDrillList(hit ? hit.list : [], hit ? hit.label : "漏斗");
       }
       document.getElementById("dashChartFunnel").innerHTML =
-        chartHeadHtml("轉換漏斗", `由 Lead 到簽單 · 篩選後 ${inRange.length} 宗喺所選期間`) + funnelBody;
+        chartHeadHtml("轉換漏斗", `由 Lead 到簽單 · 指標 ${metricLabel()} · 篩選後 ${inRange.length} 宗喺所選期間`) + funnelBody;
 
       bindChartDrills(document.getElementById("view-dashboard"));
     }
@@ -9415,21 +10085,26 @@
 
     document.getElementById("dashSalesFilter").onchange = () => {
       dashSalesFilter = document.getElementById("dashSalesFilter").value || "all";
-      localStorage.setItem("crm_dash_sales", dashSalesFilter);
+      dashSalesSel = dashSalesFilter === "all" ? null : [dashSalesFilter];
+      saveDashMultiFilters();
       dashDrill = null;
       renderDashboard();
     };
     document.getElementById("dashPartnerFilter").onchange = () => {
       dashPartnerFilter = document.getElementById("dashPartnerFilter").value || "all";
-      localStorage.setItem("crm_dash_partner", dashPartnerFilter);
+      dashPartnerSel = dashPartnerFilter === "all" ? null : [dashPartnerFilter];
+      saveDashMultiFilters();
       dashDrill = null;
       renderDashboard();
     };
     document.getElementById("dashFilterReset").onclick = () => {
-      dashSalesFilter = "all";
-      dashPartnerFilter = "all";
-      localStorage.setItem("crm_dash_sales", "all");
-      localStorage.setItem("crm_dash_partner", "all");
+      applyDashRolePreset("team");
+      applyDashRoleLayout("team");
+      dashMetric = "count";
+      dashCompareOn = false;
+      localStorage.setItem("crm_dash_metric", dashMetric);
+      localStorage.setItem("crm_dash_compare", "0");
+      saveDashMultiFilters();
       dashDrill = null;
       renderDashboard();
     };
