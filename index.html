@@ -769,6 +769,55 @@
       margin-top: 3px;
       line-height: 1.45;
     }
+    .overdue-modal .om-head-actions {
+      display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end;
+    }
+    .overdue-modal .om-item-actions {
+      display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; flex-shrink: 0;
+    }
+    .overdue-modal .om-push-block {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border: 1px solid #d8d4fb;
+      background: #f7f5ff;
+      border-radius: 14px;
+    }
+    .overdue-modal .om-push-block .om-push-title {
+      font-size: .78rem; font-weight: 800; color: var(--ink); margin-bottom: 8px;
+    }
+    .overdue-modal .om-sales-row {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-top: 1px dashed #e4e0fb;
+    }
+    .overdue-modal .om-sales-row:first-of-type { border-top: 0; padding-top: 0; }
+    .overdue-modal .om-sales-row .names {
+      font-size: .72rem; color: var(--ink-soft); margin-top: 2px; line-height: 1.4;
+    }
+    .overdue-modal .om-wa-settings {
+      margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e4e0fb;
+      display: none;
+    }
+    .overdue-modal .om-wa-settings.open { display: block; }
+    .overdue-modal .om-wa-settings .wa-grid {
+      display: grid; gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      margin-top: 8px;
+    }
+    .overdue-modal .om-wa-settings label {
+      display: flex; flex-direction: column; gap: 4px;
+      font-size: .68rem; font-weight: 700; color: var(--muted);
+    }
+    .overdue-modal .om-wa-settings input {
+      border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px;
+      font-size: .78rem; font-weight: 650;
+    }
+    .btn-wa {
+      background: #25d366; color: #fff;
+      box-shadow: 0 8px 16px rgba(37, 211, 102, .28);
+    }
+    .btn-wa:hover { background: #1da851; color: #fff; }
     .mgmt-panel { display: none; }
     .mgmt-panel.active { display: block; }
     .mgmt-stats {
@@ -5494,18 +5543,93 @@
             .map((c) => c.nextFollowUpAt)
             .filter(Boolean)
             .sort();
+          const companySales = [...new Set(
+            overdueCases
+              .map((c) => normalizeCompanySales(c.companySales))
+              .filter(Boolean)
+          )];
+          if (!companySales.length) companySales.push("未指派");
           return {
             key: r.key,
             name: r.name,
             primaryCaseId: r.primaryCaseId,
             nextFollowUp: dates[0] || r.nextFollowUp || "",
             sales: [...(r.sales || [])].join("、"),
+            companySales,
             partners: [...(r.partners || [])].join("、"),
             caseCount: overdueCases.length || r.cases.length,
             cases: overdueCases,
           };
         })
         .sort((a, b) => String(a.nextFollowUp).localeCompare(String(b.nextFollowUp)));
+    }
+
+    function loadSalesWhatsAppPhones() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("crm_sales_whatsapp") || "{}");
+        return raw && typeof raw === "object" ? raw : {};
+      } catch (_) {
+        return {};
+      }
+    }
+    function saveSalesWhatsAppPhones(map) {
+      localStorage.setItem("crm_sales_whatsapp", JSON.stringify(map || {}));
+    }
+    function normalizeWaPhone(raw) {
+      const digits = String(raw || "").replace(/\D/g, "");
+      return digits.length >= 8 ? digits : "";
+    }
+    function openWhatsAppMessage(text, phone) {
+      const q = encodeURIComponent(String(text || "").trim());
+      if (!q) return;
+      const url = phone
+        ? `https://wa.me/${phone}?text=${q}`
+        : `https://api.whatsapp.com/send?text=${q}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+    function groupOverdueByCompanySales(items) {
+      const map = new Map();
+      for (const it of items || []) {
+        const salesList = (it.companySales && it.companySales.length)
+          ? it.companySales
+          : ["未指派"];
+        for (const s of salesList) {
+          if (!map.has(s)) map.set(s, []);
+          map.get(s).push(it);
+        }
+      }
+      return map;
+    }
+    function overdueWhatsAppTextForSales(salesName, items) {
+      const list = items || [];
+      return [
+        "Achiever CRM 逾期跟進提醒",
+        `致：${salesName}`,
+        `日期：${formatLocalDate(new Date())}`,
+        "以下客戶已超過下次跟進日期，請盡快更新：",
+        ...list.map((it, i) => `${i + 1}. ${it.name}（下次跟進 ${it.nextFollowUp || "—"}）`),
+        "",
+        `共 ${list.length} 個客戶`,
+      ].join("\n");
+    }
+    function overdueWhatsAppTextAll(items) {
+      const bySales = groupOverdueByCompanySales(items);
+      const blocks = [`Achiever CRM 逾期跟進提醒`, `日期：${formatLocalDate(new Date())}`, `共 ${items.length} 個客戶需跟進`, ""];
+      for (const [sales, list] of bySales.entries()) {
+        blocks.push(`【${sales}】`);
+        list.forEach((it, i) => blocks.push(`${i + 1}. ${it.name}（${it.nextFollowUp || "—"}）`));
+        blocks.push("");
+      }
+      return blocks.join("\n").trim();
+    }
+    function pushOverdueWhatsAppForSales(salesName, items) {
+      const phones = loadSalesWhatsAppPhones();
+      const phone = normalizeWaPhone(phones[salesName] || "");
+      const text = overdueWhatsAppTextForSales(salesName, items);
+      openWhatsAppMessage(text, phone);
+      toast(phone
+        ? `已開啟 WhatsApp 推送 → ${salesName}`
+        : `已開啟 WhatsApp（未設定 ${salesName} 號碼，請自選聯絡人）`);
     }
 
     function overdueAlertHtml(overdueN, { source = "mgmt" } = {}) {
@@ -5541,15 +5665,47 @@
         return;
       }
       const fromLabel = source === "board" ? "Case Management" : (source === "dashboard" ? "Dashboard" : "客戶管理");
+      const bySales = groupOverdueByCompanySales(items);
+      const phones = loadSalesWhatsAppPhones();
+      const salesRows = [...bySales.entries()].sort((a, b) => a[0].localeCompare(b[0], "zh-HK"));
       root.innerHTML = `<div class="overdue-modal-bg" role="presentation">
         <div class="overdue-modal" role="dialog" aria-modal="true" aria-label="逾期跟進通知">
           <div class="om-head">
             <div>
               <div class="eyebrow">跟進提示 · ${escapeHtml(fromLabel)}</div>
               <h2 style="margin:4px 0 0;font-size:1.15rem">逾期未跟進客戶（${items.length}）</h2>
-              <p class="muted" style="margin:4px 0 0;font-size:.75rem">以下客戶已超過下次跟進日期，請盡快更新</p>
+              <p class="muted" style="margin:4px 0 0;font-size:.75rem">以下客戶已超過下次跟進日期，請盡快更新 · 可用 WhatsApp 推送客戶名畀相關銷售員</p>
             </div>
-            <button type="button" class="btn btn-ghost btn-sm" id="overdueModalClose">關閉</button>
+            <div class="om-head-actions">
+              <button type="button" class="btn btn-wa btn-sm" id="overdueWaPushAll" title="用 WhatsApp 推送全部逾期客戶">WhatsApp 推送</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="overdueWaSettingsToggle">設定號碼</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="overdueModalClose">關閉</button>
+            </div>
+          </div>
+          <div class="om-push-block">
+            <div class="om-push-title">按銷售員推送逾期客戶</div>
+            ${salesRows.map(([sales, list]) => `
+              <div class="om-sales-row">
+                <div>
+                  <strong style="font-size:.82rem">${escapeHtml(sales)}</strong>
+                  <span class="muted" style="font-size:.72rem;font-weight:700"> · ${list.length} 個客戶${normalizeWaPhone(phones[sales] || "") ? " · 已設 WhatsApp" : ""}</span>
+                  <div class="names">${escapeHtml(list.map((x) => x.name).join("、"))}</div>
+                </div>
+                <button type="button" class="btn btn-wa btn-sm" data-wa-sales="${escapeAttr(sales)}">WhatsApp</button>
+              </div>`).join("")}
+            <div class="om-wa-settings" id="overdueWaSettings">
+              <div class="muted" style="font-size:.72rem;font-weight:700">選填銷售員 WhatsApp 號碼（含國碼，例如 85291234567）。未填亦可推送，開啟後自行揀聯絡人。</div>
+              <div class="wa-grid">
+                ${COMPANY_SALES.map((n) => `
+                  <label>${escapeHtml(n)}
+                    <input type="tel" inputmode="tel" data-wa-phone="${escapeAttr(n)}" value="${escapeAttr(phones[n] || "")}" placeholder="8529xxxxxxx" />
+                  </label>`).join("")}
+              </div>
+              <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+                <button type="button" class="btn btn-teal btn-sm" id="overdueWaSavePhones">儲存號碼</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="overdueWaCopyAll">複製全部訊息</button>
+              </div>
+            </div>
           </div>
           <div class="om-list">
             ${items.map((it) => `
@@ -5563,7 +5719,10 @@
                     ${it.partners ? ` · Partner：${escapeHtml(it.partners)}` : ""}
                   </div>
                 </div>
-                <button type="button" class="btn btn-teal btn-sm" data-open-overdue-case="${escapeAttr(it.primaryCaseId)}">詳情</button>
+                <div class="om-item-actions">
+                  <button type="button" class="btn btn-wa btn-sm" data-wa-client="${escapeAttr(it.key)}" title="WhatsApp 推送此客戶">WhatsApp</button>
+                  <button type="button" class="btn btn-teal btn-sm" data-open-overdue-case="${escapeAttr(it.primaryCaseId)}">詳情</button>
+                </div>
               </div>`).join("")}
           </div>
         </div>
@@ -5573,6 +5732,65 @@
         if (e.target.classList.contains("overdue-modal-bg")) close();
       };
       document.getElementById("overdueModalClose").onclick = close;
+      document.getElementById("overdueWaSettingsToggle").onclick = () => {
+        document.getElementById("overdueWaSettings")?.classList.toggle("open");
+      };
+      document.getElementById("overdueWaSavePhones").onclick = () => {
+        const next = { ...loadSalesWhatsAppPhones() };
+        root.querySelectorAll("[data-wa-phone]").forEach((input) => {
+          const name = input.dataset.waPhone;
+          const phone = normalizeWaPhone(input.value);
+          if (phone) next[name] = phone;
+          else delete next[name];
+          input.value = phone;
+        });
+        saveSalesWhatsAppPhones(next);
+        toast("已儲存銷售員 WhatsApp 號碼");
+        openOverdueFollowUpModal(source);
+      };
+      document.getElementById("overdueWaCopyAll").onclick = async () => {
+        const text = overdueWhatsAppTextAll(items);
+        try {
+          await navigator.clipboard.writeText(text);
+          toast("已複製逾期客戶訊息");
+        } catch (_) {
+          prompt("複製以下訊息", text);
+        }
+      };
+      document.getElementById("overdueWaPushAll").onclick = () => {
+        // Prefer per-sales push when phones exist; otherwise one message for self-pick
+        const phoneMap = loadSalesWhatsAppPhones();
+        const withPhone = salesRows.filter(([s]) => normalizeWaPhone(phoneMap[s] || ""));
+        if (withPhone.length) {
+          withPhone.forEach(([sales, list], idx) => {
+            setTimeout(() => pushOverdueWhatsAppForSales(sales, list), idx * 450);
+          });
+          const missing = salesRows.filter(([s]) => !normalizeWaPhone(phoneMap[s] || ""));
+          if (missing.length) {
+            setTimeout(() => {
+              openWhatsAppMessage(overdueWhatsAppTextAll(missing.flatMap(([, list]) => list)));
+              toast(`其餘 ${missing.length} 位未設號碼，已開自選聯絡人訊息`);
+            }, withPhone.length * 450 + 200);
+          }
+        } else {
+          openWhatsAppMessage(overdueWhatsAppTextAll(items));
+          toast("已開啟 WhatsApp（請自選要通知嘅銷售員）");
+        }
+      };
+      root.querySelectorAll("[data-wa-sales]").forEach((btn) => {
+        btn.onclick = () => {
+          const sales = btn.dataset.waSales;
+          pushOverdueWhatsAppForSales(sales, bySales.get(sales) || []);
+        };
+      });
+      root.querySelectorAll("[data-wa-client]").forEach((btn) => {
+        btn.onclick = () => {
+          const it = items.find((x) => x.key === btn.dataset.waClient);
+          if (!it) return;
+          const salesName = (it.companySales && it.companySales[0]) || "未指派";
+          pushOverdueWhatsAppForSales(salesName, [it]);
+        };
+      });
       root.querySelectorAll("[data-open-overdue-case]").forEach((btn) => {
         btn.onclick = () => {
           close();
