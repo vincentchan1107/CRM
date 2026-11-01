@@ -1468,15 +1468,6 @@
       height: 10px; background: var(--paper); border-radius: 999px; overflow: hidden; margin: 4px 0 2px;
     }
     .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #4aa8ff, var(--accent), #ff6b9d); }
-    .dash-charts {
-      display: grid;
-      gap: 12px;
-      grid-template-columns: 1fr;
-    }
-    @media (min-width: 960px) {
-      .dash-charts { grid-template-columns: repeat(2, 1fr); }
-      #dashChartStageWrap { grid-column: 1 / -1; }
-    }
     .dash-flex-toolbar {
       display: flex;
       flex-wrap: wrap;
@@ -1577,20 +1568,55 @@
       border-color: var(--accent);
       color: #fff;
     }
+    .dash-layout-hint {
+      margin: 10px 0 0;
+      font-size: .72rem;
+      font-weight: 650;
+    }
     .dash-module { position: relative; }
+    .dash-module-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+    .dash-module-drag {
+      flex: 0 0 auto;
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f6f3fb;
+      color: var(--ink-soft);
+      font-size: 1rem;
+      line-height: 1;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+    .dash-module-drag:active { cursor: grabbing; }
     .dash-module-toggle {
-      width: 100%;
+      flex: 1 1 auto;
+      width: auto;
       border: 0;
       background: transparent;
       text-align: left;
       font-size: .95rem;
       font-weight: 800;
       color: var(--ink);
-      padding: 2px 0 8px;
+      padding: 2px 0;
       cursor: pointer;
     }
     .dash-module.collapsed .dash-module-body { display: none; }
-    .dash-module.collapsed .dash-module-toggle { padding-bottom: 0; color: var(--ink-soft); }
+    .dash-module.collapsed .dash-module-toggle { color: var(--ink-soft); }
+    .dash-module.dragging {
+      opacity: .55;
+      box-shadow: 0 10px 28px rgba(80, 55, 160, 0.16);
+    }
+    .dash-module.drag-over {
+      outline: 2px dashed var(--accent);
+      outline-offset: 2px;
+    }
     .dash-delta {
       font-weight: 800;
       font-size: .72rem;
@@ -1610,13 +1636,6 @@
       display: inline-flex;
       gap: 6px;
       align-items: center;
-    }
-    #view-dashboard[data-dash-role="mine"] #dashPartnerPerfWrap {
-      order: 5;
-    }
-    #view-dashboard[data-dash-role="mgmt"] #dashPartnerPerfWrap,
-    #view-dashboard[data-dash-role="mgmt"] #dashChartSalesTargetWrap {
-      order: -1;
     }
     #dashModules {
       display: flex;
@@ -3008,7 +3027,7 @@
           <input type="checkbox" id="dashCompareToggle" /> 對比上期
         </label>
         <button type="button" class="btn btn-ghost btn-sm" id="dashFilterReset">重設篩選</button>
-        <button type="button" class="btn btn-ink btn-sm" id="dashOpenBoardFiltered">用呢個篩選開 Board</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="dashLayoutReset" title="重設模組順序">重設版面</button>
       </div>
 
       <div class="dash-action-zone" id="dashActionZone"></div>
@@ -3044,32 +3063,49 @@
         <select id="dashPartnerFilter" class="hidden" aria-hidden="true"><option value="all">全部</option></select>
       </div>
 
+      <p class="muted dash-layout-hint">拖曳左側 ⠿ 可調整模組位置（會記住你的版面）</p>
       <div class="dash-modules" id="dashModules">
         <div class="panel dash-module" data-dash-module="partner" id="dashPartnerPerfWrap">
-          <button type="button" class="dash-module-toggle" data-toggle-module="partner" aria-expanded="true">Partner 表現 ▾</button>
+          <div class="dash-module-head">
+            <button type="button" class="dash-module-drag" data-dash-drag aria-label="拖曳排序" title="拖曳排序">⠿</button>
+            <button type="button" class="dash-module-toggle" data-toggle-module="partner" aria-expanded="true">Partner 表現 ▾</button>
+          </div>
           <div class="dash-module-body" id="dashPartnerPerf"></div>
         </div>
         <div class="panel dash-module" data-dash-module="salesTarget" id="dashChartSalesTargetWrap">
-          <button type="button" class="dash-module-toggle" data-toggle-module="salesTarget" aria-expanded="true">銷售員目標 vs Closing ▾</button>
+          <div class="dash-module-head">
+            <button type="button" class="dash-module-drag" data-dash-drag aria-label="拖曳排序" title="拖曳排序">⠿</button>
+            <button type="button" class="dash-module-toggle" data-toggle-module="salesTarget" aria-expanded="true">銷售員目標 vs Closing ▾</button>
+          </div>
           <div class="dash-module-body" id="dashChartSalesTarget"></div>
         </div>
         <div class="panel dash-module" data-dash-module="teamSales" id="dashTeamSalesWrap">
-          <button type="button" class="dash-module-toggle" data-toggle-module="teamSales" aria-expanded="true">團隊 Sales 線圖 ▾</button>
+          <div class="dash-module-head">
+            <button type="button" class="dash-module-drag" data-dash-drag aria-label="拖曳排序" title="拖曳排序">⠿</button>
+            <button type="button" class="dash-module-toggle" data-toggle-module="teamSales" aria-expanded="true">團隊 Sales 線圖 ▾</button>
+          </div>
           <div class="dash-module-body" id="dashTeamSales"></div>
         </div>
         <div class="panel dash-module" data-dash-module="targetClosing" id="dashTargetClosingWrap">
-          <button type="button" class="dash-module-toggle" data-toggle-module="targetClosing" aria-expanded="true">Target Closing ▾</button>
+          <div class="dash-module-head">
+            <button type="button" class="dash-module-drag" data-dash-drag aria-label="拖曳排序" title="拖曳排序">⠿</button>
+            <button type="button" class="dash-module-toggle" data-toggle-module="targetClosing" aria-expanded="true">Target Closing ▾</button>
+          </div>
           <div class="dash-module-body" id="dashTargetClosing"></div>
         </div>
-        <div class="dash-charts" id="dashCharts">
-          <div class="panel chart-panel dash-module" data-dash-module="stage" id="dashChartStageWrap">
+        <div class="panel chart-panel dash-module" data-dash-module="stage" id="dashChartStageWrap">
+          <div class="dash-module-head">
+            <button type="button" class="dash-module-drag" data-dash-drag aria-label="拖曳排序" title="拖曳排序">⠿</button>
             <button type="button" class="dash-module-toggle" data-toggle-module="stage" aria-expanded="true">Stage Pipeline ▾</button>
-            <div class="dash-module-body" id="dashChartStage"></div>
           </div>
-          <div class="panel chart-panel dash-module" data-dash-module="funnel" id="dashChartFunnelWrap">
+          <div class="dash-module-body" id="dashChartStage"></div>
+        </div>
+        <div class="panel chart-panel dash-module" data-dash-module="funnel" id="dashChartFunnelWrap">
+          <div class="dash-module-head">
+            <button type="button" class="dash-module-drag" data-dash-drag aria-label="拖曳排序" title="拖曳排序">⠿</button>
             <button type="button" class="dash-module-toggle" data-toggle-module="funnel" aria-expanded="true">轉換漏斗 ▾</button>
-            <div class="dash-module-body" id="dashChartFunnel"></div>
           </div>
+          <div class="dash-module-body" id="dashChartFunnel"></div>
         </div>
       </div>
     </section>
@@ -3426,6 +3462,22 @@
     let dashCompareOn = localStorage.getItem("crm_dash_compare") === "1";
     let dashMineSales = normalizeCompanySales(localStorage.getItem("crm_dash_mine_sales") || "") || COMPANY_SALES[0];
     let dashCollapsed = loadDashArr("crm_dash_collapsed", []);
+    const DEFAULT_DASH_MODULE_ORDER = ["partner", "salesTarget", "teamSales", "targetClosing", "stage", "funnel"];
+    let dashModuleOrder = (() => {
+      const raw = loadDashArr("crm_dash_module_order", DEFAULT_DASH_MODULE_ORDER);
+      const seen = new Set();
+      const out = [];
+      for (const k of raw) {
+        if (DEFAULT_DASH_MODULE_ORDER.includes(k) && !seen.has(k)) {
+          seen.add(k);
+          out.push(k);
+        }
+      }
+      for (const k of DEFAULT_DASH_MODULE_ORDER) {
+        if (!seen.has(k)) out.push(k);
+      }
+      return out;
+    })();
     let boardSalesFilter = localStorage.getItem("crm_board_sales") || "all";
     let boardPartnerFilter = localStorage.getItem("crm_board_partner") || "all";
     let boardFollowFilter = localStorage.getItem("crm_board_follow") || "all";
@@ -3933,25 +3985,110 @@
       localStorage.setItem("crm_dash_collapsed", JSON.stringify(dashCollapsed));
       syncDashCollapsedUi();
     }
-    function openBoardWithDashFilters() {
-      if (!dashSalesIsAll() && dashSalesSel?.length === 1) {
-        boardSalesFilter = dashSalesSel[0];
-      } else {
-        boardSalesFilter = "all";
+    function saveDashModuleOrder(order) {
+      dashModuleOrder = Array.isArray(order) && order.length ? order : [...DEFAULT_DASH_MODULE_ORDER];
+      localStorage.setItem("crm_dash_module_order", JSON.stringify(dashModuleOrder));
+    }
+    function applyDashModuleOrder() {
+      const root = document.getElementById("dashModules");
+      if (!root) return;
+      const map = new Map();
+      root.querySelectorAll(":scope > [data-dash-module]").forEach((el) => {
+        map.set(el.dataset.dashModule, el);
+      });
+      const next = [];
+      for (const key of dashModuleOrder) {
+        if (map.has(key) && !next.includes(key)) next.push(key);
       }
-      if (!dashPartnerIsAll() && dashPartnerSel?.length === 1) {
-        boardPartnerFilter = dashPartnerSel[0];
-      } else {
-        boardPartnerFilter = "all";
+      for (const key of DEFAULT_DASH_MODULE_ORDER) {
+        if (map.has(key) && !next.includes(key)) next.push(key);
       }
-      localStorage.setItem("crm_board_sales", boardSalesFilter);
-      localStorage.setItem("crm_board_partner", boardPartnerFilter);
-      syncBoardFilterUi();
-      const tips = [];
-      if (!dashSalesIsAll() && (dashSalesSel?.length || 0) > 1) tips.push("Board 只支援單一 Sales，已顯示全部");
-      if (!dashPartnerIsAll() && (dashPartnerSel?.length || 0) > 1) tips.push("Board 只支援單一 Partner，已顯示全部");
-      showView("board");
-      if (tips.length) toast(tips.join("；"));
+      next.forEach((key) => root.appendChild(map.get(key)));
+      if (JSON.stringify(next) !== JSON.stringify(dashModuleOrder)) saveDashModuleOrder(next);
+    }
+    function readDashModuleOrderFromDom() {
+      const root = document.getElementById("dashModules");
+      if (!root) return [...dashModuleOrder];
+      return [...root.querySelectorAll(":scope > [data-dash-module]")].map((el) => el.dataset.dashModule);
+    }
+    function bindDashModuleDnD() {
+      const root = document.getElementById("dashModules");
+      if (!root || root.dataset.dndBound === "1") return;
+      root.dataset.dndBound = "1";
+      let dragEl = null;
+      let allowDrag = false;
+
+      const clearDragAttrs = () => {
+        root.querySelectorAll("[data-dash-module][draggable='true']").forEach((el) => el.removeAttribute("draggable"));
+        root.querySelectorAll(".dash-module.drag-over, .dash-module.dragging").forEach((el) => {
+          el.classList.remove("drag-over", "dragging");
+        });
+      };
+
+      root.addEventListener("pointerdown", (e) => {
+        const handle = e.target.closest("[data-dash-drag]");
+        const mod = handle?.closest("[data-dash-module]");
+        if (!handle || !mod || !root.contains(mod)) {
+          allowDrag = false;
+          return;
+        }
+        allowDrag = true;
+        mod.setAttribute("draggable", "true");
+      });
+
+      root.addEventListener("dragstart", (e) => {
+        const mod = e.target.closest("[data-dash-module]");
+        if (!allowDrag || !mod || !root.contains(mod)) {
+          e.preventDefault();
+          allowDrag = false;
+          return;
+        }
+        dragEl = mod;
+        mod.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        try { e.dataTransfer.setData("text/plain", mod.dataset.dashModule || ""); } catch (_) {}
+      });
+
+      root.addEventListener("dragend", () => {
+        if (dragEl) {
+          const order = readDashModuleOrderFromDom();
+          saveDashModuleOrder(order);
+        }
+        dragEl = null;
+        allowDrag = false;
+        clearDragAttrs();
+      });
+
+      root.addEventListener("dragover", (e) => {
+        if (!dragEl) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        const over = e.target.closest("[data-dash-module]");
+        if (!over || over === dragEl || over.parentElement !== root) return;
+        root.querySelectorAll(".dash-module.drag-over").forEach((el) => {
+          if (el !== over) el.classList.remove("drag-over");
+        });
+        over.classList.add("drag-over");
+        const rect = over.getBoundingClientRect();
+        const before = e.clientY < rect.top + rect.height / 2;
+        if (before) root.insertBefore(dragEl, over);
+        else root.insertBefore(dragEl, over.nextSibling);
+      });
+
+      root.addEventListener("drop", (e) => {
+        e.preventDefault();
+        root.querySelectorAll(".dash-module.drag-over").forEach((el) => el.classList.remove("drag-over"));
+      });
+
+      window.addEventListener("pointerup", () => {
+        // Defer so a real dragstart can claim the gesture first.
+        setTimeout(() => {
+          if (!dragEl) {
+            allowDrag = false;
+            root.querySelectorAll("[data-dash-module][draggable='true']").forEach((el) => el.removeAttribute("draggable"));
+          }
+        }, 0);
+      });
     }
     function dashMonthBounds(offset = 0) {
       const now = new Date();
@@ -4142,12 +4279,6 @@
           openDrawer(el.dataset.caseId);
         };
       });
-      root.querySelectorAll("[data-open-board-from-drill]").forEach((b) => {
-        b.onclick = (e) => {
-          e.stopPropagation();
-          openBoardWithDashFilters();
-        };
-      });
     }
     function bindDashFlexControls() {
       const roleSeg = document.getElementById("dashRoleSeg");
@@ -4184,21 +4315,27 @@
           renderDashboard();
         });
       }
-      const openBoard = document.getElementById("dashOpenBoardFiltered");
-      if (openBoard && openBoard.dataset.bound !== "1") {
-        openBoard.dataset.bound = "1";
-        openBoard.addEventListener("click", () => openBoardWithDashFilters());
+      const layoutReset = document.getElementById("dashLayoutReset");
+      if (layoutReset && layoutReset.dataset.bound !== "1") {
+        layoutReset.dataset.bound = "1";
+        layoutReset.addEventListener("click", () => {
+          saveDashModuleOrder([...DEFAULT_DASH_MODULE_ORDER]);
+          applyDashModuleOrder();
+          toast("已重設 Dashboard 模組順序");
+        });
       }
       const modules = document.getElementById("dashModules");
       if (modules && modules.dataset.bound !== "1") {
         modules.dataset.bound = "1";
         modules.addEventListener("click", (e) => {
+          if (e.target.closest("[data-dash-drag]")) return;
           const btn = e.target.closest("[data-toggle-module]");
           if (!btn) return;
           e.preventDefault();
           toggleDashModule(btn.dataset.toggleModule);
         });
       }
+      bindDashModuleDnD();
     }
     function caseMatchesBoardFilters(c) {
       if (boardSalesFilter && boardSalesFilter !== "all") {
@@ -6256,6 +6393,7 @@
 
     function renderDashboard() {
       bindDashFlexControls();
+      applyDashModuleOrder();
       syncDashPeriodUi();
       syncDashFilterUi();
       renderDashFilterChips();
@@ -6858,9 +6996,9 @@
 
     function renderDrillList(list, title) {
       if (!list || !list.length) {
-        return `<div class="drill-panel"><div class="drill-head"><strong>${escapeHtml(title)}</strong><div class="drill-head-actions"><button type="button" class="btn btn-ink btn-sm" data-open-board-from-drill>開 Board</button><button type="button" class="btn btn-ghost btn-sm" data-clear-drill>關閉</button></div></div><div class="breakdown-empty">呢度暫時未有案件</div></div>`;
+        return `<div class="drill-panel"><div class="drill-head"><strong>${escapeHtml(title)}</strong><div class="drill-head-actions"><button type="button" class="btn btn-ghost btn-sm" data-clear-drill>關閉</button></div></div><div class="breakdown-empty">呢度暫時未有案件</div></div>`;
       }
-      return `<div class="drill-panel"><div class="drill-head"><strong>${escapeHtml(title)} · ${list.length} 宗</strong><div class="drill-head-actions"><button type="button" class="btn btn-ink btn-sm" data-open-board-from-drill>開 Board</button><button type="button" class="btn btn-ghost btn-sm" data-clear-drill>關閉</button></div></div>
+      return `<div class="drill-panel"><div class="drill-head"><strong>${escapeHtml(title)} · ${list.length} 宗</strong><div class="drill-head-actions"><button type="button" class="btn btn-ghost btn-sm" data-clear-drill>關閉</button></div></div>
         ${list.map((c) => {
           const s = stageMeta(c.stage);
           return `<div class="breakdown-item" data-case-id="${escapeAttr(c.id)}" style="cursor:pointer">
@@ -6930,12 +7068,6 @@
       });
       (root || document).querySelectorAll("[data-clear-drill]").forEach((b) => {
         b.onclick = () => { dashDrill = null; renderDashboard(); };
-      });
-      (root || document).querySelectorAll("[data-open-board-from-drill]").forEach((b) => {
-        b.onclick = (e) => {
-          e.stopPropagation();
-          openBoardWithDashFilters();
-        };
       });
       (root || document).querySelectorAll("[data-case-id]").forEach((el) => {
         if (el.closest(".month-row")) return;
