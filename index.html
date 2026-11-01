@@ -2407,6 +2407,81 @@
       background: #efeefe; border: 1px solid #d8d4fb;
     }
     .cases-bulkbar.show { display: flex; }
+    .mkt-tabs { margin: 0 0 12px; }
+    .mkt-grid {
+      display: grid; gap: 12px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 980px) {
+      .mkt-grid { grid-template-columns: minmax(280px, 0.95fr) minmax(320px, 1.15fr); }
+    }
+    .mkt-panel {
+      background: #fff; border: 1px solid var(--line); border-radius: 16px;
+      padding: 14px 14px 12px; box-shadow: var(--shadow); min-width: 0;
+    }
+    .mkt-panel-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+    }
+    .mkt-panel-head strong { font-size: .92rem; }
+    .mkt-toolbar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px;
+    }
+    .mkt-toolbar input[type="search"],
+    .mkt-toolbar select {
+      border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px;
+      font-size: .78rem; font-weight: 650; background: #fff; min-width: 120px;
+    }
+    .mkt-toolbar input[type="search"] { flex: 1; min-width: 160px; }
+    .mkt-check {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: .72rem; font-weight: 700; color: var(--ink-soft); cursor: pointer;
+    }
+    .mkt-client-list, .mkt-template-list {
+      max-height: min(58vh, 560px); overflow: auto; display: grid; gap: 6px;
+    }
+    .mkt-client-item, .mkt-tpl-item {
+      display: flex; gap: 10px; align-items: flex-start;
+      border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px;
+      background: #faf9ff; cursor: pointer;
+    }
+    .mkt-client-item:hover, .mkt-tpl-item:hover { border-color: #d8d4fb; }
+    .mkt-client-item.on, .mkt-tpl-item.on {
+      background: #efeefe; border-color: #c4b5fd;
+      box-shadow: 0 0 0 1px rgba(107,70,254,.12);
+    }
+    .mkt-client-item .meta, .mkt-tpl-item .meta {
+      font-size: .7rem; color: var(--ink-soft); font-weight: 650; margin-top: 2px; line-height: 1.4;
+    }
+    .mkt-client-item input { margin-top: 3px; }
+    .mkt-merge-bar {
+      display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px;
+    }
+    .mkt-merge-bar button {
+      border: 1px dashed #c4b5fd; background: #f7f5ff; color: #5b21b6;
+      border-radius: 999px; padding: 5px 10px; font-size: .7rem; font-weight: 800; cursor: pointer;
+    }
+    .mkt-merge-bar button:hover { background: #efeefe; border-style: solid; }
+    .mkt-preview-label {
+      font-size: .68rem; font-weight: 800; color: var(--muted);
+      letter-spacing: .04em; text-transform: uppercase; margin: 4px 0 6px;
+    }
+    .mkt-preview {
+      border: 1px solid var(--line); border-radius: 12px; background: #fff;
+      min-height: 160px; max-height: 320px; overflow: auto; padding: 12px 14px;
+      font-size: .84rem; line-height: 1.55;
+    }
+    .mkt-preview :where(h1,h2,h3) { margin: 0 0 .4em; }
+    .mkt-preview p { margin: 0 0 .7em; }
+    .mkt-actions {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+    }
+    #mktTplHtml {
+      width: 100%; min-height: 220px; resize: vertical;
+      border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .78rem; line-height: 1.45; box-sizing: border-box;
+    }
     .col-menu {
       position: relative; display: inline-block;
     }
@@ -3413,6 +3488,7 @@
             <button type="button" data-view="mgmt" data-mgmt="sales">銷售員管理</button>
           </div>
         </div>
+        <button data-view="marketing"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h11l5 5v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M9 12h6M9 16h4"/></svg></span><span class="nav-label">市場推廣</span></button>
         <button data-view="logs"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span class="nav-label">Log History</span></button>
         <button data-view="portal"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/></svg></span><span class="nav-label">手機 Portal</span></button>
       </nav>
@@ -3944,6 +4020,91 @@
     </section>
 
     <!-- LOG HISTORY -->
+    <section id="view-marketing" class="hidden">
+      <div class="page-head" style="margin-bottom:10px">
+        <div>
+          <div class="eyebrow">Marketing</div>
+          <h1>市場推廣</h1>
+          <p class="muted page-head-sub">揀客戶 → 選 Template → Mail Merge 公司名／聯絡人 → 群發電郵推廣</p>
+        </div>
+      </div>
+      <div class="seg mkt-tabs" id="mktTabSeg" title="市場推廣分頁">
+        <button type="button" data-mkt-tab="campaign" class="active">群發推廣</button>
+        <button type="button" data-mkt-tab="templates">Template 庫</button>
+      </div>
+
+      <div id="mktCampaignPanel">
+        <div class="mkt-grid">
+          <div class="mkt-panel">
+            <div class="mkt-panel-head">
+              <strong>選擇客戶</strong>
+              <span class="muted" id="mktSelectCount" style="font-size:.72rem;font-weight:700">已選 0</span>
+            </div>
+            <div class="mkt-toolbar">
+              <input type="search" id="mktClientSearch" placeholder="搜尋公司／聯絡人／電郵…" />
+              <select id="mktSalesFilter"><option value="all">全部銷售</option></select>
+              <select id="mktPartnerFilter"><option value="all">全部 Partner</option></select>
+              <label class="mkt-check"><input type="checkbox" id="mktOnlyEmail" checked /> 只顯示有電郵</label>
+              <button type="button" class="btn btn-ghost btn-sm" id="mktSelectAllVisible">全選可見</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="mktClearSelect">清除選取</button>
+            </div>
+            <div class="mkt-client-list" id="mktClientList"></div>
+          </div>
+          <div class="mkt-panel">
+            <div class="mkt-panel-head">
+              <strong>推廣內容</strong>
+              <button type="button" class="btn btn-ghost btn-sm" id="mktGotoTemplates">管理 Template</button>
+            </div>
+            <label class="field"><span>選擇 Template</span>
+              <select id="mktCampaignTemplate"></select>
+            </label>
+            <label class="field"><span>電郵主旨（可用 Merge 欄位）</span>
+              <input type="text" id="mktCampaignSubject" placeholder="例如：{{公司名}} 專屬方案介紹" />
+            </label>
+            <div class="mkt-merge-bar" id="mktCampaignMergeBar"></div>
+            <div class="mkt-preview-label">合併預覽（依第一位已選客戶）</div>
+            <div class="mkt-preview" id="mktCampaignPreview"></div>
+            <div class="mkt-actions">
+              <button type="button" class="btn btn-teal" id="mktSendMailto">用電郵客戶端群發（mailto）</button>
+              <button type="button" class="btn btn-ghost" id="mktOpenFirstEmail">開啟第一封合併電郵</button>
+              <button type="button" class="btn btn-ghost" id="mktCopyMergedHtml">複製合併 HTML</button>
+              <button type="button" class="btn btn-ghost" id="mktDownloadMerged">下載 HTML 預覽</button>
+            </div>
+            <p class="muted" style="margin:8px 0 0;font-size:.72rem">群發會按每位客戶的公司名／聯絡人做 Mail Merge。瀏覽器 mailto 適合小量；大量可複製 HTML 到郵件工具。</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="mktTemplatesPanel" class="hidden">
+        <div class="mkt-grid">
+          <div class="mkt-panel">
+            <div class="mkt-panel-head">
+              <strong>Template 庫</strong>
+              <button type="button" class="btn btn-teal btn-sm" id="mktNewTemplate">＋ 新增</button>
+            </div>
+            <div class="mkt-template-list" id="mktTemplateList"></div>
+          </div>
+          <div class="mkt-panel">
+            <div class="mkt-panel-head">
+              <strong id="mktEditorTitle">編輯 Template</strong>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button type="button" class="btn btn-teal btn-sm" id="mktSaveTemplate">儲存</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="mktDeleteTemplate">刪除</button>
+              </div>
+            </div>
+            <label class="field"><span>名稱</span><input type="text" id="mktTplName" placeholder="例如：產品推廣信" /></label>
+            <label class="field"><span>預設主旨</span><input type="text" id="mktTplSubject" placeholder="例如：致 {{聯絡人}} — {{公司名}} 最新方案" /></label>
+            <div class="mkt-merge-bar" id="mktTplMergeBar"></div>
+            <label class="field"><span>HTML 內容（支援 Mail Merge）</span>
+              <textarea id="mktTplHtml" rows="14" placeholder="可寫 HTML，插入 {{公司名}} {{聯絡人}} 等欄位"></textarea>
+            </label>
+            <div class="mkt-preview-label">即時預覽</div>
+            <div class="mkt-preview" id="mktTplPreview"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="view-logs" class="hidden">
       <div style="margin-bottom:8px">
         <div class="page-head">
@@ -5073,6 +5234,7 @@
       cases: "案件列表",
       agenda: "銷售員會議及 Case 跟進",
       mgmt: "資料庫管理",
+      marketing: "市場推廣",
       logs: "Log History",
     };
 
@@ -5250,7 +5412,7 @@
     }
     function showView(name) {
       if (name === "home") name = "dashboard";
-      ["home", "portal", "dashboard", "board", "cases", "agenda", "mgmt", "logs"].forEach((v) => {
+      ["home", "portal", "dashboard", "board", "cases", "agenda", "mgmt", "marketing", "logs"].forEach((v) => {
         document.getElementById(`view-${v}`).classList.toggle("hidden", v !== name);
       });
       document.body.classList.toggle("mode-board", name === "board");
@@ -5275,6 +5437,7 @@
         document.querySelectorAll(".mgmt-panel").forEach((p) => p.classList.toggle("active", p.id === `mgmt-${mgmtTab}`));
         renderMgmt();
       }
+      if (name === "marketing") renderMarketing();
       if (name === "logs") renderLogHistory();
       location.hash = (name === "dashboard" || name === "home") ? "" : (name === "mgmt" ? `mgmt-${mgmtTab}` : name);
       const viewRoot = document.getElementById(`view-${name}`);
@@ -11507,6 +11670,546 @@
       });
     })();
 
+    /* -------- Marketing / Template library / Mail Merge -------- */
+    const MKT_MERGE_FIELDS = [
+      { key: "公司名", label: "公司名", sample: "Achiever Demo Ltd." },
+      { key: "聯絡人", label: "聯絡人", sample: "Chan Tai Man" },
+      { key: "稱謂", label: "稱謂", sample: "先生／小姐" },
+      { key: "電郵", label: "電郵", sample: "demo@example.com" },
+      { key: "手提", label: "手提", sample: "9123 4567" },
+      { key: "銷售員", label: "銷售員", sample: "Vincent" },
+      { key: "Partner", label: "Partner", sample: "RICOH" },
+      { key: "今日日期", label: "今日日期", sample: formatLocalDate(new Date()) },
+    ];
+    const DEFAULT_MKT_TEMPLATES = [
+      {
+        id: "tpl-product",
+        name: "產品推廣",
+        subject: "{{公司名}} 專屬方案介紹 — Achiever",
+        html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2430">
+  <p>親愛的 {{聯絡人}}{{稱謂}}，</p>
+  <p>你好！我係 Achiever 嘅 {{銷售員}}。</p>
+  <p>特此向 <strong>{{公司名}}</strong> 介紹最新解決方案，希望可以幫到貴公司提升營運效率。</p>
+  <p>若方便，歡迎回覆此電郵或致電與我聯絡。</p>
+  <p>謝謝！<br/>{{銷售員}}<br/>Achiever Solutions Ltd.</p>
+</div>`,
+      },
+      {
+        id: "tpl-event",
+        name: "活動邀請",
+        subject: "誠邀 {{聯絡人}} 出席 Achiever 分享會",
+        html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2430">
+  <h2 style="color:#6b46fe;margin:0 0 12px">活動邀請</h2>
+  <p>尊敬的 {{聯絡人}}{{稱謂}}（{{公司名}}），</p>
+  <p>誠邀您參加我哋即將舉行嘅產品分享會，了解行業最新趨勢同成功案例。</p>
+  <p>日期：{{今日日期}}（詳情另報）<br/>Partner 渠道：{{Partner}}</p>
+  <p>期待與您見面！<br/>{{銷售員}}</p>
+</div>`,
+      },
+      {
+        id: "tpl-greeting",
+        name: "節日問候",
+        subject: "{{公司名}} · 節日問候",
+        html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2430">
+  <p>Hi {{聯絡人}}{{稱謂}}，</p>
+  <p>代表 Achiever 同 {{銷售員}}，祝 <strong>{{公司名}}</strong> 業務興隆、諸事順利！</p>
+  <p>如有任何 IT／流程優化需要，隨時找我。</p>
+  <p>祝福<br/>{{銷售員}}</p>
+</div>`,
+      },
+    ];
+    let mktTab = localStorage.getItem("crm_mkt_tab") || "campaign"; // campaign | templates
+    let mktSelected = new Set(loadDashArr("crm_mkt_selected", []));
+    let mktEditingId = localStorage.getItem("crm_mkt_editing") || "";
+    let mktCampaignTplId = localStorage.getItem("crm_mkt_campaign_tpl") || "";
+    let mktBound = false;
+    let mktTplLastFocus = "html";
+
+    function loadMktTemplates() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("crm_mkt_templates") || "null");
+        if (Array.isArray(raw) && raw.length) return raw;
+      } catch (_) {}
+      const seeded = DEFAULT_MKT_TEMPLATES.map((t) => ({ ...t }));
+      localStorage.setItem("crm_mkt_templates", JSON.stringify(seeded));
+      return seeded;
+    }
+    function saveMktTemplates(list) {
+      localStorage.setItem("crm_mkt_templates", JSON.stringify(list || []));
+    }
+    function getMktTemplate(id) {
+      return loadMktTemplates().find((t) => t.id === id) || null;
+    }
+    function mktToken(key) {
+      return `{{${key}}}`;
+    }
+    function insertAtCursor(el, text) {
+      if (!el) return;
+      el.focus();
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? start;
+      const before = el.value.slice(0, start);
+      const after = el.value.slice(end);
+      el.value = before + text + after;
+      const pos = start + text.length;
+      try { el.setSelectionRange(pos, pos); } catch (_) {}
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    function renderMktMergeBar(root, getTarget) {
+      if (!root) return;
+      root.innerHTML = MKT_MERGE_FIELDS.map((f) =>
+        `<button type="button" data-mkt-merge="${escapeAttr(f.key)}" title="插入 ${escapeAttr(mktToken(f.key))}">＋ ${escapeHtml(f.label)}</button>`
+      ).join("");
+      root.querySelectorAll("[data-mkt-merge]").forEach((btn) => {
+        btn.onclick = () => {
+          const target = typeof getTarget === "function" ? getTarget() : getTarget;
+          insertAtCursor(target, mktToken(btn.dataset.mktMerge));
+        };
+      });
+    }
+    function pickPrimaryContact(caseIds) {
+      const people = (caseIds || []).flatMap((id) => contactsByCase[id] || []);
+      const withEmail = people.find((p) => String(p.email || "").includes("@"));
+      return withEmail || people[0] || null;
+    }
+    function buildMktAudienceRows() {
+      const map = new Map();
+      for (const c of cases) {
+        if (isDq(c)) continue;
+        const key = companyKey(c);
+        if (!map.has(key)) {
+          map.set(key, {
+            key,
+            name: key,
+            caseIds: [],
+            primaryCaseId: c.id,
+            sales: new Set(),
+            partners: new Set(),
+            emails: new Set(),
+            contact: null,
+          });
+        }
+        const row = map.get(key);
+        row.caseIds.push(c.id);
+        if (c.stage !== "closed") row.primaryCaseId = c.id;
+        if (normalizeCompanySales(c.companySales)) row.sales.add(normalizeCompanySales(c.companySales));
+        if (normalizePartner(c.partner)) row.partners.add(normalizePartner(c.partner));
+      }
+      for (const row of map.values()) {
+        const contact = pickPrimaryContact(row.caseIds);
+        row.contact = contact;
+        if (contact?.email) row.emails.add(String(contact.email).trim());
+        // also collect other contact emails
+        for (const id of row.caseIds) {
+          for (const p of (contactsByCase[id] || [])) {
+            if (p.email && String(p.email).includes("@")) row.emails.add(String(p.email).trim());
+          }
+        }
+      }
+      return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, "zh-HK"));
+    }
+    function mktMergeContext(row) {
+      const contact = row?.contact || {};
+      const title = String(contact.title || "").trim();
+      let honorific = "";
+      if (/先生|小姐|女士|博士|博士|Sir|Madam|Ms\.?|Mr\.?|Mrs\.?/i.test(title)) honorific = title;
+      else if (title) honorific = "";
+      return {
+        公司名: row?.name || "",
+        聯絡人: contact.name || row?.name || "客戶",
+        稱謂: honorific,
+        電郵: [...(row?.emails || [])][0] || contact.email || "",
+        手提: contact.mobile || contact.tel || "",
+        銷售員: [...(row?.sales || [])][0] || "Achiever",
+        Partner: [...(row?.partners || [])][0] || "",
+        今日日期: formatLocalDate(new Date()),
+      };
+    }
+    function applyMktMerge(text, ctx) {
+      let out = String(text || "");
+      const map = ctx || {};
+      // support both {{公司名}} and {{Company}} style aliases
+      const aliases = {
+        Company: "公司名",
+        ContactName: "聯絡人",
+        Contact: "聯絡人",
+        Title: "稱謂",
+        Email: "電郵",
+        Mobile: "手提",
+        Sales: "銷售員",
+        Date: "今日日期",
+      };
+      out = out.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (_, raw) => {
+        const key = String(raw || "").trim();
+        if (Object.prototype.hasOwnProperty.call(map, key)) return map[key] ?? "";
+        const mapped = aliases[key];
+        if (mapped && Object.prototype.hasOwnProperty.call(map, mapped)) return map[mapped] ?? "";
+        return "";
+      });
+      return out;
+    }
+    function htmlToPlainText(html) {
+      const div = document.createElement("div");
+      div.innerHTML = String(html || "");
+      return (div.innerText || div.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
+    }
+    function syncMktTabUi() {
+      document.querySelectorAll("#mktTabSeg [data-mkt-tab]").forEach((b) => {
+        b.classList.toggle("active", b.dataset.mktTab === mktTab);
+      });
+      document.getElementById("mktCampaignPanel")?.classList.toggle("hidden", mktTab !== "campaign");
+      document.getElementById("mktTemplatesPanel")?.classList.toggle("hidden", mktTab !== "templates");
+    }
+    function saveMktSelected() {
+      localStorage.setItem("crm_mkt_selected", JSON.stringify([...mktSelected]));
+      const count = document.getElementById("mktSelectCount");
+      if (count) count.textContent = `已選 ${mktSelected.size}`;
+    }
+    function getVisibleMktRows() {
+      const q = (document.getElementById("mktClientSearch")?.value || "").trim().toLowerCase();
+      const sales = document.getElementById("mktSalesFilter")?.value || "all";
+      const partner = document.getElementById("mktPartnerFilter")?.value || "all";
+      const onlyEmail = !!document.getElementById("mktOnlyEmail")?.checked;
+      return buildMktAudienceRows().filter((r) => {
+        if (onlyEmail && ![...r.emails].length) return false;
+        if (sales !== "all") {
+          const list = [...r.sales];
+          const hit = sales === "未指派" ? !list.length : list.includes(sales);
+          if (!hit) return false;
+        }
+        if (partner !== "all" && ![...r.partners].includes(partner)) return false;
+        if (!q) return true;
+        const hay = [
+          r.name,
+          [...r.sales].join(" "),
+          [...r.partners].join(" "),
+          [...r.emails].join(" "),
+          r.contact?.name || "",
+          r.contact?.mobile || "",
+        ].join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+    }
+    function renderMktClientList() {
+      const root = document.getElementById("mktClientList");
+      if (!root) return;
+      const rows = getVisibleMktRows();
+      root.innerHTML = rows.length ? rows.map((r) => {
+        const checked = mktSelected.has(r.key);
+        const emailText = [...r.emails][0] || "無電郵";
+        return `<label class="mkt-client-item ${checked ? "on" : ""}">
+          <input type="checkbox" data-mkt-client="${escapeAttr(r.key)}" ${checked ? "checked" : ""} />
+          <div>
+            <strong style="font-size:.84rem">${escapeHtml(r.name)}</strong>
+            <div class="meta">
+              ${escapeHtml([...r.sales].join("、") || "未指派")}
+              · ${escapeHtml([...r.partners].join("、") || "—")}
+              <br/>${escapeHtml(r.contact?.name || "未有聯絡人")} · ${escapeHtml(emailText)}
+            </div>
+          </div>
+        </label>`;
+      }).join("") : `<div class="breakdown-empty">沒有符合條件的客戶</div>`;
+      root.querySelectorAll("[data-mkt-client]").forEach((input) => {
+        input.onchange = () => {
+          const key = input.dataset.mktClient;
+          if (input.checked) mktSelected.add(key);
+          else mktSelected.delete(key);
+          input.closest(".mkt-client-item")?.classList.toggle("on", input.checked);
+          saveMktSelected();
+          updateMktCampaignPreview();
+        };
+      });
+      saveMktSelected();
+    }
+    function fillMktFilters() {
+      const salesSel = document.getElementById("mktSalesFilter");
+      const partnerSel = document.getElementById("mktPartnerFilter");
+      if (salesSel) {
+        const cur = salesSel.value || "all";
+        salesSel.innerHTML = `<option value="all">全部銷售</option>` +
+          COMPANY_SALES.map((n) => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("") +
+          `<option value="未指派">未指派</option>`;
+        salesSel.value = [...salesSel.options].some((o) => o.value === cur) ? cur : "all";
+      }
+      if (partnerSel) {
+        const cur = partnerSel.value || "all";
+        const partners = partnerOptionsFromCases();
+        partnerSel.innerHTML = `<option value="all">全部 Partner</option>` +
+          partners.map((p) => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`).join("");
+        partnerSel.value = [...partnerSel.options].some((o) => o.value === cur) ? cur : "all";
+      }
+    }
+    function fillMktCampaignTemplateSelect() {
+      const sel = document.getElementById("mktCampaignTemplate");
+      if (!sel) return;
+      const list = loadMktTemplates();
+      if (!mktCampaignTplId || !list.some((t) => t.id === mktCampaignTplId)) {
+        mktCampaignTplId = list[0]?.id || "";
+      }
+      sel.innerHTML = list.map((t) =>
+        `<option value="${escapeAttr(t.id)}" ${t.id === mktCampaignTplId ? "selected" : ""}>${escapeHtml(t.name)}</option>`
+      ).join("") || `<option value="">未有 Template</option>`;
+      const tpl = getMktTemplate(mktCampaignTplId);
+      const subjectEl = document.getElementById("mktCampaignSubject");
+      if (subjectEl && tpl && (!subjectEl.value || subjectEl.dataset.fromTpl === "1")) {
+        subjectEl.value = tpl.subject || "";
+        subjectEl.dataset.fromTpl = "1";
+      }
+    }
+    function selectedMktRows() {
+      const all = buildMktAudienceRows();
+      return all.filter((r) => mktSelected.has(r.key));
+    }
+    function updateMktCampaignPreview() {
+      const preview = document.getElementById("mktCampaignPreview");
+      if (!preview) return;
+      const tpl = getMktTemplate(mktCampaignTplId);
+      const rows = selectedMktRows();
+      const sample = rows[0] || buildMktAudienceRows()[0] || {
+        name: "示例公司",
+        contact: { name: "示例聯絡人", email: "demo@example.com" },
+        sales: new Set(["Vincent"]),
+        partners: new Set(["RICOH"]),
+        emails: new Set(["demo@example.com"]),
+      };
+      if (!tpl) {
+        preview.innerHTML = `<div class="muted">請先在 Template 庫新增內容</div>`;
+        return;
+      }
+      const ctx = mktMergeContext(sample);
+      const subject = applyMktMerge(document.getElementById("mktCampaignSubject")?.value || tpl.subject || "", ctx);
+      const html = applyMktMerge(tpl.html || "", ctx);
+      preview.innerHTML = `<div class="muted" style="font-size:.72rem;font-weight:700;margin-bottom:8px">主旨：${escapeHtml(subject)}</div>${html}`;
+    }
+    function renderMktTemplateList() {
+      const root = document.getElementById("mktTemplateList");
+      if (!root) return;
+      const list = loadMktTemplates();
+      if (!mktEditingId || !list.some((t) => t.id === mktEditingId)) {
+        mktEditingId = list[0]?.id || "";
+      }
+      root.innerHTML = list.length ? list.map((t) => `
+        <button type="button" class="mkt-tpl-item ${t.id === mktEditingId ? "on" : ""}" data-mkt-tpl="${escapeAttr(t.id)}">
+          <div>
+            <strong style="font-size:.84rem">${escapeHtml(t.name || "未命名")}</strong>
+            <div class="meta">${escapeHtml(t.subject || "（無主旨）")}</div>
+          </div>
+        </button>`).join("") : `<div class="breakdown-empty">未有 Template，按「新增」開始</div>`;
+      root.querySelectorAll("[data-mkt-tpl]").forEach((btn) => {
+        btn.onclick = () => {
+          mktEditingId = btn.dataset.mktTpl;
+          localStorage.setItem("crm_mkt_editing", mktEditingId);
+          loadMktTemplateIntoEditor(mktEditingId);
+          renderMktTemplateList();
+        };
+      });
+    }
+    function loadMktTemplateIntoEditor(id) {
+      const tpl = getMktTemplate(id) || { id: "", name: "", subject: "", html: "" };
+      mktEditingId = tpl.id || "";
+      document.getElementById("mktEditorTitle").textContent = tpl.id ? `編輯：${tpl.name || "Template"}` : "新增 Template";
+      document.getElementById("mktTplName").value = tpl.name || "";
+      document.getElementById("mktTplSubject").value = tpl.subject || "";
+      document.getElementById("mktTplHtml").value = tpl.html || "";
+      updateMktTplPreview();
+    }
+    function updateMktTplPreview() {
+      const preview = document.getElementById("mktTplPreview");
+      if (!preview) return;
+      const sampleCtx = {};
+      MKT_MERGE_FIELDS.forEach((f) => { sampleCtx[f.key] = f.sample; });
+      sampleCtx["今日日期"] = formatLocalDate(new Date());
+      const subject = applyMktMerge(document.getElementById("mktTplSubject")?.value || "", sampleCtx);
+      const html = applyMktMerge(document.getElementById("mktTplHtml")?.value || "", sampleCtx);
+      preview.innerHTML = `<div class="muted" style="font-size:.72rem;font-weight:700;margin-bottom:8px">主旨：${escapeHtml(subject || "（無）")}</div>${html || "<div class='muted'>尚未輸入 HTML</div>"}`;
+    }
+    function bindMarketingUi() {
+      if (mktBound) return;
+      mktBound = true;
+      document.getElementById("mktTabSeg")?.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-mkt-tab]");
+        if (!btn) return;
+        mktTab = btn.dataset.mktTab || "campaign";
+        localStorage.setItem("crm_mkt_tab", mktTab);
+        syncMktTabUi();
+        renderMarketing();
+      });
+      document.getElementById("mktGotoTemplates")?.addEventListener("click", () => {
+        mktTab = "templates";
+        localStorage.setItem("crm_mkt_tab", mktTab);
+        syncMktTabUi();
+        renderMarketing();
+      });
+      ["mktClientSearch", "mktSalesFilter", "mktPartnerFilter", "mktOnlyEmail"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("input", () => renderMktClientList());
+        el.addEventListener("change", () => renderMktClientList());
+      });
+      document.getElementById("mktSelectAllVisible")?.addEventListener("click", () => {
+        getVisibleMktRows().forEach((r) => mktSelected.add(r.key));
+        saveMktSelected();
+        renderMktClientList();
+        updateMktCampaignPreview();
+        toast(`已全選可見客戶（${mktSelected.size}）`);
+      });
+      document.getElementById("mktClearSelect")?.addEventListener("click", () => {
+        mktSelected = new Set();
+        saveMktSelected();
+        renderMktClientList();
+        updateMktCampaignPreview();
+      });
+      document.getElementById("mktCampaignTemplate")?.addEventListener("change", (e) => {
+        mktCampaignTplId = e.target.value || "";
+        localStorage.setItem("crm_mkt_campaign_tpl", mktCampaignTplId);
+        const tpl = getMktTemplate(mktCampaignTplId);
+        const subjectEl = document.getElementById("mktCampaignSubject");
+        if (subjectEl && tpl) {
+          subjectEl.value = tpl.subject || "";
+          subjectEl.dataset.fromTpl = "1";
+        }
+        updateMktCampaignPreview();
+      });
+      document.getElementById("mktCampaignSubject")?.addEventListener("input", (e) => {
+        e.target.dataset.fromTpl = "0";
+        updateMktCampaignPreview();
+      });
+      document.getElementById("mktNewTemplate")?.addEventListener("click", () => {
+        mktEditingId = "";
+        localStorage.setItem("crm_mkt_editing", "");
+        loadMktTemplateIntoEditor("");
+        document.getElementById("mktTplName")?.focus();
+        renderMktTemplateList();
+      });
+      document.getElementById("mktSaveTemplate")?.addEventListener("click", () => {
+        const name = (document.getElementById("mktTplName")?.value || "").trim() || "未命名 Template";
+        const subject = (document.getElementById("mktTplSubject")?.value || "").trim();
+        const html = document.getElementById("mktTplHtml")?.value || "";
+        const list = loadMktTemplates();
+        if (mktEditingId && list.some((t) => t.id === mktEditingId)) {
+          const idx = list.findIndex((t) => t.id === mktEditingId);
+          list[idx] = { ...list[idx], name, subject, html };
+        } else {
+          const id = `tpl-${crypto.randomUUID().slice(0, 8)}`;
+          list.unshift({ id, name, subject, html });
+          mktEditingId = id;
+          localStorage.setItem("crm_mkt_editing", mktEditingId);
+        }
+        saveMktTemplates(list);
+        toast("已儲存 Template");
+        renderMktTemplateList();
+        loadMktTemplateIntoEditor(mktEditingId);
+        fillMktCampaignTemplateSelect();
+      });
+      document.getElementById("mktDeleteTemplate")?.addEventListener("click", () => {
+        if (!mktEditingId) return toast("未有選中 Template");
+        if (!confirm("確定刪除此 Template？")) return;
+        const list = loadMktTemplates().filter((t) => t.id !== mktEditingId);
+        saveMktTemplates(list);
+        mktEditingId = list[0]?.id || "";
+        localStorage.setItem("crm_mkt_editing", mktEditingId);
+        toast("已刪除 Template");
+        renderMktTemplateList();
+        loadMktTemplateIntoEditor(mktEditingId);
+        fillMktCampaignTemplateSelect();
+      });
+      document.getElementById("mktTplName")?.addEventListener("input", updateMktTplPreview);
+      document.getElementById("mktTplSubject")?.addEventListener("input", updateMktTplPreview);
+      document.getElementById("mktTplHtml")?.addEventListener("input", updateMktTplPreview);
+      document.getElementById("mktTplSubject")?.addEventListener("focus", () => { mktTplLastFocus = "subject"; });
+      document.getElementById("mktTplHtml")?.addEventListener("focus", () => { mktTplLastFocus = "html"; });
+
+      document.getElementById("mktOpenFirstEmail")?.addEventListener("click", () => {
+        const rows = selectedMktRows();
+        if (!rows.length) return toast("請先選擇客戶");
+        const tpl = getMktTemplate(mktCampaignTplId);
+        if (!tpl) return toast("請先選擇 Template");
+        openMktMailtoForRow(rows[0], tpl);
+      });
+      document.getElementById("mktSendMailto")?.addEventListener("click", async () => {
+        const rows = selectedMktRows();
+        if (!rows.length) return toast("請先選擇客戶");
+        const tpl = getMktTemplate(mktCampaignTplId);
+        if (!tpl) return toast("請先選擇 Template");
+        const withEmail = rows.filter((r) => [...r.emails].length);
+        if (!withEmail.length) return toast("已選客戶未有電郵");
+        // open first immediately; stagger a few more (browser may block popups)
+        const maxOpen = Math.min(withEmail.length, 5);
+        for (let i = 0; i < maxOpen; i++) {
+          const row = withEmail[i];
+          setTimeout(() => openMktMailtoForRow(row, tpl), i * 400);
+        }
+        if (withEmail.length > maxOpen) {
+          toast(`已開啟前 ${maxOpen} 封；其餘 ${withEmail.length - maxOpen} 位請用複製／逐封開啟（避免瀏覽器攔截）`);
+        } else {
+          toast(`已為 ${withEmail.length} 位客戶開啟電郵草稿`);
+        }
+      });
+      document.getElementById("mktCopyMergedHtml")?.addEventListener("click", async () => {
+        const rows = selectedMktRows();
+        const tpl = getMktTemplate(mktCampaignTplId);
+        if (!tpl) return toast("請先選擇 Template");
+        const row = rows[0] || buildMktAudienceRows()[0];
+        if (!row) return toast("沒有客戶可合併");
+        const html = applyMktMerge(tpl.html || "", mktMergeContext(row));
+        try {
+          await navigator.clipboard.writeText(html);
+          toast("已複製合併 HTML");
+        } catch (_) {
+          prompt("複製 HTML", html);
+        }
+      });
+      document.getElementById("mktDownloadMerged")?.addEventListener("click", () => {
+        const rows = selectedMktRows();
+        const tpl = getMktTemplate(mktCampaignTplId);
+        if (!tpl) return toast("請先選擇 Template");
+        const row = rows[0] || buildMktAudienceRows()[0];
+        if (!row) return toast("沒有客戶可合併");
+        const ctx = mktMergeContext(row);
+        const subject = applyMktMerge(document.getElementById("mktCampaignSubject")?.value || tpl.subject || "", ctx);
+        const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(subject)}</title></head><body>${applyMktMerge(tpl.html || "", ctx)}</body></html>`;
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `marketing-${(row.name || "preview").replace(/[^\w\u4e00-\u9fff-]+/g, "_").slice(0, 40)}.html`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast("已下載 HTML 預覽");
+      });
+    }
+    function openMktMailtoForRow(row, tpl) {
+      const ctx = mktMergeContext(row);
+      const subject = applyMktMerge(document.getElementById("mktCampaignSubject")?.value || tpl.subject || "", ctx);
+      const html = applyMktMerge(tpl.html || "", ctx);
+      const body = htmlToPlainText(html);
+      const email = [...(row.emails || [])][0] || "";
+      if (!email) {
+        toast(`${row.name} 未有電郵`);
+        return;
+      }
+      const url = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = url;
+    }
+    function renderMarketing() {
+      bindMarketingUi();
+      syncMktTabUi();
+      fillMktFilters();
+      renderMktMergeBar(document.getElementById("mktCampaignMergeBar"), () => document.getElementById("mktCampaignSubject"));
+      renderMktMergeBar(document.getElementById("mktTplMergeBar"), () =>
+        mktTplLastFocus === "subject"
+          ? document.getElementById("mktTplSubject")
+          : document.getElementById("mktTplHtml")
+      );
+      if (mktTab === "campaign") {
+        fillMktCampaignTemplateSelect();
+        renderMktClientList();
+        updateMktCampaignPreview();
+      } else {
+        renderMktTemplateList();
+        loadMktTemplateIntoEditor(mktEditingId);
+      }
+    }
+
     document.getElementById("navPills").onclick = (e) => {
       const btn = e.target.closest("button[data-view]");
       if (!btn) return;
@@ -12014,7 +12717,7 @@
         if (["customers", "partners", "sales"].includes(tab)) mgmtTab = tab;
         showView("mgmt");
       } else {
-        showView(["portal", "dashboard", "board", "cases", "agenda", "logs"].includes(hash) ? hash : "dashboard");
+        showView(["portal", "dashboard", "board", "cases", "agenda", "marketing", "logs"].includes(hash) ? hash : "dashboard");
       }
     });
   </script>
