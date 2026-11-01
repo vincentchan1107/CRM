@@ -2397,10 +2397,20 @@
     .sales-kpi-nav button {
       border: 0; background: transparent; text-align: left; padding: 10px 12px;
       border-radius: 12px; font-weight: 750; cursor: pointer; color: var(--ink-soft);
+      transition: transform .15s ease, box-shadow .15s ease, filter .15s ease, background .15s ease;
     }
     .sales-kpi-nav button.active {
       background: var(--accent); color: #fff;
       box-shadow: 0 8px 18px rgba(107,70,254,.22);
+    }
+    .sales-kpi-nav button.flash {
+      animation: sales-nav-flash .75s ease;
+    }
+    @keyframes sales-nav-flash {
+      0% { filter: brightness(1); box-shadow: 0 0 0 0 rgba(107,70,254,0); transform: scale(1); }
+      25% { filter: brightness(1.22); box-shadow: 0 0 0 8px rgba(107,70,254,.28); transform: scale(1.03); }
+      55% { filter: brightness(1.08); box-shadow: 0 0 0 3px rgba(107,70,254,.12); transform: scale(1.01); }
+      100% { filter: brightness(1); box-shadow: 0 8px 18px rgba(107,70,254,.22); transform: scale(1); }
     }
     .sales-kpi-nav button .sub {
       display: block; font-size: .68rem; font-weight: 650; opacity: .85; margin-top: 2px;
@@ -2676,8 +2686,8 @@
       border-radius: 999px;
       height: 0;
       transform-origin: bottom center;
-      transition: height .85s cubic-bezier(.22, 1, .36, 1);
-      transition-delay: calc(var(--bar-i, 0) * 45ms);
+      transition: height 3s cubic-bezier(.22, 1, .36, 1);
+      transition-delay: calc(var(--bar-i, 0) * 70ms);
     }
     .year-month-bars.is-ready .ymb .pair > span > i {
       height: var(--h, 0%);
@@ -2690,82 +2700,37 @@
       background: linear-gradient(180deg, #5ee4b0, #27c281);
       box-shadow: 0 0 10px rgba(39, 194, 129, .28);
     }
-    .year-month-bars.is-ready .ymb.has-actual .pair > span.a > i {
-      animation: sales-bar-glow 2.4s ease-in-out infinite;
-      animation-delay: calc(var(--bar-i, 0) * 80ms);
+    .year-month-bars.is-ready .ymb .pair > span.t > i,
+    .year-month-bars.is-ready .ymb .pair > span.a > i {
+      animation: sales-bar-wave 2.4s ease-in-out infinite;
+      animation-delay: calc(var(--bar-i, 0) * 110ms + 3s);
     }
-    @keyframes sales-bar-glow {
-      0%, 100% { filter: brightness(1); }
-      50% { filter: brightness(1.18); }
+    @keyframes sales-bar-wave {
+      0%, 100% { transform: scaleY(1); filter: brightness(1); }
+      35% { transform: scaleY(0.86); filter: brightness(1.08); }
+      70% { transform: scaleY(1.06); filter: brightness(1.14); }
     }
     .year-month-bars .ymb .m { font-size: .62rem; font-weight: 800; color: var(--ink-soft); }
     .year-month-bars .ymb .p { font-size: .58rem; font-weight: 700; color: var(--muted); }
-    .sales-eq {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      align-items: flex-end;
-      gap: 3px;
-      height: 42px;
-      margin-top: 10px;
-      padding: 8px 10px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, #1a1630, #241f3d);
-      border: 1px solid rgba(255,255,255,.06);
-      overflow: hidden;
-    }
-    .sales-eq > i {
-      flex: 1 1 0;
-      min-width: 0;
-      border-radius: 2px 2px 0 0;
-      background: linear-gradient(180deg, #ffb086, #ff8a4c);
-      box-shadow: 0 0 8px rgba(255, 138, 76, .35);
-      height: var(--eq-h, 28%);
-      transform-origin: bottom center;
-      animation: sales-eq-pulse 1.15s ease-in-out infinite;
-      animation-delay: calc(var(--eq-i, 0) * 55ms);
-    }
-    .sales-eq > i.cool {
-      background: linear-gradient(180deg, #8b6fff, #6b46fe);
-      box-shadow: 0 0 8px rgba(107, 70, 254, .35);
-    }
-    .sales-eq > i.hot {
-      background: linear-gradient(180deg, #5ee4b0, #27c281);
-      box-shadow: 0 0 8px rgba(39, 194, 129, .35);
-    }
-    @keyframes sales-eq-pulse {
-      0%, 100% { transform: scaleY(1); opacity: .95; }
-      50% { transform: scaleY(0.45); opacity: .7; }
-    }
-    .sales-eq-label {
-      position: absolute;
-      left: 10px;
-      top: 6px;
-      font-size: .58rem;
-      font-weight: 800;
-      letter-spacing: .06em;
-      color: rgba(232, 228, 245, .72);
-      text-transform: uppercase;
-      pointer-events: none;
-    }
     body.motion-paused .sales-live-spark,
-    body.motion-paused .year-month-bars .ymb .pair > span > i,
-    body.motion-paused .sales-eq > i {
+    body.motion-paused .year-month-bars .ymb .pair > span > i {
       animation: none !important;
     }
     body.motion-paused .year-month-bars .ymb .pair > span > i {
       transition: none !important;
       height: var(--h, 0%) !important;
+      transform: none !important;
     }
     @media (prefers-reduced-motion: reduce) {
       .sales-live-spark,
       .year-month-bars .ymb .pair > span > i,
-      .sales-eq > i {
+      .sales-kpi-nav button.flash {
         animation: none !important;
       }
       .year-month-bars .ymb .pair > span > i {
         transition: none !important;
         height: var(--h, 0%) !important;
+        transform: none !important;
       }
       .year-month-bars .ymb:hover { transform: none; }
     }
@@ -4966,6 +4931,10 @@
       if (/^(HK\$|\$)[\d,]+$/.test(s)) {
         return { kind: "money", target: Number(s.replace(/[^\d.-]/g, "")) || 0 };
       }
+      const ratio = s.match(/^(-?\d+)\s*\/\s*(-?\d+)$/);
+      if (ratio) {
+        return { kind: "ratio", target: Number(ratio[1]), denom: Number(ratio[2]) };
+      }
       if (/^-?\d+$/.test(s)) return { kind: "int", target: Number(s) };
       if (/^-?\d+%$/.test(s)) return { kind: "pct", target: Number(s.replace("%", "")) };
       return null;
@@ -4973,14 +4942,20 @@
     function formatAnimNumber(n, parsed) {
       if (parsed.kind === "money") return money(Math.round(n));
       if (parsed.kind === "pct") return `${Math.round(n)}%`;
+      if (parsed.kind === "ratio") return `${Math.round(n)} / ${parsed.denom}`;
       return String(Math.round(n));
     }
-    function animateCountUps(root) {
+    function animateCountUps(root, opts = {}) {
       if (!root || motionPaused || prefersReducedMotion()) return;
-      const nodes = root.querySelectorAll(".stat .value, .dash-action-card .val, .money-compare .mc .val");
+      const selector = opts.selector || ".stat .value, .dash-action-card .val, .money-compare .mc .val";
+      const duration = Number(opts.duration) > 0 ? Number(opts.duration) : 950;
+      const stagger = opts.stagger != null ? Number(opts.stagger) : 55;
+      const nodes = root.querySelectorAll(selector);
       nodes.forEach((el, idx) => {
         if (el.querySelector("input")) return;
         if (el.dataset.countBusy === "1") return;
+        // allow replay when re-entering sales mgmt
+        if (opts.force) delete el.dataset.countFinal;
         const finalText = (el.dataset.countFinal || el.textContent || "").trim();
         if (!finalText) return;
         el.dataset.countFinal = finalText;
@@ -4994,8 +4969,7 @@
           return;
         }
         el.dataset.countBusy = "1";
-        const duration = 950;
-        const delay = Math.min(idx, 12) * 55;
+        const delay = Math.min(idx, 12) * stagger;
         const startAt = performance.now() + delay;
         el.textContent = formatAnimNumber(0, parsed);
         const tick = (now) => {
@@ -9876,15 +9850,6 @@
               </div>`;
             }).join("")}
           </div>
-          <div class="sales-eq" aria-hidden="true">
-            <span class="sales-eq-label">${escapeHtml(name)} signal</span>
-            ${monthRows.map((r, idx) => {
-              const ratio = maxBar ? (r.a / maxBar) : 0;
-              const h = Math.max(12, Math.round(18 + ratio * 78));
-              const cls = r.a <= 0 ? "cool" : (r.p >= 100 ? "hot" : "");
-              return `<i class="${cls}" style="--eq-h:${h}%;--eq-i:${idx}"></i>`;
-            }).join("")}
-          </div>
         </div>
 
         <div class="year-fill-box">
@@ -10219,6 +10184,15 @@
         renderStatCard({ label: `${planYear} 年團隊目標`, value: money(teamYearTarget), sub: `全年已完成 ${money(teamYearClosed)} · ${teamYearTarget ? teamYearPct + "%" : "未設"}`, tone: teamYearPct >= 100 ? "mint" : "orange", icon: "chart", valueStyle: "font-size:1.05rem" }),
         renderStatCard({ label: "已指派 Case", value: `${assigned} / ${cases.length}`, sub: unassigned ? `${unassigned} 宗未指派` : "全部已指派", tone: "mint", icon: "cases", valueStyle: "font-size:1.2rem" }),
       ].join("");
+      // top cards: count from 0 → target within 3s
+      requestAnimationFrame(() => {
+        animateCountUps(document.getElementById("salesStats"), {
+          duration: 3000,
+          stagger: 80,
+          force: true,
+          selector: ".stat .value",
+        });
+      });
 
       document.getElementById("salesKpiNav").innerHTML = COMPANY_SALES.map((n) => {
         const t = Number(getSalesPlan(n).months[cur]?.closingTarget) || 0;
@@ -10232,9 +10206,22 @@
       }).join("");
       document.querySelectorAll("#salesKpiNav [data-sales-kpi]").forEach((btn) => {
         btn.onclick = () => {
-          salesKpiSelected = btn.dataset.salesKpi;
+          const next = btn.dataset.salesKpi;
+          if (next === salesKpiSelected) {
+            btn.classList.remove("flash");
+            void btn.offsetWidth;
+            btn.classList.add("flash");
+            return;
+          }
+          salesKpiSelected = next;
           localStorage.setItem("crm_sales_kpi_selected", salesKpiSelected);
           renderSalesMgmt();
+          const active = document.querySelector("#salesKpiNav button.active");
+          if (active) {
+            active.classList.remove("flash");
+            void active.offsetWidth;
+            active.classList.add("flash");
+          }
         };
       });
 
