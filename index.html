@@ -2368,6 +2368,14 @@
     tr.agenda-today-meet td { background: rgba(107, 70, 254, .06); }
     tr.agenda-overdue td:first-child { box-shadow: inset 3px 0 0 #e11d48; }
     tr.agenda-today-meet td:first-child { box-shadow: inset 3px 0 0 #6b46fe; }
+    /* keep <td> as table-cell; flex belongs on an inner wrapper */
+    td.agenda-actions { white-space: nowrap; vertical-align: middle; }
+    td.agenda-actions .agenda-actions-inner {
+      display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    tr.agenda-overdue td.agenda-actions .btn-ghost {
+      background: rgba(255, 255, 255, .72);
+    }
     .agenda-view-seg { margin-left: auto; }
     .agenda-cal {
       display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 6px; margin-top: 10px;
@@ -9810,7 +9818,7 @@
           <td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>
           <td class="muted" style="font-size:.75rem">${escapeHtml(c.ricohSales || "—")}</td>
           <td class="muted" style="font-size:.75rem">${escapeHtml(it.note || "—")}</td>
-          <td style="display:flex;gap:4px;flex-wrap:wrap">${actions.join("")}</td>
+          <td class="agenda-actions"><div class="agenda-actions-inner">${actions.join("")}</div></td>
         </tr>`;
       }).join("") || `<tr><td colspan="8"><div class="empty-state">${range.incomplete ? "請先套用日期範圍" : "沒有符合項目"}</div></td></tr>`;
 
