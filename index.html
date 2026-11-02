@@ -2648,10 +2648,24 @@
     .potential-pill.Low { background: #e2e8f0; color: #475569; }
     .potential-pill.unset { background: #f1f5f9; color: #94a3b8; }
     /* keep <td> as table-cell; flex belongs on an inner wrapper */
-    td.agenda-actions { white-space: nowrap; vertical-align: middle; }
+    td.agenda-actions { white-space: nowrap; vertical-align: middle; min-width: 210px; }
     td.agenda-actions .agenda-actions-inner {
-      display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      display: inline-flex; align-items: flex-end; gap: 8px; flex-wrap: wrap;
     }
+    td.agenda-actions .agenda-op-field {
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    td.agenda-actions .agenda-op-field span {
+      font-size: .62rem; font-weight: 800; color: var(--muted);
+    }
+    td.agenda-actions .agenda-op-field select,
+    td.agenda-actions .agenda-op-field input[type="date"] {
+      border: 1px solid var(--line); border-radius: 10px; padding: 5px 8px;
+      background: #fff; font-size: .74rem; font-weight: 700; min-width: 92px;
+    }
+    td.agenda-actions .agenda-op-field select.potential-High { color: #15803d; background: #ecfdf5; }
+    td.agenda-actions .agenda-op-field select.potential-Mid { color: #c2410c; background: #fff7ed; }
+    td.agenda-actions .agenda-op-field select.potential-Low { color: #475569; background: #f8fafc; }
     tr.agenda-overdue td.agenda-actions .btn-ghost {
       background: rgba(255, 255, 255, .72);
     }
@@ -4304,7 +4318,7 @@
           </div>
           <div class="table-wrap"><table>
             <thead><tr>
-              <th>日期</th><th>狀態</th><th>本公司銷售員</th><th>客戶</th><th>階段</th><th>Partner Sales</th><th>備註</th><th>操作</th>
+              <th>日期</th><th>狀態</th><th>本公司銷售員</th><th>客戶</th><th>階段</th><th>Partner Sales</th><th>備註</th><th>操作（Potential／跟進日）</th>
             </tr></thead>
             <tbody id="agendaMeetBody"></tbody>
           </table></div>
@@ -4316,7 +4330,7 @@
           </div>
           <div class="table-wrap"><table>
             <thead><tr>
-              <th>日期</th><th>狀態</th><th>本公司銷售員</th><th>客戶</th><th>階段</th><th>Partner Sales</th><th>備註</th><th>操作</th>
+              <th>日期</th><th>狀態</th><th>本公司銷售員</th><th>客戶</th><th>階段</th><th>Partner Sales</th><th>備註</th><th>操作（Potential／跟進日）</th>
             </tr></thead>
             <tbody id="agendaFollowBody"></tbody>
           </table></div>
@@ -11305,10 +11319,24 @@
           : (it.overdue ? "逾期跟進" : "待跟進");
         const kindClass = it.kind === "meeting" ? "tag-ok" : (it.overdue ? "tag-overdue" : "tag-ok");
         const trClass = it.overdue ? "agenda-overdue" : (it.isTodayMeet ? "agenda-today-meet" : "");
+        const pot = normalizePotential(c.potential);
         const canComplete = it.kind === "meeting" && !c.meetingDone;
-        const actions = canComplete
+        const completeBtn = canComplete
           ? `<button type="button" class="btn btn-teal btn-sm" data-complete-meet="${escapeAttr(c.id)}">完成會面</button>`
           : "";
+        const actions = `
+          <label class="agenda-op-field">
+            <span>Potential</span>
+            <select class="agenda-potential ${pot ? `potential-${pot}` : ""}" data-agenda-potential="${escapeAttr(c.id)}" title="點選 High／Mid／Low">
+              <option value="" ${!pot ? "selected" : ""}>未設</option>
+              ${POTENTIAL_LEVELS.map((p) => `<option value="${p}" ${pot === p ? "selected" : ""}>${p}</option>`).join("")}
+            </select>
+          </label>
+          <label class="agenda-op-field">
+            <span>跟進日</span>
+            <input type="date" class="agenda-follow" data-agenda-follow="${escapeAttr(c.id)}" value="${escapeAttr(c.nextFollowUpAt || "")}" title="設定下次跟進日期" />
+          </label>
+          ${completeBtn}`;
         return `<tr class="${trClass}" data-case-id="${escapeAttr(c.id)}" title="雙擊開啟詳情">
           <td>
             <strong>${escapeHtml(it.dateText)}</strong>
@@ -11348,6 +11376,30 @@
         b.onclick = (e) => {
           e.stopPropagation();
           completeMeetingQuick(b.dataset.completeMeet);
+        };
+      });
+      document.querySelectorAll("#agendaMeetBody [data-agenda-potential], #agendaFollowBody [data-agenda-potential]").forEach((sel) => {
+        sel.onchange = async (e) => {
+          e.stopPropagation();
+          const id = sel.dataset.agendaPotential;
+          const potential = normalizePotential(sel.value);
+          localPotentialSet(id, potential);
+          sel.classList.remove("potential-High", "potential-Mid", "potential-Low");
+          if (potential) sel.classList.add(`potential-${potential}`);
+          await updateCase(id, { potential }, { silent: true, source: "會議／跟進 · Potential" });
+          toast(potential ? `Potential → ${potential}` : "已清除 Potential");
+          renderAgenda();
+        };
+      });
+      document.querySelectorAll("#agendaMeetBody [data-agenda-follow], #agendaFollowBody [data-agenda-follow]").forEach((input) => {
+        input.onchange = async (e) => {
+          e.stopPropagation();
+          const id = input.dataset.agendaFollow;
+          const nextFollowUpAt = input.value || "";
+          localFollowUpSet(id, nextFollowUpAt);
+          await updateCase(id, { nextFollowUpAt }, { silent: true, source: "會議／跟進 · 跟進日" });
+          toast(nextFollowUpAt ? `跟進日 → ${nextFollowUpAt}` : "已清除跟進日");
+          renderAgenda();
         };
       });
 
