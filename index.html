@@ -1563,6 +1563,31 @@
       word-break: break-word;
       margin-top: 2px;
     }
+    .drawer-head .page-head-sub {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px;
+    }
+    .drawer-potential-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 3px 8px 3px 10px;
+      font-size: .72rem;
+      font-weight: 800;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+    .drawer-potential-btn:hover { border-color: #c4b5fd; background: #f5f3ff; }
+    .drawer-potential-btn select {
+      border: 0; background: transparent; outline: none;
+      font: inherit; font-weight: 800; color: inherit;
+      padding: 0; margin: 0; cursor: pointer;
+      appearance: auto;
+    }
+    .drawer-potential-btn.High { background: #ecfdf5; color: #15803d; border-color: #86efac; }
+    .drawer-potential-btn.Mid { background: #fff7ed; color: #c2410c; border-color: #fdba74; }
+    .drawer-potential-btn.Low { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
     @media (max-width: 700px) {
       .drawer-bg {
         align-items: stretch;
@@ -12292,6 +12317,7 @@
         : "";
       const salesOpts = isSales() ? scopedSalesNames() : COMPANY_SALES;
       const curSales = normalizeCompanySales(c.companySales) || (isSales() ? currentSalesName() : "") || salesOpts[0] || "";
+      const potNow = normalizePotential(c.potential);
       document.body.classList.add("drawer-open");
       root.innerHTML = `<div class="drawer-bg"><div class="drawer" role="dialog" aria-modal="true">
         <div class="drawer-head">
@@ -12299,7 +12325,16 @@
             <div class="eyebrow">Case · Multi contact</div>
             <div class="page-head" style="margin-top:2px">
               <h2>${escapeHtml(c.customerName)}</h2>
-              <div class="muted page-head-sub">${escapeHtml(c.partner || "")} · Sales：${escapeHtml(normalizeCompanySales(c.companySales) || "未指派")} · Potential：${normalizePotential(c.potential) || "未設"}</div>
+              <div class="muted page-head-sub">
+                <span>${escapeHtml(c.partner || "")} · Sales：${escapeHtml(normalizeCompanySales(c.companySales) || "未指派")}</span>
+                <label class="drawer-potential-btn ${potNow || ""}" title="點選設定 Potential：High／Mid／Low">
+                  Potential
+                  <select id="d_potentialHead" aria-label="Potential">
+                    <option value="" ${!potNow ? "selected" : ""}>未設</option>
+                    ${POTENTIAL_LEVELS.map((p) => `<option value="${p}" ${potNow === p ? "selected" : ""}>${p}</option>`).join("")}
+                  </select>
+                </label>
+              </div>
             </div>
           </div>
           <button class="btn btn-ghost btn-sm" id="drawerClose">關閉</button>
@@ -12463,6 +12498,35 @@
           }
         };
       });
+      const potHead = document.getElementById("d_potentialHead");
+      const potBody = document.getElementById("d_potential");
+      const potLabel = potHead?.closest(".drawer-potential-btn");
+      const applyPotentialUi = (level) => {
+        const v = normalizePotential(level);
+        if (potHead && potHead.value !== (v || "")) potHead.value = v || "";
+        if (potBody && potBody.value !== (v || "")) potBody.value = v || "";
+        if (potLabel) {
+          potLabel.classList.remove("High", "Mid", "Low");
+          if (v) potLabel.classList.add(v);
+        }
+      };
+      const savePotentialQuick = async (raw) => {
+        const potential = normalizePotential(raw);
+        applyPotentialUi(potential);
+        localPotentialSet(c.id, potential);
+        await updateCase(c.id, { potential }, { silent: true, source: "案件詳情 · Potential" });
+        toast(potential ? `Potential → ${potential}` : "已清除 Potential");
+      };
+      if (potHead) {
+        potHead.onchange = (e) => {
+          e.stopPropagation();
+          savePotentialQuick(potHead.value);
+        };
+      }
+      if (potBody) {
+        potBody.onchange = () => applyPotentialUi(potBody.value);
+      }
+
       document.getElementById("drawerSave").onclick = async () => {
         const stage = document.getElementById("d_stage").value;
         const appt = document.getElementById("d_appt").value;
@@ -12474,7 +12538,11 @@
         const budgetRaw = document.getElementById("d_budget").value;
         const amountRaw = document.getElementById("d_amount").value;
         const targetClosing = document.getElementById("d_targetClosing").value || "";
-        const potential = normalizePotential(document.getElementById("d_potential")?.value || "");
+        const potential = normalizePotential(
+          document.getElementById("d_potentialHead")?.value
+            || document.getElementById("d_potential")?.value
+            || ""
+        );
         localPotentialSet(c.id, potential);
         await updateCase(c.id, {
           companySales: document.getElementById("d_companySales").value || "Vincent",
