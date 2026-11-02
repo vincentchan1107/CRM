@@ -41,6 +41,11 @@ create index if not exists crm_cases_followup_idx on public.crm_cases(next_follo
 create index if not exists crm_cases_team_leader_idx on public.crm_cases(team_leader);
 create index if not exists crm_cases_company_sales_idx on public.crm_cases(company_sales);
 
+-- Case Potential：Low / Mid / High
+alter table public.crm_cases
+  add column if not exists potential text not null default '';
+create index if not exists crm_cases_potential_idx on public.crm_cases(potential);
+
 -- 由 ricoh_house 自動填 team_leader（只填空值）
 -- 例：MA (Polly Lee Team) → Polly Lee
 update public.crm_cases
