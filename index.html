@@ -4068,7 +4068,7 @@
           <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerExpandAll">全部展開</button>
           <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerCollapseAll">全部收合</button>
         </div>
-        <p class="muted" style="margin-bottom:10px;font-size:.78rem">預設 Partner：RICOH／HKBN／HPE／ICO · 按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Qualified = 非 DQ 且（已會面／有跟進機會／報價或之後階段）</p>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">預設 Partner：Achiever（本公司）／RICOH／HKBN／HPE／ICO · Case 唔一定有外部 Partner · 按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Qualified = 非 DQ 且（已會面／有跟進機會／報價或之後階段）</p>
         <div class="partner-tree" id="partnersTree"></div>
       </div>
 
@@ -4165,11 +4165,11 @@
         <div class="row2">
           <label class="field"><span>Customer（客戶）*</span><input id="agendaLeadCustomer" name="customer" required placeholder="公司／客戶名稱" /></label>
           <label class="field"><span>Partner</span>
-            <select id="agendaLeadPartner" name="partner"></select>
+            <select id="agendaLeadPartner" name="partner" title="Achiever = 本公司；外部渠道選 RICOH／HKBN 等"></select>
           </label>
         </div>
         <div class="row2">
-          <label class="field"><span>Partner Sales</span><input id="agendaLeadPartnerSales" name="partnerSales" placeholder="Partner 銷售員" /></label>
+          <label class="field"><span>Partner Sales</span><input id="agendaLeadPartnerSales" name="partnerSales" placeholder="外部 Partner 銷售員（Achiever 可留空）" /></label>
           <label class="field"><span>本公司銷售員</span>
             <select id="agendaLeadCompanySales" name="companySales">
               <option value="">未指派</option>
@@ -4384,8 +4384,8 @@
       { id: "confirmation", label: "確認簽單", short: "確認", color: "#059669", bg: "#d1fae5", desc: "客戶確認成交" },
       { id: "closed", label: "已關閉", short: "關閉", color: "#64748b", bg: "#eef1f6", desc: "DQ／失敗關閉" },
     ];
-    // Partner 管理預設清單（不限 RICOH）
-    const PARTNERS = ["RICOH", "HKBN", "HPE", "ICO"];
+    // Partner 管理預設清單：Achiever = 本公司（Case 唔一定有外部 Partner）
+    const PARTNERS = ["Achiever", "RICOH", "HKBN", "HPE", "ICO"];
     // 本公司銷售員（唔係 Partner Sales）
     const COMPANY_SALES = ["Vincent", "Tim", "Andrew", "Kelly", "Sophia"];
 
@@ -4968,10 +4968,14 @@
       const raw = String(name || "").trim();
       if (!raw) return "";
       if (/^ricoh(\s*partner)?$/i.test(raw)) return "RICOH";
+      if (/^achiever(\s*(solutions?|ltd\.?|limited|crm|hk))?$/i.test(raw)) return "Achiever";
       const upper = raw.toUpperCase();
       const preset = PARTNERS.find((p) => p.toUpperCase() === upper);
       if (preset) return preset;
       return raw;
+    }
+    function isInHousePartner(name) {
+      return normalizePartner(name) === "Achiever";
     }
     function partnerOptionsFromCases() {
       const set = new Set(PARTNERS);
@@ -6020,7 +6024,7 @@
       return {
         id: r.id,
         customerName: r.customer_name,
-        partner: normalizePartner(r.partner) || "RICOH",
+        partner: normalizePartner(r.partner) || "Achiever",
         systems: r.systems || [],
         requirements,
         quantity: r.quantity || "",
@@ -6464,7 +6468,7 @@
 
       return {
         customerName,
-        partner: normalizePartner(partner) || "RICOH",
+        partner: normalizePartner(partner) || "Achiever",
         systems,
         requirements,
         quantity,
@@ -6621,9 +6625,19 @@
       return Math.round(n);
     }
 
+    function partnerOptionLabel(p) {
+      return p === "Achiever" ? "Achiever（本公司）" : p;
+    }
     function initPortalForm() {
       const sel = document.getElementById("partnerSelect");
-      if (sel) sel.innerHTML = PARTNERS.map((p) => `<option value="${p}">${p}</option>`).join("");
+      if (sel) {
+        const cur = sel.value;
+        sel.innerHTML = PARTNERS.map((p) =>
+          `<option value="${escapeAttr(p)}">${escapeHtml(partnerOptionLabel(p))}</option>`
+        ).join("");
+        if ([...sel.options].some((o) => o.value === cur)) sel.value = cur;
+        else if ([...sel.options].some((o) => o.value === "Achiever")) sel.value = "Achiever";
+      }
       const tags = document.getElementById("systemTags");
       if (!tags) return;
       tags.innerHTML = SYSTEMS.map((s) => `<button type="button" class="tag ${selectedSystems.has(s) ? "on" : ""}" data-sys="${s}">${s}</button>`).join("");
@@ -7856,7 +7870,7 @@
       selectedSystems = new Set(parsed.systems || []);
       initPortalForm();
       if (parsed.customerName) form.customerName.value = parsed.customerName;
-      form.partner.value = normalizePartner(parsed.partner) || "RICOH";
+      form.partner.value = normalizePartner(parsed.partner) || "Achiever";
       form.requirements.value = parsed.requirements || "";
       form.quantity.value = parsed.quantity || "";
       if (parsed.budget != null) form.budget.value = parsed.budget;
@@ -10009,7 +10023,7 @@
 
     const MGMT_META = {
       customers: { title: "客戶管理", sub: "客戶統計與跟進提示", top: "客戶管理" },
-      partners: { title: "Partner 管理", sub: "Partner → Team Leader → Sales", top: "Partner 管理" },
+      partners: { title: "Partner 管理", sub: "Achiever（本公司）／外部 Partner → Team Leader → Sales", top: "Partner 管理" },
       sales: { title: "銷售員管理", sub: "KPI 同 Closing 目標設計", top: "銷售員管理" },
       users: { title: "使用者權限", sub: "ADMIN／SALES 帳號與屬性", top: "使用者權限" },
     };
@@ -13160,7 +13174,7 @@
       const item = {
         id: `case-${crypto.randomUUID().slice(0, 8)}`,
         customerName: String(fd.get("customerName") || "").trim(),
-        partner: normalizePartner(fd.get("partner")) || "RICOH",
+        partner: normalizePartner(fd.get("partner")) || "Achiever",
         systems: [...selectedSystems],
         requirements: String(fd.get("requirements") || ""),
         quantity: String(fd.get("quantity") || ""),
@@ -13328,12 +13342,27 @@
       sendAgendaReminder(items);
     };
 
+    function syncAgendaLeadPartnerSalesUi() {
+      const partnerSel = document.getElementById("agendaLeadPartner");
+      const salesInput = document.getElementById("agendaLeadPartnerSales");
+      if (!partnerSel || !salesInput) return;
+      const inHouse = isInHousePartner(partnerSel.value);
+      salesInput.placeholder = inHouse ? "本公司 Case · Partner Sales 可留空" : "Partner 銷售員";
+      salesInput.disabled = false;
+    }
     function initAgendaNewLeadForm() {
       const partnerSel = document.getElementById("agendaLeadPartner");
       const salesSel = document.getElementById("agendaLeadCompanySales");
-      if (partnerSel && !partnerSel.dataset.ready) {
-        partnerSel.innerHTML = PARTNERS.map((p) => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`).join("");
-        partnerSel.dataset.ready = "1";
+      if (partnerSel) {
+        if (!partnerSel.dataset.ready) {
+          partnerSel.innerHTML = PARTNERS.map((p) =>
+            `<option value="${escapeAttr(p)}">${escapeHtml(partnerOptionLabel(p))}</option>`
+          ).join("");
+          partnerSel.dataset.ready = "1";
+          partnerSel.onchange = () => syncAgendaLeadPartnerSalesUi();
+        }
+        if (!partnerSel.value) partnerSel.value = "Achiever";
+        syncAgendaLeadPartnerSalesUi();
       }
       if (salesSel) {
         const names = isSales() ? scopedSalesNames() : COMPANY_SALES;
@@ -13369,7 +13398,7 @@
       e.preventDefault();
       if (!dbReady) return toast("請先完成 Supabase 設定");
       const customer = String(document.getElementById("agendaLeadCustomer").value || "").trim();
-      const partner = normalizePartner(document.getElementById("agendaLeadPartner").value) || "RICOH";
+      const partner = normalizePartner(document.getElementById("agendaLeadPartner").value) || "Achiever";
       const partnerSales = String(document.getElementById("agendaLeadPartnerSales").value || "").trim();
       let companySales = normalizeCompanySales(document.getElementById("agendaLeadCompanySales").value) || "";
       if (isSales()) companySales = currentSalesName() || companySales;
