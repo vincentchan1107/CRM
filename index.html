@@ -823,6 +823,50 @@
       display: flex; flex-direction: column; gap: 4px;
       font-size: .68rem; font-weight: 700; color: var(--muted);
     }
+    .daily-brief-modal {
+      width: min(640px, 100%);
+      max-height: min(82vh, 720px);
+    }
+    .daily-brief-modal .db-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin: 10px 0 12px;
+    }
+    .daily-brief-modal .db-summary .chip {
+      border-radius: 12px;
+      padding: 10px 10px 8px;
+      background: #f7f4fc;
+      border: 1px solid #ebe6f8;
+    }
+    .daily-brief-modal .db-summary .chip .lbl {
+      font-size: .68rem; font-weight: 800; color: var(--muted);
+    }
+    .daily-brief-modal .db-summary .chip .val {
+      font-size: 1.25rem; font-weight: 800; color: var(--ink); margin-top: 2px;
+    }
+    .daily-brief-modal .db-summary .chip.meet { background: #e8faf2; border-color: #bbf7d0; }
+    .daily-brief-modal .db-summary .chip.follow { background: #ffedd5; border-color: #fdba74; }
+    .daily-brief-modal .db-summary .chip.overdue { background: #ffe4e6; border-color: #fecdd3; }
+    .daily-brief-modal .db-section {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+    .daily-brief-modal .db-section h3 {
+      margin: 0 0 8px;
+      font-size: .9rem;
+      font-weight: 800;
+    }
+    .daily-brief-modal .db-section .empty {
+      font-size: .78rem; color: var(--muted); font-weight: 650; padding: 4px 0 2px;
+    }
+    .daily-brief-modal .om-item .meta .tag {
+      display: inline-block; margin-right: 6px;
+    }
+    @media (max-width: 560px) {
+      .daily-brief-modal .db-summary { grid-template-columns: 1fr; }
+    }
     .overdue-modal .om-wa-settings input {
       border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px;
       font-size: .78rem; font-weight: 650;
@@ -6333,6 +6377,149 @@
       const d = parseLocalDate(c.nextFollowUpAt);
       if (!d) return false;
       return d < todayStart();
+    }
+
+    function collectDailyBriefing() {
+      const start = todayStart();
+      const end = endOfDay(start);
+      const todayStr = formatLocalDate(start);
+      const meetings = [];
+      const followups = [];
+      const overdue = [];
+      for (const c of scopedCases(cases)) {
+        if (isDq(c)) continue;
+        const sales = normalizeCompanySales(c.companySales) || "未指派";
+        const name = companyKey(c);
+        if (c.appointmentAt) {
+          const d = new Date(c.appointmentAt);
+          if (!Number.isNaN(d.getTime()) && d >= start && d <= end && !c.meetingDone) {
+            meetings.push({
+              id: c.id,
+              name,
+              sales,
+              partner: c.partner || "",
+              timeText: d.toLocaleTimeString("zh-HK", { hour: "2-digit", minute: "2-digit" }),
+              status: c.appointmentConfirmed ? "已確認" : "待確認",
+              note: c.meetingNotes ? String(c.meetingNotes).slice(0, 50) : "今日約見",
+            });
+          }
+        }
+        if (c.nextFollowUpAt && c.stage !== "closed") {
+          const d = parseLocalDate(c.nextFollowUpAt);
+          if (d && formatLocalDate(d) === todayStr && !isFollowUpOverdue(c)) {
+            followups.push({
+              id: c.id,
+              name,
+              sales,
+              partner: c.partner || "",
+              dateText: todayStr,
+              note: c.followUpOpportunity ? "有跟進機會" : (c.requirements || "").slice(0, 50),
+            });
+          }
+        }
+        if (isFollowUpOverdue(c)) {
+          overdue.push({
+            id: c.id,
+            name,
+            sales,
+            partner: c.partner || "",
+            dateText: c.nextFollowUpAt || "—",
+            note: "已過下次跟進日期",
+          });
+        }
+      }
+      meetings.sort((a, b) => String(a.timeText).localeCompare(String(b.timeText)));
+      followups.sort((a, b) => a.name.localeCompare(b.name, "zh-HK"));
+      overdue.sort((a, b) => String(a.dateText).localeCompare(String(b.dateText)));
+      return { date: todayStr, meetings, followups, overdue };
+    }
+
+    function dailyBriefStorageKey() {
+      const uid = currentSessionUser?.id || "anon";
+      return `crm_daily_brief_${uid}_${formatLocalDate(new Date())}`;
+    }
+
+    function openDailyBriefingModal({ force = false } = {}) {
+      if (!currentSessionUser) return;
+      const key = dailyBriefStorageKey();
+      if (!force && sessionStorage.getItem(key) === "1") return;
+      const brief = collectDailyBriefing();
+      const root = document.getElementById("overdueModalRoot");
+      if (!root) return;
+      const total = brief.meetings.length + brief.followups.length + brief.overdue.length;
+      sessionStorage.setItem(key, "1");
+
+      const rowHtml = (it, toneMeta) => `
+        <div class="om-item">
+          <div>
+            <strong>${escapeHtml(it.name)}</strong>
+            <div class="meta">
+              ${toneMeta}
+              ${it.sales ? ` · Sales：${escapeHtml(it.sales)}` : ""}
+              ${it.partner ? ` · ${escapeHtml(it.partner)}` : ""}
+              ${it.note ? `<br>${escapeHtml(it.note)}` : ""}
+            </div>
+          </div>
+          <div class="om-item-actions">
+            <button type="button" class="btn btn-teal btn-sm" data-daily-open="${escapeAttr(it.id)}">詳情</button>
+          </div>
+        </div>`;
+
+      root.innerHTML = `<div class="overdue-modal-bg" role="presentation">
+        <div class="overdue-modal daily-brief-modal" role="dialog" aria-modal="true" aria-label="今日工作提示">
+          <div class="om-head">
+            <div>
+              <div class="eyebrow">登入提示 · ${escapeHtml(brief.date)}</div>
+              <h2 style="margin:4px 0 0;font-size:1.15rem">今日要見／跟進／逾期</h2>
+              <p class="muted" style="margin:4px 0 0;font-size:.75rem">登入後即時提示今日約見、今日跟進 Case，同埋已逾期未跟進客戶</p>
+            </div>
+            <div class="om-head-actions">
+              <button type="button" class="btn btn-ghost btn-sm" id="dailyBriefAgenda">開會議／跟進</button>
+              <button type="button" class="btn btn-teal btn-sm" id="dailyBriefClose">知道了</button>
+            </div>
+          </div>
+          <div class="db-summary">
+            <div class="chip meet"><div class="lbl">今日約見</div><div class="val">${brief.meetings.length}</div></div>
+            <div class="chip follow"><div class="lbl">今日跟進</div><div class="val">${brief.followups.length}</div></div>
+            <div class="chip overdue"><div class="lbl">逾期 Case</div><div class="val">${brief.overdue.length}</div></div>
+          </div>
+          <div class="db-section">
+            <h3>今日要見嘅客戶（${brief.meetings.length}）</h3>
+            ${brief.meetings.length
+              ? brief.meetings.map((it) => rowHtml(it, `<span class="tag" style="color:#15803d;font-weight:800">${escapeHtml(it.timeText)} · ${escapeHtml(it.status)}</span>`)).join("")
+              : `<div class="empty">今日未有約見</div>`}
+          </div>
+          <div class="db-section">
+            <h3>今日跟進 Case（${brief.followups.length}）</h3>
+            ${brief.followups.length
+              ? brief.followups.map((it) => rowHtml(it, `<span class="tag" style="color:#c2410c;font-weight:800">跟進 ${escapeHtml(it.dateText)}</span>`)).join("")
+              : `<div class="empty">今日未有跟進 Case</div>`}
+          </div>
+          <div class="db-section">
+            <h3>逾期未跟進（${brief.overdue.length}）</h3>
+            ${brief.overdue.length
+              ? brief.overdue.map((it) => rowHtml(it, `<span class="tag" style="color:#9f1239;font-weight:800">逾期 · ${escapeHtml(it.dateText)}</span>`)).join("")
+              : `<div class="empty">暫時沒有逾期 Case</div>`}
+          </div>
+          ${total ? "" : `<p class="muted" style="margin:10px 0 0;font-size:.75rem;font-weight:650">今日暫時冇約見／跟進／逾期，可以安心開始工作。</p>`}
+        </div>
+      </div>`;
+
+      const close = () => { root.innerHTML = ""; };
+      root.querySelector(".overdue-modal-bg").onclick = (e) => {
+        if (e.target.classList.contains("overdue-modal-bg")) close();
+      };
+      document.getElementById("dailyBriefClose").onclick = close;
+      document.getElementById("dailyBriefAgenda").onclick = () => {
+        close();
+        showView("agenda");
+      };
+      root.querySelectorAll("[data-daily-open]").forEach((btn) => {
+        btn.onclick = () => {
+          close();
+          openDrawer(btn.dataset.dailyOpen);
+        };
+      });
     }
 
     function getOverdueFollowUpItems() {
@@ -13818,6 +14005,8 @@
         } else {
           showView(["portal", "dashboard", "board", "cases", "agenda", "potential", "marketing", "logs"].includes(hash) ? hash : "dashboard");
         }
+        // 登入後即時彈今日約見／跟進／逾期提示
+        requestAnimationFrame(() => openDailyBriefingModal({ force: true }));
       };
       if (casesLoading) {
         const wait = setInterval(() => {
@@ -13878,6 +14067,8 @@
       } else {
         showView(["portal", "dashboard", "board", "cases", "agenda", "potential", "marketing", "logs"].includes(hash) ? hash : "dashboard");
       }
+      // 已登入再開頁：每日提示一次（今日約見／跟進／逾期）
+      requestAnimationFrame(() => openDailyBriefingModal({ force: false }));
     });
   </script>
 </body>
