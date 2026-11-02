@@ -11026,7 +11026,7 @@
         const c = it.case;
         const s = stageMeta(c.stage);
         const statusLabel = it.kind === "meeting"
-          ? String(it.kindLabel || "會議").replace(/^會議\s*/, "") || "會議"
+          ? (c.meetingDone ? "已完成" : (c.appointmentConfirmed ? "已確認" : "待確認"))
           : (it.overdue ? "逾期跟進" : "待跟進");
         const kindClass = it.kind === "meeting" ? "tag-ok" : (it.overdue ? "tag-overdue" : "tag-ok");
         const trClass = it.overdue ? "agenda-overdue" : (it.isTodayMeet ? "agenda-today-meet" : "");
