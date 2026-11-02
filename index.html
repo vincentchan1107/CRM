@@ -2567,8 +2567,33 @@
     tr.agenda-today-meet td { background: rgba(107, 70, 254, .06); }
     tr.agenda-overdue td:first-child { box-shadow: inset 3px 0 0 #e11d48; }
     tr.agenda-today-meet td:first-child { box-shadow: inset 3px 0 0 #6b46fe; }
-    #agendaBody tr[data-case-id] { cursor: pointer; }
-    #agendaBody tr[data-case-id]:hover td { filter: brightness(0.985); }
+    #agendaMeetBody tr[data-case-id],
+    #agendaFollowBody tr[data-case-id] { cursor: pointer; }
+    #agendaMeetBody tr[data-case-id]:hover td,
+    #agendaFollowBody tr[data-case-id]:hover td { filter: brightness(0.985); }
+    .agenda-split {
+      display: grid; gap: 14px; margin-top: 8px;
+    }
+    .agenda-section {
+      background: rgba(255,255,255,.72);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 12px 8px;
+    }
+    .agenda-section-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .agenda-section-head h2 {
+      margin: 0; font-size: 1rem; font-weight: 800; color: var(--ink);
+    }
+    .agenda-section-head .count {
+      font-size: .72rem; font-weight: 800; color: var(--muted);
+      background: #f3f0ff; border-radius: 999px; padding: 4px 10px;
+    }
+    .agenda-section.meet .count { background: #e8faf2; color: #15803d; }
+    .agenda-section.follow .count { background: #ffedd5; color: #9a3412; }
+    .agenda-section .table-wrap { margin: 0; border: 0; box-shadow: none; background: transparent; }
     /* keep <td> as table-cell; flex belongs on an inner wrapper */
     td.agenda-actions { white-space: nowrap; vertical-align: middle; }
     td.agenda-actions .agenda-actions-inner {
@@ -4217,12 +4242,32 @@
       <div class="mgmt-stats" id="agendaStats" style="margin-top:4px"></div>
       <div id="agendaAlert"></div>
       <div id="agendaCalendar" class="hidden"></div>
-      <div class="table-wrap" id="agendaTableWrap" style="margin-top:8px"><table>
-        <thead><tr>
-          <th>日期</th><th>類型</th><th>本公司銷售員</th><th>客戶</th><th>階段</th><th>Partner Sales</th><th>備註</th><th>操作</th>
-        </tr></thead>
-        <tbody id="agendaBody"></tbody>
-      </table></div>
+      <div class="agenda-split" id="agendaTableWrap">
+        <section class="agenda-section meet" aria-labelledby="agendaMeetTitle">
+          <div class="agenda-section-head">
+            <h2 id="agendaMeetTitle">會議</h2>
+            <span class="count" id="agendaMeetCount">0</span>
+          </div>
+          <div class="table-wrap"><table>
+            <thead><tr>
+              <th>日期</th><th>狀態</th><th>本公司銷售員</th><th>客戶</th><th>階段</th><th>Partner Sales</th><th>備註</th><th>操作</th>
+            </tr></thead>
+            <tbody id="agendaMeetBody"></tbody>
+          </table></div>
+        </section>
+        <section class="agenda-section follow" aria-labelledby="agendaFollowTitle">
+          <div class="agenda-section-head">
+            <h2 id="agendaFollowTitle">跟進 Case</h2>
+            <span class="count" id="agendaFollowCount">0</span>
+          </div>
+          <div class="table-wrap"><table>
+            <thead><tr>
+              <th>日期</th><th>狀態</th><th>本公司銷售員</th><th>客戶</th><th>階段</th><th>Partner Sales</th><th>備註</th><th>操作</th>
+            </tr></thead>
+            <tbody id="agendaFollowBody"></tbody>
+          </table></div>
+        </section>
+      </div>
     </section>
 
     <!-- LOG HISTORY -->
@@ -10969,9 +11014,20 @@
         renderAgendaCalendar(items, range);
       }
 
-      document.getElementById("agendaBody").innerHTML = items.map((it) => {
+      const meetItems = items.filter((i) => i.kind === "meeting");
+      const followItems = items.filter((i) => i.kind === "followup");
+      const emptyMsg = range.incomplete ? "請先套用日期範圍" : "呢段期間暫時沒有項目";
+      const meetCount = document.getElementById("agendaMeetCount");
+      const followCount = document.getElementById("agendaFollowCount");
+      if (meetCount) meetCount.textContent = `${meetItems.length} 項`;
+      if (followCount) followCount.textContent = `${followItems.length} 項${overdueN ? ` · ${overdueN} 逾期` : ""}`;
+
+      function agendaRowHtml(it) {
         const c = it.case;
         const s = stageMeta(c.stage);
+        const statusLabel = it.kind === "meeting"
+          ? (c.meetingDone ? "已完成" : (c.appointmentConfirmed ? "已確認" : "待確認"))
+          : (it.overdue ? "逾期跟進" : "待跟進");
         const kindClass = it.kind === "meeting" ? "tag-ok" : (it.overdue ? "tag-overdue" : "tag-ok");
         const trClass = it.overdue ? "agenda-overdue" : (it.isTodayMeet ? "agenda-today-meet" : "");
         const canComplete = it.kind === "meeting" && !c.meetingDone;
@@ -10985,7 +11041,7 @@
             ${it.isTodayMeet ? `<div style="margin-top:4px"><span class="badge" style="color:#5b21b6;background:#efeefe">今日約見</span></div>` : ""}
             ${it.overdue ? `<div style="margin-top:4px"><span class="tag-overdue">逾期</span></div>` : ""}
           </td>
-          <td><span class="${kindClass}">${escapeHtml(it.kindLabel)}</span></td>
+          <td><span class="${kindClass}">${escapeHtml(statusLabel)}</span></td>
           <td><strong>${escapeHtml(it.sales)}</strong></td>
           <td>
             <strong>${escapeHtml(companyKey(c))}</strong>
@@ -10996,15 +11052,24 @@
           <td class="muted" style="font-size:.75rem">${escapeHtml(it.note || "—")}</td>
           <td class="agenda-actions"><div class="agenda-actions-inner">${actions}</div></td>
         </tr>`;
-      }).join("") || `<tr><td colspan="8"><div class="empty-state">${range.incomplete ? "請先套用日期範圍" : "沒有符合項目"}</div></td></tr>`;
+      }
+      function fillAgendaBody(id, list, emptyLabel) {
+        const body = document.getElementById(id);
+        if (!body) return;
+        body.innerHTML = list.length
+          ? list.map(agendaRowHtml).join("")
+          : `<tr><td colspan="8"><div class="empty-state">${escapeHtml(emptyLabel)}</div></td></tr>`;
+      }
+      fillAgendaBody("agendaMeetBody", meetItems, range.incomplete ? emptyMsg : "呢段期間暫時沒有會議");
+      fillAgendaBody("agendaFollowBody", followItems, range.incomplete ? emptyMsg : "呢段期間暫時沒有跟進 Case");
 
-      document.querySelectorAll("#agendaBody tr[data-case-id]").forEach((tr) => {
+      document.querySelectorAll("#agendaMeetBody tr[data-case-id], #agendaFollowBody tr[data-case-id]").forEach((tr) => {
         tr.ondblclick = (e) => {
           if (e.target.closest("button, a, input, select, textarea, label")) return;
           openDrawer(tr.dataset.caseId);
         };
       });
-      document.querySelectorAll("#agendaBody [data-complete-meet]").forEach((b) => {
+      document.querySelectorAll("#agendaMeetBody [data-complete-meet]").forEach((b) => {
         b.onclick = (e) => {
           e.stopPropagation();
           completeMeetingQuick(b.dataset.completeMeet);
