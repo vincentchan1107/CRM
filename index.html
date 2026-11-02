@@ -1498,7 +1498,7 @@
     .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: var(--shadow); }
     .drawer-bg {
       position: fixed; inset: 0; background: rgba(31, 36, 48, .28); backdrop-filter: blur(4px);
-      display: flex; justify-content: center; align-items: center; z-index: 80;
+      display: flex; justify-content: center; align-items: center; z-index: 90;
       padding: 16px;
       overscroll-behavior: contain;
       width: 100%;
@@ -6544,18 +6544,20 @@
         </div>
       </div>`;
 
+      // 只可用「知道了」關閉；點詳情／背景唔會關，返出 drawer 後提示仍在
       const close = () => { root.innerHTML = ""; };
       root.querySelector(".overdue-modal-bg").onclick = (e) => {
-        if (e.target.classList.contains("overdue-modal-bg")) close();
+        e.stopPropagation();
       };
+      root.querySelector(".daily-brief-modal")?.addEventListener("click", (e) => e.stopPropagation());
       document.getElementById("dailyBriefClose").onclick = close;
       document.getElementById("dailyBriefAgenda").onclick = () => {
         close();
         showView("agenda");
       };
       root.querySelectorAll("[data-daily-open]").forEach((btn) => {
-        btn.onclick = () => {
-          close();
+        btn.onclick = (e) => {
+          e.stopPropagation();
           openDrawer(btn.dataset.dailyOpen);
         };
       });
