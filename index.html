@@ -2694,6 +2694,37 @@
     tr.agenda-overdue td.agenda-actions .btn-ghost {
       background: rgba(255, 255, 255, .72);
     }
+    .action-modal-bg {
+      position: fixed; inset: 0; z-index: 95;
+      background: rgba(26, 22, 48, .45);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .action-modal {
+      width: min(440px, 100%);
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 24px 60px rgba(26, 22, 48, .28);
+      padding: 18px 18px 16px;
+      border: 1px solid var(--line);
+    }
+    .action-modal .am-head {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+      margin-bottom: 14px;
+    }
+    .action-modal .am-head h2 {
+      margin: 4px 0 0; font-size: 1.1rem;
+    }
+    .action-modal .am-fields {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .action-modal .am-fields .field span { font-size: .72rem; font-weight: 800; }
+    .action-modal .am-fields select.potential-High { color: #15803d; background: #ecfdf5; }
+    .action-modal .am-fields select.potential-Mid { color: #c2410c; background: #fff7ed; }
+    .action-modal .am-fields select.potential-Low { color: #475569; background: #f8fafc; }
+    .action-modal .am-actions {
+      display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; flex-wrap: wrap;
+    }
     .agenda-view-seg { margin-left: auto; }
     .agenda-cal {
       display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 6px; margin-top: 10px;
@@ -4343,7 +4374,7 @@
           </div>
           <div class="table-wrap"><table>
             <thead><tr>
-              <th>日期</th><th>狀態</th><th>本公司銷售員</th><th>客戶</th><th>階段</th><th>Partner Sales</th><th>備註</th><th>操作（Potential／跟進日）</th>
+              <th>日期</th><th>狀態</th><th>本公司銷售員</th><th>客戶</th><th>階段</th><th>Partner Sales</th><th>備註</th><th>操作</th>
             </tr></thead>
             <tbody id="agendaMeetBody"></tbody>
           </table></div>
@@ -4557,6 +4588,7 @@
 
   <div id="drawerRoot"></div>
   <div id="overdueModalRoot"></div>
+  <div id="actionModalRoot"></div>
   <div id="toastRoot"></div>
 
   <script>
@@ -11136,13 +11168,84 @@
       return order[Math.min(idx + 1, order.length - 1)];
     }
 
-    async function completeMeetingQuick(caseId) {
+    function openCompleteMeetingModal(caseId) {
+      const c = cases.find((x) => x.id === caseId);
+      if (!c) return;
+      const root = document.getElementById("actionModalRoot");
+      if (!root) return;
+      const potNow = normalizePotential(c.potential);
+      const followNow = c.nextFollowUpAt || "";
+      root.innerHTML = `<div class="action-modal-bg" role="presentation">
+        <div class="action-modal" role="dialog" aria-modal="true" aria-label="完成會面">
+          <div class="am-head">
+            <div>
+              <div class="eyebrow">會議完成</div>
+              <h2>${escapeHtml(c.customerName || companyKey(c))}</h2>
+              <p class="muted" style="margin:4px 0 0;font-size:.75rem">設定 Potential、會議記錄 Comment、下次跟進日</p>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" id="cmCancel">取消</button>
+          </div>
+          <div class="am-fields">
+            <label class="field"><span>Potential</span>
+              <select id="cmPotential" class="${potNow ? `potential-${potNow}` : ""}" aria-label="Potential">
+                <option value="" ${!potNow ? "selected" : ""}>未設</option>
+                ${POTENTIAL_LEVELS.map((p) => `<option value="${p}" ${potNow === p ? "selected" : ""}>${p}</option>`).join("")}
+              </select>
+            </label>
+            <label class="field"><span>會議記錄 Comment</span>
+              <textarea id="cmComment" rows="4" placeholder="例如：客人對方案有興趣，下週跟進報價…"></textarea>
+            </label>
+            <label class="field"><span>下次跟進日</span>
+              <input id="cmFollow" type="date" value="${escapeAttr(followNow)}" />
+            </label>
+          </div>
+          <div class="am-actions">
+            <button type="button" class="btn btn-ghost" id="cmCancel2">取消</button>
+            <button type="button" class="btn btn-teal" id="cmSave">確認完成會面</button>
+          </div>
+        </div>
+      </div>`;
+
+      const close = () => { root.innerHTML = ""; };
+      const potSel = document.getElementById("cmPotential");
+      potSel.onchange = () => {
+        potSel.classList.remove("potential-High", "potential-Mid", "potential-Low");
+        const v = normalizePotential(potSel.value);
+        if (v) potSel.classList.add(`potential-${v}`);
+      };
+      root.querySelector(".action-modal-bg").onclick = (e) => {
+        if (e.target.classList.contains("action-modal-bg")) close();
+      };
+      document.getElementById("cmCancel").onclick = close;
+      document.getElementById("cmCancel2").onclick = close;
+      document.getElementById("cmSave").onclick = async () => {
+        const btn = document.getElementById("cmSave");
+        if (btn) btn.disabled = true;
+        try {
+          await completeMeetingQuick(c.id, {
+            potential: document.getElementById("cmPotential").value,
+            comment: document.getElementById("cmComment").value,
+            nextFollowUpAt: document.getElementById("cmFollow").value || "",
+          });
+          close();
+        } catch (err) {
+          if (btn) btn.disabled = false;
+          toast("完成會面失敗：" + (err?.message || err));
+        }
+      };
+      document.getElementById("cmComment")?.focus();
+    }
+
+    async function completeMeetingQuick(caseId, opts = {}) {
       const c = cases.find((x) => x.id === caseId);
       if (!c) return;
       const nextStage = nextStageAfterMeeting(c.stage);
-      const note = prompt("會後 comment（可留空）", c.meetingNotes || "") ?? null;
-      if (note === null) return;
-      const logContent = note.trim() || "會面已完成";
+      const note = String(opts.comment ?? "").trim();
+      const potential = normalizePotential(opts.potential ?? c.potential);
+      const nextFollowUpAt = opts.nextFollowUpAt != null ? String(opts.nextFollowUpAt || "") : (c.nextFollowUpAt || "");
+      const logContent = note || "會面已完成";
+      localPotentialSet(c.id, potential);
+      localFollowUpSet(c.id, nextFollowUpAt);
       await db.from("crm_activity_logs").insert({
         case_id: c.id,
         log_type: "meeting_done",
@@ -11151,12 +11254,14 @@
       });
       await updateCase(c.id, {
         meetingDone: true,
-        meetingNotes: note.trim() || c.meetingNotes || logContent,
+        meetingNotes: note || c.meetingNotes || logContent,
         appointmentConfirmed: true,
         stage: nextStage === c.stage ? c.stage : nextStage,
         followUpOpportunity: true,
+        potential,
+        nextFollowUpAt,
       }, { source: "完成會面" });
-      toast(`已完成會面${nextStage !== c.stage ? " · 階段 → " + stageMeta(nextStage).label : ""}`);
+      toast(`已完成會面${potential ? ` · Potential ${potential}` : ""}${nextFollowUpAt ? ` · 跟進 ${nextFollowUpAt}` : ""}${nextStage !== c.stage ? " · 階段 → " + stageMeta(nextStage).label : ""}`);
       renderAgenda();
     }
 
@@ -11348,10 +11453,13 @@
         const trClass = it.overdue ? "agenda-overdue" : (it.isTodayMeet ? "agenda-today-meet" : "");
         const pot = normalizePotential(c.potential);
         const canComplete = it.kind === "meeting" && !c.meetingDone;
-        const completeBtn = canComplete
-          ? `<button type="button" class="btn btn-teal btn-sm" data-complete-meet="${escapeAttr(c.id)}">完成會面</button>`
-          : "";
-        const actions = `
+        let actions = "";
+        if (it.kind === "meeting") {
+          actions = canComplete
+            ? `<button type="button" class="btn btn-teal btn-sm" data-complete-meet="${escapeAttr(c.id)}">完成會面</button>`
+            : `<span class="muted" style="font-size:.72rem;font-weight:700">已完成</span>`;
+        } else {
+          actions = `
           <label class="agenda-op-field">
             <span>Potential</span>
             <select class="agenda-potential ${pot ? `potential-${pot}` : ""}" data-agenda-potential="${escapeAttr(c.id)}" title="點選 High／Mid／Low">
@@ -11362,8 +11470,8 @@
           <label class="agenda-op-field">
             <span>跟進日</span>
             <input type="date" class="agenda-follow" data-agenda-follow="${escapeAttr(c.id)}" value="${escapeAttr(c.nextFollowUpAt || "")}" title="設定下次跟進日期" />
-          </label>
-          ${completeBtn}`;
+          </label>`;
+        }
         return `<tr class="${trClass}" data-case-id="${escapeAttr(c.id)}" title="雙擊開啟詳情">
           <td>
             <strong>${escapeHtml(it.dateText)}</strong>
@@ -11402,10 +11510,10 @@
       document.querySelectorAll("#agendaMeetBody [data-complete-meet]").forEach((b) => {
         b.onclick = (e) => {
           e.stopPropagation();
-          completeMeetingQuick(b.dataset.completeMeet);
+          openCompleteMeetingModal(b.dataset.completeMeet);
         };
       });
-      document.querySelectorAll("#agendaMeetBody [data-agenda-potential], #agendaFollowBody [data-agenda-potential]").forEach((sel) => {
+      document.querySelectorAll("#agendaFollowBody [data-agenda-potential]").forEach((sel) => {
         sel.onchange = async (e) => {
           e.stopPropagation();
           const id = sel.dataset.agendaPotential;
@@ -11418,7 +11526,7 @@
           renderAgenda();
         };
       });
-      document.querySelectorAll("#agendaMeetBody [data-agenda-follow], #agendaFollowBody [data-agenda-follow]").forEach((input) => {
+      document.querySelectorAll("#agendaFollowBody [data-agenda-follow]").forEach((input) => {
         input.onchange = async (e) => {
           e.stopPropagation();
           const id = input.dataset.agendaFollow;
