@@ -231,11 +231,18 @@
     .nav-group.open .nav-sub,
     .nav-group.active-group .nav-sub { display: flex; }
     .case-mode-bar {
-      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-      margin: 0 0 12px;
+      display: flex; align-items: end; gap: 8px; flex-wrap: wrap;
+      margin-left: auto;
     }
-    .case-mode-bar .case-mode-hint {
-      font-size: .75rem; font-weight: 650;
+    .case-mode-bar .case-mode-label {
+      display: block;
+      font-size: .68rem; font-weight: 700; color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .board-filters .case-mode-bar,
+    .cases-toolbar .case-mode-bar {
+      margin-top: 0;
+      margin-bottom: 0;
     }
     .nav-sub button {
       border: 0;
@@ -1270,8 +1277,13 @@
         min-width: 0;
         width: 100%;
       }
-      .board-filters label:last-child {
+      .board-filters > label:nth-child(3) {
         grid-column: 1 / -1;
+      }
+      .board-filters .case-mode-bar {
+        grid-column: 1 / -1;
+        margin-left: 0;
+        justify-content: flex-end;
       }
       .board-filters select {
         width: 100%;
@@ -3939,13 +3951,6 @@
     <!-- BOARD -->
     <section id="view-board" class="hidden">
       <div id="boardOverdueAlert"></div>
-      <div class="case-mode-bar" data-case-mode-bar>
-        <div class="seg" role="tablist" aria-label="Case Management 展示方式">
-          <button type="button" data-case-mode="folder" class="active">文件夾</button>
-          <button type="button" data-case-mode="list">列表</button>
-        </div>
-        <span class="muted case-mode-hint">用文件夾（狀態欄）或列表方式睇案件</span>
-      </div>
       <div class="board-toolbar">
         <div class="board-toolbar-left">
           <div class="board-search-wrap">
@@ -3976,6 +3981,15 @@
               <option value="no">無跟進機會</option>
             </select>
           </label>
+          <div class="case-mode-bar" data-case-mode-bar title="用文件夾（狀態欄）或列表方式睇案件">
+            <div>
+              <span class="case-mode-label">展示方式</span>
+              <div class="seg" role="tablist" aria-label="Case Management 展示方式">
+                <button type="button" data-case-mode="folder" class="active">文件夾</button>
+                <button type="button" data-case-mode="list">列表</button>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="board-dash" id="boardDash"></div>
         <div class="stage-filter" id="stageFilter"></div>
@@ -3987,13 +4001,6 @@
 
     <!-- CASES LIST -->
     <section id="view-cases" class="hidden">
-      <div class="case-mode-bar" data-case-mode-bar>
-        <div class="seg" role="tablist" aria-label="Case Management 展示方式">
-          <button type="button" data-case-mode="folder">文件夾</button>
-          <button type="button" data-case-mode="list" class="active">列表</button>
-        </div>
-        <span class="muted case-mode-hint">用文件夾（狀態欄）或列表方式睇案件</span>
-      </div>
       <div class="page-head" style="margin-bottom:12px">
         <h1>案件列表</h1>
         <p class="muted page-head-sub">可排序、顯示欄位、批量更新、匯出 CSV</p>
@@ -4008,6 +4015,15 @@
         </div>
         <button type="button" class="btn btn-ghost btn-sm" id="btnExportCasesCsv">匯出 CSV</button>
         <button type="button" class="btn btn-ghost btn-sm" id="btnExportCasesXls">匯出 Excel</button>
+        <div class="case-mode-bar" data-case-mode-bar title="用文件夾（狀態欄）或列表方式睇案件">
+          <div>
+            <span class="case-mode-label">展示方式</span>
+            <div class="seg" role="tablist" aria-label="Case Management 展示方式">
+              <button type="button" data-case-mode="folder">文件夾</button>
+              <button type="button" data-case-mode="list" class="active">列表</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="cases-bulkbar" id="casesBulkBar">
         <strong id="casesBulkCount">已選 0</strong>
