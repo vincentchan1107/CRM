@@ -3499,9 +3499,89 @@
       background: #fff;
       font-size: .8rem;
     }
+    /* ---- Auth / Login ---- */
+    body.auth-locked .app-shell { display: none !important; }
+    body.auth-locked #loginGate { display: flex; }
+    #loginGate {
+      display: none;
+      position: fixed; inset: 0; z-index: 200;
+      align-items: center; justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(900px 500px at 10% -10%, rgba(107,70,254,.22), transparent 55%),
+        radial-gradient(800px 480px at 110% 10%, rgba(39,194,129,.16), transparent 50%),
+        linear-gradient(160deg, #f7f4ff 0%, #eef2ff 45%, #f8fafc 100%);
+      font-family: var(--font-body);
+    }
+    .login-card {
+      width: min(420px, 100%);
+      background: rgba(255,255,255,.96);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: 0 24px 60px rgba(40, 20, 80, .14);
+      padding: 28px 26px 22px;
+    }
+    .login-card .brand {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+    }
+    .login-card .brand img { width: 36px; height: 36px; border-radius: 10px; }
+    .login-card h1 {
+      margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--ink);
+    }
+    .login-card .sub {
+      margin: 4px 0 18px; font-size: .8rem; color: var(--muted); font-weight: 650;
+    }
+    .login-card .field { margin-bottom: 12px; }
+    .login-card .field span {
+      display: block; font-size: .72rem; font-weight: 800; color: var(--muted); margin-bottom: 5px;
+    }
+    .login-card .field input, .login-card .field select {
+      width: 100%; box-sizing: border-box;
+      border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+      font-size: .88rem; font-weight: 650; background: #fff;
+    }
+    .login-error {
+      display: none; margin: 0 0 10px; padding: 8px 10px; border-radius: 10px;
+      background: #fff1f2; color: #9f1239; font-size: .75rem; font-weight: 700;
+    }
+    .login-error.show { display: block; }
+    .login-hint {
+      margin-top: 14px; font-size: .68rem; color: var(--muted); line-height: 1.5; font-weight: 650;
+    }
+    .topbar-user {
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .topbar-user .role-pill {
+      font-size: .68rem; font-weight: 800; padding: 4px 8px; border-radius: 999px;
+      background: #efeefe; color: var(--accent);
+    }
+    .topbar-user .role-pill.sales { background: #e8faf2; color: #15803d; }
+    .users-form-grid {
+      display: grid; gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      margin-top: 10px;
+    }
   </style>
 </head>
-<body>
+<body class="auth-locked">
+  <div id="loginGate" role="dialog" aria-modal="true" aria-label="登入">
+    <form class="login-card" id="loginForm">
+      <div class="brand">
+        <img src="./images/achiever-icon.png?v=2" alt="" />
+        <div>
+          <div class="eyebrow" style="margin:0">Achiever CRM</div>
+          <strong style="font-size:.95rem">登入系統</strong>
+        </div>
+      </div>
+      <h1>歡迎回來</h1>
+      <p class="sub">用你的帳號登入。SALES 只睇自己資料；ADMIN 可睇全部。</p>
+      <div class="login-error" id="loginError"></div>
+      <label class="field"><span>使用者名稱</span><input id="loginUsername" name="username" autocomplete="username" required placeholder="例如 admin 或 vincent" /></label>
+      <label class="field"><span>密碼</span><input id="loginPassword" name="password" type="password" autocomplete="current-password" required placeholder="輸入密碼" /></label>
+      <button type="submit" class="btn btn-teal" style="width:100%;margin-top:6px">登入</button>
+      <p class="login-hint">預設帳號：<br/>ADMIN — <code>admin</code> / <code>admin123</code><br/>SALES — <code>vincent</code>（或 tim／andrew／kelly／sophia）/ 密碼同用戶名+<code>123</code></p>
+    </form>
+  </div>
   <div class="app-shell" id="appShell">
     <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
     <aside class="sidebar" id="sidebar">
@@ -3522,6 +3602,7 @@
             <button type="button" data-view="mgmt" data-mgmt="customers">客戶管理</button>
             <button type="button" data-view="mgmt" data-mgmt="partners">Partner 管理</button>
             <button type="button" data-view="mgmt" data-mgmt="sales">銷售員管理</button>
+            <button type="button" data-view="mgmt" data-mgmt="users" data-admin-only="1">使用者權限</button>
           </div>
         </div>
         <button data-view="marketing"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h11l5 5v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M9 12h6M9 16h4"/></svg></span><span class="nav-label">市場推廣</span></button>
@@ -3542,7 +3623,11 @@
         <div class="topbar-right">
           <span class="live-pill" title="系統運作中"><i class="live-dot" aria-hidden="true"></i>LIVE</span>
           <button type="button" class="btn-motion" id="btnToggleMotion" aria-pressed="false" title="暫停／恢復介面動態">暫停動態</button>
-          <div class="topbar-meta">ADMIN · Achiever</div>
+          <div class="topbar-user">
+            <span class="role-pill" id="topbarRolePill">ADMIN</span>
+            <div class="topbar-meta" id="topbarUserMeta">—</div>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnLogout" title="登出">登出</button>
+          </div>
         </div>
       </header>
       <main class="wrap">
@@ -3975,6 +4060,47 @@
         </table></div>
         <div id="salesUnassigned" style="margin-top:12px"></div>
       </div>
+
+      <div class="mgmt-panel" id="mgmt-users">
+        <div class="page-head" style="margin-bottom:8px">
+          <div>
+            <div class="eyebrow">權限管理</div>
+            <h2 style="margin:0;font-size:1.1rem">使用者定義</h2>
+            <p class="muted page-head-sub">設定 ADMIN／SALES 帳號屬性。SALES 必須綁定本公司銷售員，登入後只睇自己資料。</p>
+          </div>
+        </div>
+        <div class="mkt-panel" style="margin-bottom:12px">
+          <div class="mkt-panel-head"><strong id="userEditorTitle">新增使用者</strong>
+            <button type="button" class="btn btn-teal btn-sm" id="btnSaveUser">儲存使用者</button>
+          </div>
+          <input type="hidden" id="userEditId" value="" />
+          <div class="users-form-grid">
+            <label class="field"><span>使用者名稱</span><input id="userUsername" placeholder="例如 kelly" /></label>
+            <label class="field"><span>顯示名稱</span><input id="userDisplayName" placeholder="例如 Kelly" /></label>
+            <label class="field"><span>角色</span>
+              <select id="userRole">
+                <option value="SALES">SALES</option>
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </label>
+            <label class="field"><span>綁定銷售員（SALES 必填）</span>
+              <select id="userSalesName"><option value="">—</option></select>
+            </label>
+            <label class="field"><span>電郵</span><input id="userEmail" type="email" placeholder="optional@" /></label>
+            <label class="field"><span>密碼（留空＝不改）</span><input id="userPassword" type="password" placeholder="新密碼" /></label>
+            <label class="field" style="display:flex;align-items:center;gap:8px;margin-top:18px">
+              <input type="checkbox" id="userActive" checked /> <span style="margin:0">啟用帳號</span>
+            </label>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="btnResetUserForm" style="margin-top:8px">清空表單／新增</button>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr>
+            <th>使用者</th><th>顯示名稱</th><th>角色</th><th>綁定銷售</th><th>電郵</th><th>狀態</th><th>操作</th>
+          </tr></thead>
+          <tbody id="usersBody"></tbody>
+        </table></div>
+      </div>
     </section>
 
     <!-- AGENDA: meetings + follow-ups -->
@@ -4234,6 +4360,177 @@
     const PARTNERS = ["RICOH", "HKBN", "HPE", "ICO"];
     // 本公司銷售員（唔係 Partner Sales）
     const COMPANY_SALES = ["Vincent", "Tim", "Andrew", "Kelly", "Sophia"];
+
+    /* -------- Auth / Users / Roles (ADMIN | SALES) -------- */
+    function hashPassword(pw) {
+      const s = `achiever-crm:${String(pw || "")}`;
+      let h = 2166136261;
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return `h${(h >>> 0).toString(16)}`;
+    }
+    function defaultUsersSeed() {
+      const salesUsers = COMPANY_SALES.map((name) => ({
+        id: `user-${name.toLowerCase()}`,
+        username: name.toLowerCase(),
+        displayName: name,
+        role: "SALES",
+        salesName: name,
+        email: "",
+        active: true,
+        passwordHash: hashPassword(`${name.toLowerCase()}123`),
+        createdAt: new Date().toISOString(),
+      }));
+      return [
+        {
+          id: "user-admin",
+          username: "admin",
+          displayName: "Administrator",
+          role: "ADMIN",
+          salesName: "",
+          email: "",
+          active: true,
+          passwordHash: hashPassword("admin123"),
+          createdAt: new Date().toISOString(),
+        },
+        ...salesUsers,
+      ];
+    }
+    function loadUsers() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("crm_users") || "null");
+        if (Array.isArray(raw) && raw.length) return raw;
+      } catch (_) {}
+      const seeded = defaultUsersSeed();
+      localStorage.setItem("crm_users", JSON.stringify(seeded));
+      return seeded;
+    }
+    function saveUsers(list) {
+      localStorage.setItem("crm_users", JSON.stringify(list || []));
+    }
+    function loadSession() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("crm_session") || "null");
+        if (!raw?.userId) return null;
+        const user = loadUsers().find((u) => u.id === raw.userId && u.active !== false);
+        return user || null;
+      } catch (_) {
+        return null;
+      }
+    }
+    let currentSessionUser = loadSession();
+    function currentUser() { return currentSessionUser; }
+    function isAdmin() { return currentSessionUser?.role === "ADMIN"; }
+    function isSales() { return currentSessionUser?.role === "SALES"; }
+    function currentSalesName() {
+      if (!currentSessionUser) return "";
+      if (currentSessionUser.role === "SALES") {
+        return normalizeCompanySales(currentSessionUser.salesName) || normalizeCompanySales(currentSessionUser.displayName) || "";
+      }
+      return "";
+    }
+    function caseInUserScope(c) {
+      if (!currentSessionUser) return false;
+      if (isAdmin()) return true;
+      const mine = currentSalesName();
+      if (!mine) return false;
+      return normalizeCompanySales(c.companySales) === mine;
+    }
+    function scopedCases(pool) {
+      const list = Array.isArray(pool) ? pool : cases;
+      return list.filter(caseInUserScope);
+    }
+    function scopedSalesNames() {
+      if (isAdmin()) return [...COMPANY_SALES];
+      const mine = currentSalesName();
+      return mine ? [mine] : [];
+    }
+    function setSessionUser(user) {
+      currentSessionUser = user || null;
+      if (user) localStorage.setItem("crm_session", JSON.stringify({ userId: user.id, at: Date.now() }));
+      else localStorage.removeItem("crm_session");
+      syncAuthUi();
+    }
+    function loginWithCredentials(username, password) {
+      const u = String(username || "").trim().toLowerCase();
+      const p = String(password || "");
+      const user = loadUsers().find((x) => String(x.username || "").toLowerCase() === u);
+      if (!user || user.active === false) return { ok: false, error: "帳號不存在或已停用" };
+      if (user.passwordHash !== hashPassword(p)) return { ok: false, error: "密碼不正確" };
+      setSessionUser(user);
+      applyRoleDefaults();
+      return { ok: true, user };
+    }
+    function logoutCurrentUser() {
+      setSessionUser(null);
+      document.body.classList.add("auth-locked");
+      const err = document.getElementById("loginError");
+      if (err) { err.textContent = ""; err.classList.remove("show"); }
+      document.getElementById("loginPassword").value = "";
+      document.getElementById("loginUsername")?.focus();
+    }
+    function applyRoleDefaults() {
+      if (!currentSessionUser) return;
+      if (isSales()) {
+        const mine = currentSalesName() || COMPANY_SALES[0];
+        dashMineSales = mine;
+        localStorage.setItem("crm_dash_mine_sales", mine);
+        applyDashRolePreset("mine", { persist: true });
+        boardSalesFilter = mine;
+        localStorage.setItem("crm_board_sales", boardSalesFilter);
+        agendaSalesFilter = mine;
+        localStorage.setItem("crm_agenda_sales", agendaSalesFilter);
+        portalSalesSelected = mine;
+        localStorage.setItem("crm_portal_sales", portalSalesSelected);
+        salesKpiSelected = mine;
+        localStorage.setItem("crm_sales_kpi_selected", salesKpiSelected);
+        targetClosingSalesSel = [mine];
+        localStorage.setItem("crm_tc_sales_sel", JSON.stringify(targetClosingSalesSel));
+        if (mgmtTab === "users") mgmtTab = "customers";
+      }
+    }
+    function syncAuthUi() {
+      const loggedIn = !!currentSessionUser;
+      document.body.classList.toggle("auth-locked", !loggedIn);
+      const rolePill = document.getElementById("topbarRolePill");
+      const meta = document.getElementById("topbarUserMeta");
+      if (rolePill) {
+        rolePill.textContent = currentSessionUser?.role || "—";
+        rolePill.classList.toggle("sales", currentSessionUser?.role === "SALES");
+      }
+      if (meta) {
+        const sales = currentSalesName();
+        meta.textContent = currentSessionUser
+          ? `${currentSessionUser.displayName || currentSessionUser.username}${sales ? " · " + sales : ""}`
+          : "—";
+      }
+      document.querySelectorAll("[data-admin-only]").forEach((el) => {
+        el.classList.toggle("hidden", !isAdmin());
+      });
+      // lock dashboard role controls for SALES
+      const roleSeg = document.getElementById("dashRoleSeg");
+      if (roleSeg) {
+        roleSeg.style.display = isSales() ? "none" : "";
+      }
+      const salesLocked = isSales();
+      ["boardSalesFilter", "agendaSalesFilter", "caseSalesFilter", "portalSalesSelect", "mktSalesFilter", "dashSalesFilter"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = salesLocked;
+      });
+      const actor = document.getElementById("logActorName");
+      if (actor && currentSessionUser) {
+        const name = currentSessionUser.displayName || currentSessionUser.username || currentActor();
+        actor.value = name;
+        localStorage.setItem("crm_actor_name", name);
+        actor.readOnly = salesLocked;
+      } else if (actor) {
+        actor.readOnly = false;
+      }
+    }
+
     const LOG_TYPES = [
       { id: "field_change", label: "欄位變更" },
       { id: "call_attempt", label: "致電／聯絡" },
@@ -4279,7 +4576,8 @@
     let portalCardOcrLines = [];
     let portalCardOcrPickLine = "";
     let mgmtTab = localStorage.getItem("crm_mgmt_tab") || "customers";
-    if (!["customers", "partners", "sales"].includes(mgmtTab)) mgmtTab = "customers";
+    if (!["customers", "partners", "sales", "users"].includes(mgmtTab)) mgmtTab = "customers";
+    if (mgmtTab === "users" && currentSessionUser && !isAdmin()) mgmtTab = "customers";
     let agendaPeriod = localStorage.getItem("crm_agenda_period") || "today";
     let agendaFrom = localStorage.getItem("crm_agenda_from") || "";
     let agendaTo = localStorage.getItem("crm_agenda_to") || "";
@@ -4660,8 +4958,19 @@
       const el = document.getElementById(id);
       if (!el) return cur || "all";
       if (kind === "sales") {
+        const names = scopedSalesNames();
+        if (isSales()) {
+          const mine = currentSalesName() || names[0] || "";
+          el.innerHTML = mine
+            ? `<option value="${escapeAttr(mine)}">${escapeHtml(mine)}</option>`
+            : `<option value="all">全部</option>`;
+          el.value = mine || "all";
+          el.disabled = true;
+          return el.value;
+        }
+        el.disabled = false;
         el.innerHTML = `<option value="all">全部</option>` +
-          COMPANY_SALES.map((n) => `<option value="${n}">${n}</option>`).join("") +
+          names.map((n) => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("") +
           `<option value="未指派">未指派</option>`;
       } else if (kind === "partner") {
         el.innerHTML = `<option value="all">全部</option>` +
@@ -4672,6 +4981,10 @@
       return el.value;
     }
     function dashSalesOptions() {
+      if (isSales()) {
+        const mine = currentSalesName();
+        return mine ? [mine] : [];
+      }
       return [...COMPANY_SALES, "未指派"];
     }
     function dashSalesIsAll() {
@@ -4693,6 +5006,7 @@
       return dashPartnerSel.includes(name);
     }
     function caseMatchesDashFilters(c) {
+      if (!caseInUserScope(c)) return false;
       if (!dashSalesIsAll()) {
         const s = normalizeCompanySales(c.companySales) || "未指派";
         if (!dashSalesSel.includes(s)) return false;
@@ -5234,6 +5548,7 @@
       bindDashModuleDnD();
     }
     function caseMatchesBoardFilters(c) {
+      if (!caseInUserScope(c)) return false;
       if (boardSalesFilter && boardSalesFilter !== "all") {
         const s = normalizeCompanySales(c.companySales) || "未指派";
         if (s !== boardSalesFilter) return false;
@@ -5483,6 +5798,10 @@
       root.classList.add("motion-play");
     }
     function showView(name) {
+      if (!currentSessionUser) {
+        syncAuthUi();
+        return;
+      }
       if (name === "home") name = "dashboard";
       ["home", "portal", "dashboard", "board", "cases", "agenda", "mgmt", "marketing", "logs"].forEach((v) => {
         document.getElementById(`view-${v}`).classList.toggle("hidden", v !== name);
@@ -5959,7 +6278,7 @@
             <div class="om-wa-settings" id="overdueWaSettings">
               <div class="muted" style="font-size:.72rem;font-weight:700">選填銷售員 WhatsApp 號碼（含國碼，例如 85291234567）。未填亦可推送，開啟後自行揀聯絡人。</div>
               <div class="wa-grid">
-                ${COMPANY_SALES.map((n) => `
+                ${scopedSalesNames().map((n) => `
                   <label>${escapeHtml(n)}
                     <input type="tel" inputmode="tel" data-wa-phone="${escapeAttr(n)}" value="${escapeAttr(phones[n] || "")}" placeholder="8529xxxxxxx" />
                   </label>`).join("")}
@@ -7419,7 +7738,12 @@
       const salesSel = document.getElementById("portalSalesSelect");
       if (salesSel) {
         salesSel.onchange = () => {
-          portalSalesSelected = salesSel.value || COMPANY_SALES[0];
+          if (isSales()) {
+            portalSalesSelected = currentSalesName() || COMPANY_SALES[0];
+            salesSel.value = portalSalesSelected;
+          } else {
+            portalSalesSelected = salesSel.value || COMPANY_SALES[0];
+          }
           localStorage.setItem("crm_portal_sales", portalSalesSelected);
           renderPortalToday();
           fillPortalCardCaseSelect();
@@ -7442,12 +7766,18 @@
 
     function initPortal() {
       bindPortalUi();
-      if (!COMPANY_SALES.includes(portalSalesSelected)) portalSalesSelected = COMPANY_SALES[0];
+      const salesNames = scopedSalesNames();
+      if (isSales()) {
+        portalSalesSelected = currentSalesName() || salesNames[0] || COMPANY_SALES[0];
+      } else if (!salesNames.includes(portalSalesSelected)) {
+        portalSalesSelected = salesNames[0] || COMPANY_SALES[0];
+      }
       const salesSel = document.getElementById("portalSalesSelect");
       if (salesSel) {
-        salesSel.innerHTML = COMPANY_SALES.map((n) =>
+        salesSel.innerHTML = salesNames.map((n) =>
           `<option value="${escapeAttr(n)}" ${n === portalSalesSelected ? "selected" : ""}>${escapeHtml(n)}</option>`
         ).join("");
+        salesSel.disabled = isSales();
       }
       initPortalForm();
       fillPortalCardCaseSelect();
@@ -8731,7 +9061,10 @@
 
       const totalAmt = pool.reduce((s, c) => s + (Number(c.amount) || 0), 0);
       const totalBudget = pool.reduce((s, c) => s + (Number(c.budget) || 0), 0);
-      const allSelected = COMPANY_SALES.every((n) => selected.has(n)) && selected.has("__unset");
+      const tcSalesNames = scopedSalesNames();
+      const allSelected = isAdmin()
+        ? (tcSalesNames.every((n) => selected.has(n)) && selected.has("__unset"))
+        : tcSalesNames.every((n) => selected.has(n));
 
       const listRows = [...pool].sort((a, b) => {
         const da = caseTargetClosingDateOnly(a)?.getTime() || 0;
@@ -8750,11 +9083,11 @@
           </div>
         </div>
         <div class="tc-sales-checks" id="tcSalesChecks">
-          <label class="all"><input type="checkbox" data-tc-sales="__all" ${allSelected ? "checked" : ""}/> 全部 Sales</label>
-          ${COMPANY_SALES.map((n) => `
-            <label><input type="checkbox" data-tc-sales="${escapeAttr(n)}" ${selected.has(n) ? "checked" : ""}/> ${escapeHtml(n)}</label>
+          ${isAdmin() ? `<label class="all"><input type="checkbox" data-tc-sales="__all" ${allSelected ? "checked" : ""}/> 全部 Sales</label>` : ""}
+          ${tcSalesNames.map((n) => `
+            <label><input type="checkbox" data-tc-sales="${escapeAttr(n)}" ${selected.has(n) ? "checked" : ""} ${isSales() ? "disabled" : ""}/> ${escapeHtml(n)}</label>
           `).join("")}
-          <label><input type="checkbox" data-tc-sales="__unset" ${selected.has("__unset") ? "checked" : ""}/> 未指派</label>
+          ${isAdmin() ? `<label><input type="checkbox" data-tc-sales="__unset" ${selected.has("__unset") ? "checked" : ""}/> 未指派</label>` : ""}
         </div>
         <p class="muted" style="margin:8px 0 0;font-size:.75rem">${escapeHtml(range.title)} · Target Closing Date · ${pool.length} 宗</p>
         <div class="money-compare" style="margin-top:10px">
@@ -8837,9 +9170,10 @@
 
       root.querySelectorAll("#tcSalesChecks input[data-tc-sales]").forEach((input) => {
         input.onchange = () => {
+          if (isSales()) return;
           const key = input.dataset.tcSales;
           if (key === "__all") {
-            targetClosingSalesSel = input.checked ? [...COMPANY_SALES, "__unset"] : [];
+            targetClosingSalesSel = input.checked ? [...scopedSalesNames(), "__unset"] : [];
             persistSalesSel();
             return;
           }
@@ -8866,7 +9200,7 @@
       const monthKeys = (salesRange.months || []).map((m) => m.key);
       const timeBuckets = buildTeamSalesTimeBuckets(salesRange);
       const pool = filtered || cases;
-      const salesRows = COMPANY_SALES.filter((name) => dashSalesSelected(name)).map((name, idx) => {
+      const salesRows = scopedSalesNames().filter((name) => dashSalesSelected(name)).map((name, idx) => {
         const list = pool.filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed");
         const closedAmt = salesClosedAmountInRange(name, salesRange.from, salesRange.to);
         const targetAmt = salesClosingTargetSum(name, monthKeys);
@@ -8979,7 +9313,7 @@
         const monthKeys = (range.months || []).map((m) => m.key);
         const periodFrom = range.from;
         const periodTo = range.to;
-        const salesTargetRows = COMPANY_SALES.filter((name) => dashSalesSelected(name)).map((name) => {
+        const salesTargetRows = scopedSalesNames().filter((name) => dashSalesSelected(name)).map((name) => {
           const targetAmt = salesClosingTargetSum(name, monthKeys);
           // If period months don't match plan keys well, also include targets for monthKeys from range.months
           const closedAmt = salesClosedAmountInRange(name, periodFrom, periodTo);
@@ -9096,13 +9430,14 @@
     }
 
     function renderBoardDash() {
-      const open = cases.filter((c) => c.stage !== "closed");
-      const apptN = cases.filter((c) => c.appointmentFlag || c.appointmentAt).length;
-      const meetN = cases.filter((c) => c.meetingDone).length;
-      const followN = cases.filter((c) => c.followUpOpportunity).length;
-      const contactingN = cases.filter((c) => ["contacting", "unreachable"].includes(c.stage)).length;
+      const pool = scopedCases(cases);
+      const open = pool.filter((c) => c.stage !== "closed");
+      const apptN = pool.filter((c) => c.appointmentFlag || c.appointmentAt).length;
+      const meetN = pool.filter((c) => c.meetingDone).length;
+      const followN = pool.filter((c) => c.followUpOpportunity).length;
+      const contactingN = pool.filter((c) => ["contacting", "unreachable"].includes(c.stage)).length;
       document.getElementById("boardDash").innerHTML = [
-        renderStatCard({ label: "公司 Cases", value: open.length, sub: `${cases.length} 總數`, tone: "purple", icon: "cases" }),
+        renderStatCard({ label: "公司 Cases", value: open.length, sub: `${pool.length} 總數`, tone: "purple", icon: "cases" }),
         renderStatCard({ label: "聯絡中／失聯", value: contactingN, sub: "需要跟進致電", tone: "rose", icon: "phone" }),
         renderStatCard({ label: "已約會面", value: apptN, sub: "含待確認", tone: "orange", icon: "meet" }),
         renderStatCard({ label: "已會面", value: meetN, sub: "可寫會後 comment", tone: "mint", icon: "check" }),
@@ -9112,9 +9447,10 @@
 
     function renderStageFilter() {
       const box = document.getElementById("stageFilter");
+      const pool = scopedCases(cases);
       box.innerHTML = `<span class="eyebrow" style="margin-right:4px">顯示 Status</span>` +
         STAGES.map((s) => {
-          const n = cases.filter((c) => c.stage === s.id).length;
+          const n = pool.filter((c) => c.stage === s.id).length;
           const checked = visibleStages.includes(s.id) ? "checked" : "";
           return `<label><input type="checkbox" data-stage-toggle="${s.id}" ${checked}/> ${s.label} <span class="muted">(${n})</span></label>`;
         }).join("") +
@@ -9388,7 +9724,9 @@
       }
       const bulkSales = document.getElementById("bulkSales");
       if (bulkSales) {
-        bulkSales.innerHTML = `<option value="">指派銷售員…</option>` + COMPANY_SALES.map((n) => `<option value="${n}">${n}</option>`).join("") + `<option value="__clear">清除指派</option>`;
+        const assignNames = isSales() ? scopedSalesNames() : COMPANY_SALES;
+        bulkSales.innerHTML = `<option value="">指派銷售員…</option>` + assignNames.map((n) => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("") +
+          (isAdmin() ? `<option value="__clear">清除指派</option>` : "");
       }
       const panel = document.getElementById("casesColPanel");
       if (panel) {
@@ -9423,6 +9761,7 @@
       const stage = document.getElementById("caseStageFilter")?.value || "all";
       const sales = document.getElementById("caseSalesFilter")?.value || "all";
       return cases.filter((c) => {
+        if (!caseInUserScope(c)) return false;
         if (stage !== "all" && c.stage !== stage) return false;
         if (sales !== "all") {
           const s = normalizeCompanySales(c.companySales) || "未指派";
@@ -9605,6 +9944,7 @@
       customers: { title: "客戶管理", sub: "客戶統計與跟進提示", top: "客戶管理" },
       partners: { title: "Partner 管理", sub: "Partner → Team Leader → Sales", top: "Partner 管理" },
       sales: { title: "銷售員管理", sub: "KPI 同 Closing 目標設計", top: "銷售員管理" },
+      users: { title: "使用者權限", sub: "ADMIN／SALES 帳號與屬性", top: "使用者權限" },
     };
 
     function syncMgmtNav() {
@@ -9631,6 +9971,7 @@
 
     function setMgmtTab(tab) {
       mgmtTab = tab || "customers";
+      if (mgmtTab === "users" && !isAdmin()) mgmtTab = "customers";
       localStorage.setItem("crm_mgmt_tab", mgmtTab);
       document.querySelectorAll(".mgmt-panel").forEach((p) => p.classList.toggle("active", p.id === `mgmt-${mgmtTab}`));
       syncMgmtNav();
@@ -9639,10 +9980,136 @@
 
     function renderMgmt() {
       document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady && addressColReady && cardsTableReady);
+      if (mgmtTab === "users" && !isAdmin()) mgmtTab = "customers";
       syncMgmtNav();
+      syncAuthUi();
       if (mgmtTab === "customers") renderCustomersMgmt();
       else if (mgmtTab === "partners") renderPartnersMgmt();
+      else if (mgmtTab === "users") renderUsersMgmt();
       else renderSalesMgmt();
+    }
+
+    function fillUserSalesSelect() {
+      const sel = document.getElementById("userSalesName");
+      if (!sel) return;
+      const cur = sel.value;
+      sel.innerHTML = `<option value="">—</option>` + COMPANY_SALES.map((n) =>
+        `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`
+      ).join("");
+      if ([...sel.options].some((o) => o.value === cur)) sel.value = cur;
+    }
+    function resetUserForm() {
+      document.getElementById("userEditId").value = "";
+      document.getElementById("userUsername").value = "";
+      document.getElementById("userDisplayName").value = "";
+      document.getElementById("userRole").value = "SALES";
+      document.getElementById("userSalesName").value = "";
+      document.getElementById("userEmail").value = "";
+      document.getElementById("userPassword").value = "";
+      document.getElementById("userActive").checked = true;
+      document.getElementById("userEditorTitle").textContent = "新增使用者";
+    }
+    function loadUserIntoForm(id) {
+      const u = loadUsers().find((x) => x.id === id);
+      if (!u) return;
+      document.getElementById("userEditId").value = u.id;
+      document.getElementById("userUsername").value = u.username || "";
+      document.getElementById("userDisplayName").value = u.displayName || "";
+      document.getElementById("userRole").value = u.role === "ADMIN" ? "ADMIN" : "SALES";
+      document.getElementById("userSalesName").value = u.salesName || "";
+      document.getElementById("userEmail").value = u.email || "";
+      document.getElementById("userPassword").value = "";
+      document.getElementById("userActive").checked = u.active !== false;
+      document.getElementById("userEditorTitle").textContent = `編輯：${u.username}`;
+    }
+    function renderUsersMgmt() {
+      if (!isAdmin()) {
+        toast("只有 ADMIN 可以管理使用者");
+        setMgmtTab("customers");
+        return;
+      }
+      fillUserSalesSelect();
+      const body = document.getElementById("usersBody");
+      if (!body) return;
+      const users = loadUsers().slice().sort((a, b) => String(a.username).localeCompare(String(b.username)));
+      body.innerHTML = users.map((u) => `
+        <tr>
+          <td><strong>${escapeHtml(u.username)}</strong></td>
+          <td>${escapeHtml(u.displayName || "—")}</td>
+          <td><span class="badge" style="color:${u.role === "ADMIN" ? "#5b21b6" : "#15803d"};background:${u.role === "ADMIN" ? "#efeefe" : "#e8faf2"}">${escapeHtml(u.role)}</span></td>
+          <td>${escapeHtml(u.salesName || "—")}</td>
+          <td class="muted" style="font-size:.75rem">${escapeHtml(u.email || "—")}</td>
+          <td>${u.active === false ? `<span class="tag-overdue">停用</span>` : `<span class="tag-ok">啟用</span>`}</td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" class="btn btn-ghost btn-sm" data-edit-user="${escapeAttr(u.id)}">編輯</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-toggle-user="${escapeAttr(u.id)}">${u.active === false ? "啟用" : "停用"}</button>
+          </td>
+        </tr>`).join("") || `<tr><td colspan="7"><div class="empty-state">未有使用者</div></td></tr>`;
+      body.querySelectorAll("[data-edit-user]").forEach((btn) => {
+        btn.onclick = () => loadUserIntoForm(btn.dataset.editUser);
+      });
+      body.querySelectorAll("[data-toggle-user]").forEach((btn) => {
+        btn.onclick = () => {
+          const list = loadUsers();
+          const idx = list.findIndex((x) => x.id === btn.dataset.toggleUser);
+          if (idx < 0) return;
+          if (list[idx].username === "admin" && list[idx].active !== false) {
+            return toast("唔可以停用預設 admin");
+          }
+          list[idx] = { ...list[idx], active: list[idx].active === false };
+          saveUsers(list);
+          renderUsersMgmt();
+          toast("已更新帳號狀態");
+        };
+      });
+    }
+    function saveUserFromForm() {
+      if (!isAdmin()) return toast("只有 ADMIN 可以管理使用者");
+      const id = document.getElementById("userEditId").value.trim();
+      const username = document.getElementById("userUsername").value.trim().toLowerCase();
+      const displayName = document.getElementById("userDisplayName").value.trim() || username;
+      const role = document.getElementById("userRole").value === "ADMIN" ? "ADMIN" : "SALES";
+      const salesName = normalizeCompanySales(document.getElementById("userSalesName").value) || "";
+      const email = document.getElementById("userEmail").value.trim();
+      const password = document.getElementById("userPassword").value;
+      const active = !!document.getElementById("userActive").checked;
+      if (!username) return toast("請輸入使用者名稱");
+      if (role === "SALES" && !salesName) return toast("SALES 必須綁定本公司銷售員");
+      const list = loadUsers();
+      const dup = list.find((u) => String(u.username).toLowerCase() === username && u.id !== id);
+      if (dup) return toast("使用者名稱已存在");
+      if (id) {
+        const idx = list.findIndex((u) => u.id === id);
+        if (idx < 0) return toast("找不到使用者");
+        const prev = list[idx];
+        list[idx] = {
+          ...prev,
+          username,
+          displayName,
+          role,
+          salesName: role === "SALES" ? salesName : "",
+          email,
+          active,
+          passwordHash: password ? hashPassword(password) : prev.passwordHash,
+        };
+      } else {
+        if (!password) return toast("新增使用者請設定密碼");
+        list.push({
+          id: `user-${crypto.randomUUID().slice(0, 8)}`,
+          username,
+          displayName,
+          role,
+          salesName: role === "SALES" ? salesName : "",
+          email,
+          active,
+          passwordHash: hashPassword(password),
+          createdAt: new Date().toISOString(),
+        });
+      }
+      saveUsers(list);
+      toast("已儲存使用者");
+      resetUserForm();
+      renderUsersMgmt();
     }
 
     function lastContactChannelForCases(caseList) {
@@ -9664,7 +10131,7 @@
 
     function buildCustomerRows() {
       const map = new Map();
-      for (const c of cases) {
+      for (const c of scopedCases(cases)) {
         const key = companyKey(c);
         if (!map.has(key)) {
           map.set(key, {
@@ -9884,7 +10351,7 @@
       const partners = new Map();
       // 預設 Partner 永遠顯示（即使未有 Case）
       PARTNERS.forEach((name) => partners.set(name, emptyPartnerNode(name)));
-      for (const c of cases) {
+      for (const c of scopedCases(cases)) {
         const partnerName = normalizePartner(c.partner) || "未分類";
         if (!partners.has(partnerName)) {
           partners.set(partnerName, emptyPartnerNode(partnerName));
@@ -10098,13 +10565,14 @@
     }
 
     function buildSalesRows() {
-      const map = new Map(COMPANY_SALES.map((name) => [name, emptySalesBucket(name)]));
-      for (const c of cases) {
+      const names = scopedSalesNames();
+      const map = new Map(names.map((name) => [name, emptySalesBucket(name)]));
+      for (const c of scopedCases(cases)) {
         const name = normalizeCompanySales(c.companySales);
         if (!name || !map.has(name)) continue;
         accumulateSalesStats(map.get(name), c);
       }
-      return COMPANY_SALES.map((name) => map.get(name));
+      return names.map((name) => map.get(name));
     }
 
     function startOfWeek(d = new Date()) {
@@ -10152,7 +10620,7 @@
       const today = new Date();
       const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const todayEnd = endOfDay(todayStart);
-      for (const c of cases) {
+      for (const c of scopedCases(cases)) {
         if (c.stage === "closed" && isDq(c)) continue;
         const sales = normalizeCompanySales(c.companySales) || "未指派";
         if (agendaSalesFilter !== "all" && sales !== agendaSalesFilter) continue;
@@ -10340,10 +10808,21 @@
       }
       const sel = document.getElementById("agendaSalesFilter");
       const cur = agendaSalesFilter;
-      sel.innerHTML = `<option value="all">全部銷售員</option>` +
-        COMPANY_SALES.map((n) => `<option value="${n}">${n}</option>`).join("") +
-        `<option value="未指派">未指派</option>`;
-      sel.value = [...sel.options].some((o) => o.value === cur) ? cur : "all";
+      const salesNames = scopedSalesNames();
+      if (isSales()) {
+        const mine = currentSalesName() || salesNames[0] || "";
+        sel.innerHTML = mine
+          ? `<option value="${escapeAttr(mine)}">${escapeHtml(mine)}</option>`
+          : `<option value="all">全部銷售員</option>`;
+        sel.value = mine || "all";
+        sel.disabled = true;
+      } else {
+        sel.disabled = false;
+        sel.innerHTML = `<option value="all">全部銷售員</option>` +
+          salesNames.map((n) => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("") +
+          `<option value="未指派">未指派</option>`;
+        sel.value = [...sel.options].some((o) => o.value === cur) ? cur : "all";
+      }
       agendaSalesFilter = sel.value;
       const wh = document.getElementById("agendaWebhookUrl");
       if (wh && !wh.dataset.ready) {
@@ -10874,26 +11353,29 @@
     }
 
     function renderSalesMgmt() {
-      if (!COMPANY_SALES.includes(salesKpiSelected)) salesKpiSelected = COMPANY_SALES[0];
+      const salesNames = scopedSalesNames();
+      if (!salesNames.includes(salesKpiSelected)) salesKpiSelected = salesNames[0] || COMPANY_SALES[0];
       const rows = buildSalesRows();
-      const assigned = cases.filter((c) => !!normalizeCompanySales(c.companySales)).length;
-      const unassigned = cases.length - assigned;
+      const scopePool = scopedCases(cases);
+      const assigned = scopePool.filter((c) => !!normalizeCompanySales(c.companySales)).length;
+      const unassigned = isAdmin() ? cases.filter((c) => !normalizeCompanySales(c.companySales)).length : 0;
       const cur = currentMonthKey();
       const curStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
       const curEnd = endOfDay(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
-      const teamTarget = COMPANY_SALES.reduce((s, n) => s + (Number(getSalesPlan(n).months[cur]?.closingTarget) || 0), 0);
-      const teamClosed = COMPANY_SALES.reduce((s, n) => s + salesClosedAmountInRange(n, curStart, curEnd), 0);
+      const teamTarget = salesNames.reduce((s, n) => s + (Number(getSalesPlan(n).months[cur]?.closingTarget) || 0), 0);
+      const teamClosed = salesNames.reduce((s, n) => s + salesClosedAmountInRange(n, curStart, curEnd), 0);
       const teamPct = attainPct(teamClosed, teamTarget);
       const planYear = salesKpiYear || new Date().getFullYear();
-      const teamYearTarget = COMPANY_SALES.reduce((s, n) => s + salesYearClosingTargetSum(n, planYear), 0);
-      const teamYearClosed = COMPANY_SALES.reduce((s, n) => s + salesYearClosedAmount(n, planYear), 0);
+      const teamYearTarget = salesNames.reduce((s, n) => s + salesYearClosingTargetSum(n, planYear), 0);
+      const teamYearClosed = salesNames.reduce((s, n) => s + salesYearClosedAmount(n, planYear), 0);
       const teamYearPct = attainPct(teamYearClosed, teamYearTarget);
+      const scopeLabel = isSales() ? "我的" : "團隊";
 
       document.getElementById("salesStats").innerHTML = [
-        renderStatCard({ label: "本公司銷售員", value: COMPANY_SALES.length, sub: COMPANY_SALES.join(" · "), tone: "purple", icon: "people" }),
-        renderStatCard({ label: "本月團隊 Closing 目標", value: money(teamTarget), sub: `已完成 ${money(teamClosed)} · 達成 ${teamTarget ? teamPct + "%" : "—"}`, tone: "sky", icon: "money", valueStyle: "font-size:1.05rem" }),
-        renderStatCard({ label: `${planYear} 年團隊目標`, value: money(teamYearTarget), sub: `全年已完成 ${money(teamYearClosed)} · ${teamYearTarget ? teamYearPct + "%" : "未設"}`, tone: teamYearPct >= 100 ? "mint" : "orange", icon: "chart", valueStyle: "font-size:1.05rem" }),
-        renderStatCard({ label: "已指派 Case", value: `${assigned} / ${cases.length}`, sub: unassigned ? `${unassigned} 宗未指派` : "全部已指派", tone: "mint", icon: "cases", valueStyle: "font-size:1.2rem" }),
+        renderStatCard({ label: isSales() ? "銷售員" : "本公司銷售員", value: salesNames.length, sub: salesNames.join(" · ") || "—", tone: "purple", icon: "people" }),
+        renderStatCard({ label: `本月${scopeLabel} Closing 目標`, value: money(teamTarget), sub: `已完成 ${money(teamClosed)} · 達成 ${teamTarget ? teamPct + "%" : "—"}`, tone: "sky", icon: "money", valueStyle: "font-size:1.05rem" }),
+        renderStatCard({ label: `${planYear} 年${scopeLabel}目標`, value: money(teamYearTarget), sub: `全年已完成 ${money(teamYearClosed)} · ${teamYearTarget ? teamYearPct + "%" : "未設"}`, tone: teamYearPct >= 100 ? "mint" : "orange", icon: "chart", valueStyle: "font-size:1.05rem" }),
+        renderStatCard({ label: "已指派 Case", value: `${assigned} / ${scopePool.length}`, sub: isAdmin() && unassigned ? `${unassigned} 宗未指派` : (isSales() ? "只顯示自己案件" : "全部已指派"), tone: "mint", icon: "cases", valueStyle: "font-size:1.2rem" }),
       ].join("");
       // top cards: count from 0 → target within 3s
       requestAnimationFrame(() => {
@@ -10905,7 +11387,7 @@
         });
       });
 
-      document.getElementById("salesKpiNav").innerHTML = COMPANY_SALES.map((n) => {
+      document.getElementById("salesKpiNav").innerHTML = salesNames.map((n) => {
         const t = Number(getSalesPlan(n).months[cur]?.closingTarget) || 0;
         const a = salesClosedAmountInRange(n, curStart, curEnd);
         const p = attainPct(a, t);
@@ -10968,8 +11450,12 @@
       </tr>`;
       }).join("");
 
-      const unset = cases.filter((c) => !normalizeCompanySales(c.companySales));
       const box = document.getElementById("salesUnassigned");
+      if (!isAdmin()) {
+        box.innerHTML = `<div class="mgmt-alert ok">SALES 帳號只顯示自己嘅 KPI／案件；未指派案件由 ADMIN 處理</div>`;
+        return;
+      }
+      const unset = cases.filter((c) => !normalizeCompanySales(c.companySales));
       if (!unset.length) {
         box.innerHTML = `<div class="mgmt-alert ok">✓ 所有案件都已指派本公司銷售員</div>`;
         return;
@@ -11200,6 +11686,10 @@
     function openDrawer(id) {
       const c = cases.find((x) => x.id === id);
       if (!c) return;
+      if (!caseInUserScope(c)) {
+        toast("呢宗案件唔喺你嘅權限範圍");
+        return;
+      }
       const contacts = contactsByCase[c.id] || [];
       const logs = logsByCase[c.id] || [];
       const root = document.getElementById("drawerRoot");
@@ -11207,6 +11697,8 @@
       const apptValue = apptLocal && !Number.isNaN(apptLocal.getTime())
         ? new Date(apptLocal.getTime() - apptLocal.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
         : "";
+      const salesOpts = isSales() ? scopedSalesNames() : COMPANY_SALES;
+      const curSales = normalizeCompanySales(c.companySales) || (isSales() ? currentSalesName() : "") || salesOpts[0] || "";
       document.body.classList.add("drawer-open");
       root.innerHTML = `<div class="drawer-bg"><div class="drawer" role="dialog" aria-modal="true">
         <div class="drawer-head">
@@ -11214,7 +11706,7 @@
             <div class="eyebrow">Case · Multi contact</div>
             <div class="page-head" style="margin-top:2px">
               <h2>${escapeHtml(c.customerName)}</h2>
-              <div class="muted page-head-sub">${escapeHtml(c.partner || "")} · Sales：${escapeHtml(normalizeCompanySales(c.companySales) || "Vincent")}</div>
+              <div class="muted page-head-sub">${escapeHtml(c.partner || "")} · Sales：${escapeHtml(normalizeCompanySales(c.companySales) || "未指派")}</div>
             </div>
           </div>
           <button class="btn btn-ghost btn-sm" id="drawerClose">關閉</button>
@@ -11224,9 +11716,9 @@
           <div class="modal-col">
             <div class="eyebrow">本公司銷售員</div>
             <label class="field"><span>負責銷售員（Vincent／Tim／Andrew／Kelly／Sophia）</span>
-              <select id="d_companySales">
-                <option value="">未指派</option>
-                ${COMPANY_SALES.map((n) => `<option value="${n}" ${(c.companySales || "Vincent") === n ? "selected" : ""}>${n}</option>`).join("")}
+              <select id="d_companySales" ${isSales() ? "disabled" : ""}>
+                ${isAdmin() ? `<option value="">未指派</option>` : ""}
+                ${salesOpts.map((n) => `<option value="${escapeAttr(n)}" ${curSales === n ? "selected" : ""}>${escapeHtml(n)}</option>`).join("")}
               </select>
             </label>
 
@@ -11501,6 +11993,9 @@
     ];
 
     function currentActor() {
+      if (currentSessionUser) {
+        return currentSessionUser.displayName || currentSessionUser.username || currentSessionUser.role || "USER";
+      }
       const el = document.getElementById("logActorName");
       const v = (el?.value || localStorage.getItem("crm_actor_name") || "ADMIN").trim();
       return v || "ADMIN";
@@ -11598,6 +12093,8 @@
       });
 
       items = items.filter(({ log, case: c }) => {
+        if (c && !caseInUserScope(c)) return false;
+        if (!c && isSales()) return false;
         const isChange = log.log_type === "field_change";
         if (typeF === "field_change" && !isChange) return false;
         if (typeF === "activity" && isChange) return false;
@@ -11668,6 +12165,17 @@
     async function updateCase(id, patch, opts = {}) {
       const prev = cases.find((c) => c.id === id);
       if (!prev) return;
+      if (!caseInUserScope(prev)) {
+        toast("無權限更新呢宗案件");
+        return;
+      }
+      if (isSales() && patch && "companySales" in patch) {
+        const mine = currentSalesName();
+        if (normalizeCompanySales(patch.companySales) !== mine) {
+          toast("SALES 唔可以改指派畀其他人");
+          return;
+        }
+      }
       const next = {
         ...prev,
         ...patch,
@@ -11920,7 +12428,7 @@
     }
     function buildMktAudienceRows() {
       const map = new Map();
-      for (const c of cases) {
+      for (const c of scopedCases(cases)) {
         if (isDq(c)) continue;
         const key = companyKey(c);
         if (!map.has(key)) {
@@ -12072,10 +12580,21 @@
       const partnerSel = document.getElementById("mktPartnerFilter");
       if (salesSel) {
         const cur = salesSel.value || "all";
-        salesSel.innerHTML = `<option value="all">全部銷售</option>` +
-          COMPANY_SALES.map((n) => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("") +
-          `<option value="未指派">未指派</option>`;
-        salesSel.value = [...salesSel.options].some((o) => o.value === cur) ? cur : "all";
+        const salesNames = scopedSalesNames();
+        if (isSales()) {
+          const mine = currentSalesName() || salesNames[0] || "";
+          salesSel.innerHTML = mine
+            ? `<option value="${escapeAttr(mine)}">${escapeHtml(mine)}</option>`
+            : `<option value="all">全部銷售</option>`;
+          salesSel.value = mine || "all";
+          salesSel.disabled = true;
+        } else {
+          salesSel.disabled = false;
+          salesSel.innerHTML = `<option value="all">全部銷售</option>` +
+            salesNames.map((n) => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("") +
+            `<option value="未指派">未指派</option>`;
+          salesSel.value = [...salesSel.options].some((o) => o.value === cur) ? cur : "all";
+        }
       }
       if (partnerSel) {
         const cur = partnerSel.value || "all";
@@ -12458,8 +12977,12 @@
       renderDashboard();
     };
     document.getElementById("dashFilterReset").onclick = () => {
-      applyDashRolePreset("team");
-      applyDashRoleLayout("team");
+      if (isSales()) {
+        applyRoleDefaults();
+      } else {
+        applyDashRolePreset("team");
+        applyDashRoleLayout("team");
+      }
       setDashCategory("all");
       dashMetric = "count";
       dashCompareOn = false;
@@ -12559,7 +13082,7 @@
         stage: "first_interview",
         closeReason: null,
         notes: document.getElementById("transcript").value.trim() ? `語音原文：${document.getElementById("transcript").value.trim()}` : "",
-        companySales: normalizeCompanySales(portalSalesSelected) || COMPANY_SALES[0],
+        companySales: (isSales() ? currentSalesName() : null) || normalizeCompanySales(portalSalesSelected) || COMPANY_SALES[0],
         customerAddress: "",
         appointmentFlag: false,
         appointmentAt: "",
@@ -12723,9 +13246,13 @@
         partnerSel.innerHTML = PARTNERS.map((p) => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`).join("");
         partnerSel.dataset.ready = "1";
       }
-      if (salesSel && !salesSel.dataset.ready) {
-        salesSel.innerHTML = `<option value="">未指派</option>` +
-          COMPANY_SALES.map((n) => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("");
+      if (salesSel) {
+        const names = isSales() ? scopedSalesNames() : COMPANY_SALES;
+        const mine = currentSalesName();
+        salesSel.innerHTML = (isAdmin() ? `<option value="">未指派</option>` : "") +
+          names.map((n) => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("");
+        if (isSales() && mine) salesSel.value = mine;
+        salesSel.disabled = isSales();
         salesSel.dataset.ready = "1";
       }
       const follow = document.getElementById("agendaLeadFollowUp");
@@ -12755,7 +13282,8 @@
       const customer = String(document.getElementById("agendaLeadCustomer").value || "").trim();
       const partner = normalizePartner(document.getElementById("agendaLeadPartner").value) || "RICOH";
       const partnerSales = String(document.getElementById("agendaLeadPartnerSales").value || "").trim();
-      const companySales = normalizeCompanySales(document.getElementById("agendaLeadCompanySales").value) || "";
+      let companySales = normalizeCompanySales(document.getElementById("agendaLeadCompanySales").value) || "";
+      if (isSales()) companySales = currentSalesName() || companySales;
       const address = String(document.getElementById("agendaLeadAddress").value || "").trim();
       const remark = String(document.getElementById("agendaLeadRemark").value || "").trim();
       const followUp = String(document.getElementById("agendaLeadFollowUp").value || "").trim();
@@ -12848,6 +13376,66 @@
       toast("已重新整理 Log History");
     };
 
+    // auth bindings
+    document.getElementById("loginForm")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const username = document.getElementById("loginUsername")?.value || "";
+      const password = document.getElementById("loginPassword")?.value || "";
+      const err = document.getElementById("loginError");
+      const res = loginWithCredentials(username, password);
+      if (!res.ok) {
+        if (err) {
+          err.textContent = res.error || "登入失敗";
+          err.classList.add("show");
+        }
+        return;
+      }
+      if (err) { err.textContent = ""; err.classList.remove("show"); }
+      document.getElementById("loginPassword").value = "";
+      toast(`歡迎回來，${res.user.displayName || res.user.username}`);
+      const enterApp = () => {
+        const hash = (location.hash || "").replace("#", "");
+        if (hash.startsWith("mgmt")) {
+          const tab = hash.replace(/^mgmt-?/, "") || localStorage.getItem("crm_mgmt_tab") || "customers";
+          if (["customers", "partners", "sales", "users"].includes(tab)) {
+            mgmtTab = (tab === "users" && !isAdmin()) ? "customers" : tab;
+          }
+          showView("mgmt");
+        } else {
+          showView(["portal", "dashboard", "board", "cases", "agenda", "marketing", "logs"].includes(hash) ? hash : "dashboard");
+        }
+      };
+      if (casesLoading) {
+        const wait = setInterval(() => {
+          if (!casesLoading) {
+            clearInterval(wait);
+            enterApp();
+          }
+        }, 80);
+      } else if (!cases.length) {
+        casesLoading = true;
+        loadCases().then(() => {
+          casesLoading = false;
+          enterApp();
+        });
+      } else {
+        enterApp();
+      }
+    });
+    document.getElementById("btnLogout")?.addEventListener("click", () => {
+      logoutCurrentUser();
+      toast("已登出");
+    });
+    document.getElementById("btnSaveUser")?.addEventListener("click", () => saveUserFromForm());
+    document.getElementById("btnResetUserForm")?.addEventListener("click", () => resetUserForm());
+    document.getElementById("userRole")?.addEventListener("change", () => {
+      const role = document.getElementById("userRole")?.value;
+      const salesSel = document.getElementById("userSalesName");
+      if (!salesSel) return;
+      salesSel.disabled = role === "ADMIN";
+      if (role === "ADMIN") salesSel.value = "";
+    });
+
     // boot
     syncMotionToggleUi();
     document.getElementById("btnToggleMotion")?.addEventListener("click", () => {
@@ -12855,13 +13443,23 @@
     });
     bindPortalUi();
     initPortalForm();
+    if (currentSessionUser) {
+      applyRoleDefaults();
+      syncAuthUi();
+    } else {
+      syncAuthUi();
+      document.getElementById("loginUsername")?.focus();
+    }
     casesLoading = true;
     loadCases().then(() => {
       casesLoading = false;
+      if (!currentSessionUser) return;
       const hash = (location.hash || "").replace("#", "");
       if (hash.startsWith("mgmt")) {
         const tab = hash.replace(/^mgmt-?/, "") || localStorage.getItem("crm_mgmt_tab") || "customers";
-        if (["customers", "partners", "sales"].includes(tab)) mgmtTab = tab;
+        if (["customers", "partners", "sales", "users"].includes(tab)) {
+          mgmtTab = (tab === "users" && !isAdmin()) ? "customers" : tab;
+        }
         showView("mgmt");
       } else {
         showView(["portal", "dashboard", "board", "cases", "agenda", "marketing", "logs"].includes(hash) ? hash : "dashboard");
