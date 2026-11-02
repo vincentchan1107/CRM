@@ -2594,6 +2594,15 @@
     .agenda-section.meet .count { background: #e8faf2; color: #15803d; }
     .agenda-section.follow .count { background: #ffedd5; color: #9a3412; }
     .agenda-section .table-wrap { margin: 0; border: 0; box-shadow: none; background: transparent; }
+    .potential-pill {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 52px; padding: 3px 10px; border-radius: 999px;
+      font-size: .72rem; font-weight: 800;
+    }
+    .potential-pill.High { background: #dcfce7; color: #15803d; }
+    .potential-pill.Mid { background: #ffedd5; color: #c2410c; }
+    .potential-pill.Low { background: #e2e8f0; color: #475569; }
+    .potential-pill.unset { background: #f1f5f9; color: #94a3b8; }
     /* keep <td> as table-cell; flex belongs on an inner wrapper */
     td.agenda-actions { white-space: nowrap; vertical-align: middle; }
     td.agenda-actions .agenda-actions-inner {
@@ -3647,6 +3656,7 @@
           </div>
         </div>
         <button data-view="agenda"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></span><span class="nav-label">會議／跟進</span></button>
+        <button data-view="potential"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.9 7.2 18l.9-5.4L4.2 8.7l5.4-.8L12 3z"/></svg></span><span class="nav-label">Potential</span></button>
         <div class="nav-group" id="navMgmtGroup">
           <button type="button" data-view="mgmt" data-mgmt="customers" class="nav-group-parent"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><span class="nav-label">資料庫</span></button>
           <div class="nav-sub" id="navMgmtSub">
@@ -4270,7 +4280,45 @@
       </div>
     </section>
 
-    <!-- LOG HISTORY -->
+    <!-- POTENTIAL -->
+    <section id="view-potential" class="hidden">
+      <div class="page-head" style="margin-bottom:10px">
+        <div>
+          <div class="eyebrow">Pipeline</div>
+          <h1>Potential</h1>
+          <p class="muted page-head-sub">按銷售員睇 Low／Mid／High Potential Case · Target Closing · Amount · Budget</p>
+        </div>
+      </div>
+      <div class="dash-period" style="align-items:center;flex-wrap:wrap;gap:10px">
+        <div class="seg" id="potentialLevelSeg" role="tablist" aria-label="Potential 等級">
+          <button type="button" data-potential-level="all" class="active">全部</button>
+          <button type="button" data-potential-level="High">High</button>
+          <button type="button" data-potential-level="Mid">Mid</button>
+          <button type="button" data-potential-level="Low">Low</button>
+          <button type="button" data-potential-level="unset">未設</button>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:.68rem;font-weight:700;color:var(--muted)">
+          銷售員
+          <select id="potentialSalesFilter" style="border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:#fff;font-size:.8rem;min-width:140px">
+            <option value="all">全部銷售員</option>
+          </select>
+        </label>
+        <input id="potentialSearch" type="search" placeholder="搜尋客戶／Partner…" style="flex:1;min-width:180px;border:1px solid var(--line);border-radius:999px;padding:9px 14px;background:#fff" />
+      </div>
+      <div class="mgmt-stats" id="potentialStats" style="margin-top:8px"></div>
+      <div id="potentialAlert" style="margin-top:8px"></div>
+      <div class="table-wrap" style="margin-top:8px"><table>
+        <thead>
+          <tr>
+            <th>客戶</th><th>本公司銷售</th><th>Potential</th><th>Target Closing</th>
+            <th>Contract Amount</th><th>Client Budget</th><th>階段</th><th>Partner</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="potentialBody"></tbody>
+      </table></div>
+    </section>
+
+    <!-- MARKETING -->
     <section id="view-marketing" class="hidden">
       <div class="page-head" style="margin-bottom:10px">
         <div>
@@ -4656,6 +4704,9 @@
     let dbReady = false;
     let mgmtColsReady = false;
     let addressColReady = false;
+    let potentialColReady = false;
+    let potentialLevelFilter = localStorage.getItem("crm_potential_level") || "all";
+    let potentialSalesFilter = localStorage.getItem("crm_potential_sales") || "all";
     let cardsTableReady = false;
     let portalSalesSelected = localStorage.getItem("crm_portal_sales") || COMPANY_SALES[0];
     let portalTab = localStorage.getItem("crm_portal_tab") || "today";
@@ -5713,10 +5764,42 @@
       board: "Case Management · 文件夾",
       cases: "Case Management · 列表",
       agenda: "銷售員會議及 Case 跟進",
+      potential: "Potential",
       mgmt: "資料庫管理",
       marketing: "市場推廣",
       logs: "Log History",
     };
+    const POTENTIAL_LEVELS = ["High", "Mid", "Low"];
+    function normalizePotential(v) {
+      const s = String(v || "").trim();
+      if (!s) return "";
+      const hit = POTENTIAL_LEVELS.find((x) => x.toLowerCase() === s.toLowerCase());
+      return hit || "";
+    }
+    function potentialPillHtml(level) {
+      const v = normalizePotential(level);
+      if (!v) return `<span class="potential-pill unset">未設</span>`;
+      return `<span class="potential-pill ${escapeAttr(v)}">${escapeHtml(v)}</span>`;
+    }
+    const POTENTIAL_LS_KEY = "crm_case_potential";
+    function loadPotentialMap() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(POTENTIAL_LS_KEY) || "{}");
+        return raw && typeof raw === "object" ? raw : {};
+      } catch (_) {
+        return {};
+      }
+    }
+    function localPotentialGet(id) {
+      return normalizePotential(loadPotentialMap()[id]);
+    }
+    function localPotentialSet(id, level) {
+      const map = loadPotentialMap();
+      const v = normalizePotential(level);
+      if (!v) delete map[id];
+      else map[id] = v;
+      localStorage.setItem(POTENTIAL_LS_KEY, JSON.stringify(map));
+    }
     let caseMgmtMode = localStorage.getItem("crm_case_mgmt_mode") === "list" ? "list" : "folder";
     function caseModeToView(mode) {
       return mode === "list" ? "cases" : "board";
@@ -5933,7 +6016,7 @@
         caseMgmtMode = viewToCaseMode(name);
         localStorage.setItem("crm_case_mgmt_mode", caseMgmtMode);
       }
-      ["home", "portal", "dashboard", "board", "cases", "agenda", "mgmt", "marketing", "logs"].forEach((v) => {
+      ["home", "portal", "dashboard", "board", "cases", "agenda", "potential", "mgmt", "marketing", "logs"].forEach((v) => {
         document.getElementById(`view-${v}`).classList.toggle("hidden", v !== name);
       });
       document.body.classList.toggle("mode-board", name === "board");
@@ -5956,6 +6039,7 @@
       if (name === "cases") renderCasesTable();
       if (name === "portal") initPortal();
       if (name === "agenda") renderAgenda();
+      if (name === "potential") renderPotentialPage();
       if (name === "mgmt") {
         document.querySelectorAll(".mgmt-panel").forEach((p) => p.classList.toggle("active", p.id === `mgmt-${mgmtTab}`));
         renderMgmt();
@@ -5981,6 +6065,8 @@
         mgmtColsReady = !probe.error;
         const addrProbe = await db.from("crm_cases").select("customer_address").limit(1);
         addressColReady = !addrProbe.error;
+        const potProbe = await db.from("crm_cases").select("potential").limit(1);
+        potentialColReady = !potProbe.error;
         const cardsProbe = await db.from("crm_case_cards").select("id").limit(1);
         cardsTableReady = !cardsProbe.error;
         document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady && addressColReady && cardsTableReady);
@@ -6093,6 +6179,7 @@
         amount: Number(r.amount) || 0,
         successRate: Number(r.success_rate) || 0,
         targetClosingDate: r.target_closing_date || "",
+        potential: normalizePotential(r.potential) || localPotentialGet(r.id) || "",
         stage: r.stage || "new_lead",
         closeReason: r.close_reason,
         notes,
@@ -6151,6 +6238,7 @@
         row.team_leader = c.teamLeader || "";
         row.company_sales = c.companySales || "";
       }
+      if (potentialColReady) row.potential = normalizePotential(c.potential) || "";
       if (addressColReady) row.customer_address = address;
       return row;
     }
@@ -11086,6 +11174,106 @@
       }
     }
 
+    function syncPotentialFilterUi() {
+      document.querySelectorAll("#potentialLevelSeg button[data-potential-level]").forEach((b) => {
+        b.classList.toggle("active", b.dataset.potentialLevel === potentialLevelFilter);
+      });
+      const sel = document.getElementById("potentialSalesFilter");
+      if (!sel) return;
+      const names = scopedSalesNames();
+      if (isSales()) {
+        const mine = currentSalesName() || names[0] || "";
+        sel.innerHTML = mine
+          ? `<option value="${escapeAttr(mine)}">${escapeHtml(mine)}</option>`
+          : `<option value="all">全部銷售員</option>`;
+        sel.value = mine || "all";
+        sel.disabled = true;
+        potentialSalesFilter = sel.value;
+      } else {
+        sel.disabled = false;
+        const cur = potentialSalesFilter;
+        sel.innerHTML = `<option value="all">全部銷售員</option>` +
+          names.map((n) => `<option value="${escapeAttr(n)}">${escapeHtml(n)}</option>`).join("") +
+          `<option value="__unset">未指派</option>`;
+        sel.value = [...sel.options].some((o) => o.value === cur) ? cur : "all";
+        potentialSalesFilter = sel.value;
+      }
+    }
+
+    function getPotentialFilteredCases() {
+      const q = (document.getElementById("potentialSearch")?.value || "").trim().toLowerCase();
+      return scopedCases(cases).filter((c) => {
+        if (c.stage === "closed" && c.closeReason !== "won") {
+          // still show closed/won? show open + won; hide DQ/failed closed
+          if (c.closeReason === "disqualified" || c.closeReason === "failed") return false;
+        }
+        const pot = normalizePotential(c.potential);
+        if (potentialLevelFilter === "unset") {
+          if (pot) return false;
+        } else if (potentialLevelFilter !== "all") {
+          if (pot !== potentialLevelFilter) return false;
+        }
+        const sales = normalizeCompanySales(c.companySales) || "__unset";
+        if (potentialSalesFilter && potentialSalesFilter !== "all" && sales !== potentialSalesFilter) return false;
+        if (!q) return true;
+        const hay = [companyKey(c), c.partner || "", c.companySales || "", pot].join(" ").toLowerCase();
+        return hay.includes(q);
+      }).sort((a, b) => {
+        const da = parseLocalDate(a.targetClosingDate)?.getTime() || Number.POSITIVE_INFINITY;
+        const db = parseLocalDate(b.targetClosingDate)?.getTime() || Number.POSITIVE_INFINITY;
+        if (da !== db) return da - db;
+        return (Number(b.amount) || 0) - (Number(a.amount) || 0);
+      });
+    }
+
+    function renderPotentialPage() {
+      syncPotentialFilterUi();
+      const list = getPotentialFilteredCases();
+      const high = list.filter((c) => normalizePotential(c.potential) === "High");
+      const mid = list.filter((c) => normalizePotential(c.potential) === "Mid");
+      const low = list.filter((c) => normalizePotential(c.potential) === "Low");
+      const unset = list.filter((c) => !normalizePotential(c.potential));
+      const sumAmt = (arr) => arr.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+      const sumBudget = (arr) => arr.reduce((s, c) => s + (Number(c.budget) || 0), 0);
+      document.getElementById("potentialStats").innerHTML = [
+        renderStatCard({ label: "顯示 Case", value: list.length, sub: `Amount ${money(sumAmt(list))}`, tone: "purple", icon: "cases" }),
+        renderStatCard({ label: "High", value: high.length, sub: money(sumAmt(high)), tone: "mint", icon: "chart" }),
+        renderStatCard({ label: "Mid", value: mid.length, sub: money(sumAmt(mid)), tone: "orange", icon: "follow" }),
+        renderStatCard({ label: "Low／未設", value: low.length + unset.length, sub: `Budget ${money(sumBudget(list))}`, tone: "sky", icon: "money", valueStyle: "font-size:1.15rem" }),
+      ].join("");
+
+      const alert = document.getElementById("potentialAlert");
+      if (!potentialColReady) {
+        alert.innerHTML = `<div class="mgmt-alert">Potential 暫存於本機；請 Run <code>supabase/mgmt_alter.sql</code> 啟用資料庫欄位後可多人同步</div>`;
+      } else if (!list.length) {
+        alert.innerHTML = `<div class="mgmt-alert ok">目前篩選下沒有 Case</div>`;
+      } else {
+        alert.innerHTML = `<div class="mgmt-alert ok">共 <strong>${list.length}</strong> 宗 · Contract Amount <strong>${money(sumAmt(list))}</strong> · Budget <strong>${money(sumBudget(list))}</strong></div>`;
+      }
+
+      const body = document.getElementById("potentialBody");
+      body.innerHTML = list.length ? list.map((c) => {
+        const sales = normalizeCompanySales(c.companySales) || "未指派";
+        const s = stageMeta(c.stage);
+        const d = parseLocalDate(c.targetClosingDate);
+        return `<tr>
+          <td><strong>${escapeHtml(companyKey(c))}</strong></td>
+          <td>${escapeHtml(sales)}</td>
+          <td>${potentialPillHtml(c.potential)}</td>
+          <td>${d ? formatLocalDate(d) : "—"}</td>
+          <td><strong>${money(c.amount)}</strong></td>
+          <td>${money(c.budget)}</td>
+          <td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>
+          <td class="muted" style="font-size:.75rem">${escapeHtml(c.partner || "—")}</td>
+          <td><button type="button" class="btn btn-ghost btn-sm" data-open-potential="${escapeAttr(c.id)}">詳情</button></td>
+        </tr>`;
+      }).join("") : `<tr><td colspan="9"><div class="empty-state">沒有符合嘅 Potential Case</div></td></tr>`;
+
+      body.querySelectorAll("[data-open-potential]").forEach((btn) => {
+        btn.onclick = () => openDrawer(btn.dataset.openPotential);
+      });
+    }
+
     function renderSalesKpiEditor(name) {
       const plan = getSalesPlan(name);
       const kpi = plan.kpi;
@@ -11872,7 +12060,7 @@
             <div class="eyebrow">Case · Multi contact</div>
             <div class="page-head" style="margin-top:2px">
               <h2>${escapeHtml(c.customerName)}</h2>
-              <div class="muted page-head-sub">${escapeHtml(c.partner || "")} · Sales：${escapeHtml(normalizeCompanySales(c.companySales) || "未指派")}</div>
+              <div class="muted page-head-sub">${escapeHtml(c.partner || "")} · Sales：${escapeHtml(normalizeCompanySales(c.companySales) || "未指派")} · Potential：${normalizePotential(c.potential) || "未設"}</div>
             </div>
           </div>
           <button class="btn btn-ghost btn-sm" id="drawerClose">關閉</button>
@@ -11963,11 +12151,19 @@
                 <input id="d_nextFollow" type="date" value="${escapeAttr(c.nextFollowUpAt || "")}" />
               </label>
             </div>
-            <div class="eyebrow" style="margin-top:8px">Closing／Budget</div>
-            <div class="row3">
+            <div class="eyebrow" style="margin-top:8px">Potential／Closing／Budget</div>
+            <div class="row2">
+              <label class="field"><span>Potential</span>
+                <select id="d_potential">
+                  <option value="" ${!normalizePotential(c.potential) ? "selected" : ""}>未設</option>
+                  ${POTENTIAL_LEVELS.map((p) => `<option value="${p}" ${normalizePotential(c.potential) === p ? "selected" : ""}>${p}</option>`).join("")}
+                </select>
+              </label>
               <label class="field"><span>Target Closing Date</span>
                 <input id="d_targetClosing" type="date" value="${escapeAttr((c.targetClosingDate || "").slice(0, 10))}" />
               </label>
+            </div>
+            <div class="row2">
               <label class="field"><span>Client Budget (HKD)</span>
                 <input id="d_budget" type="number" min="0" step="1000" placeholder="0" value="${c.budget ? escapeAttr(String(c.budget)) : ""}" />
               </label>
@@ -12039,6 +12235,8 @@
         const budgetRaw = document.getElementById("d_budget").value;
         const amountRaw = document.getElementById("d_amount").value;
         const targetClosing = document.getElementById("d_targetClosing").value || "";
+        const potential = normalizePotential(document.getElementById("d_potential")?.value || "");
+        localPotentialSet(c.id, potential);
         await updateCase(c.id, {
           companySales: document.getElementById("d_companySales").value || "Vincent",
           ricohHouse: document.getElementById("d_house").value.trim(),
@@ -12059,6 +12257,7 @@
           followUpOpportunity: document.getElementById("d_follow").checked,
           nextFollowUpAt: nextFollow,
           targetClosingDate: targetClosing,
+          potential,
           budget: budgetRaw === "" ? 0 : Number(budgetRaw) || 0,
           amount: amountRaw === "" ? 0 : Number(amountRaw) || 0,
           customerAddress: document.getElementById("d_address").value.trim(),
@@ -12143,6 +12342,7 @@
       { key: "ricohConsultant", label: "Partner Consultant", fmt: (v) => v || "—" },
       { key: "amount", label: "Contract Amount", fmt: (v) => money(Number(v) || 0) },
       { key: "budget", label: "Client Budget", fmt: (v) => money(Number(v) || 0) },
+      { key: "potential", label: "Potential", fmt: (v) => normalizePotential(v) || "未設" },
       { key: "customerAddress", label: "公司地址", fmt: (v) => v || "—" },
       { key: "successRate", label: "成功機率", fmt: (v) => pct(Number(v) || 0) },
       { key: "targetClosingDate", label: "Target Closing Date", fmt: (v) => v || "—" },
@@ -13423,6 +13623,20 @@
       sendAgendaReminder(items);
     };
 
+    document.getElementById("potentialLevelSeg")?.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-potential-level]");
+      if (!btn) return;
+      potentialLevelFilter = btn.dataset.potentialLevel || "all";
+      localStorage.setItem("crm_potential_level", potentialLevelFilter);
+      renderPotentialPage();
+    });
+    document.getElementById("potentialSalesFilter")?.addEventListener("change", () => {
+      potentialSalesFilter = document.getElementById("potentialSalesFilter").value || "all";
+      localStorage.setItem("crm_potential_sales", potentialSalesFilter);
+      renderPotentialPage();
+    });
+    document.getElementById("potentialSearch")?.addEventListener("input", () => renderPotentialPage());
+
     function syncAgendaLeadPartnerSalesUi() {
       const partnerSel = document.getElementById("agendaLeadPartner");
       const salesInput = document.getElementById("agendaLeadPartnerSales");
@@ -13500,6 +13714,7 @@
         amount: 0,
         successRate: 20,
         targetClosingDate: "",
+        potential: "",
         stage: "new_lead",
         closeReason: null,
         notes: noteParts.join("\n\n"),
@@ -13601,7 +13816,7 @@
           }
           showView("mgmt");
         } else {
-          showView(["portal", "dashboard", "board", "cases", "agenda", "marketing", "logs"].includes(hash) ? hash : "dashboard");
+          showView(["portal", "dashboard", "board", "cases", "agenda", "potential", "marketing", "logs"].includes(hash) ? hash : "dashboard");
         }
       };
       if (casesLoading) {
@@ -13661,7 +13876,7 @@
         }
         showView("mgmt");
       } else {
-        showView(["portal", "dashboard", "board", "cases", "agenda", "marketing", "logs"].includes(hash) ? hash : "dashboard");
+        showView(["portal", "dashboard", "board", "cases", "agenda", "potential", "marketing", "logs"].includes(hash) ? hash : "dashboard");
       }
     });
   </script>
