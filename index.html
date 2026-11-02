@@ -1030,6 +1030,36 @@
     .team-sales td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
     .team-sales td.dq { color: #9f1239; text-align: right; font-weight: 700; }
     .team-sales td.q { color: #15803d; text-align: right; font-weight: 700; }
+    .sales-teams-editor {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .sales-team-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+    }
+    .sales-team-card .st-head {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: end; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .sales-team-card .st-members {
+      display: flex; flex-wrap: wrap; gap: 8px 14px;
+    }
+    .sales-team-card .st-members label {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: .8rem; font-weight: 700; color: var(--ink);
+      padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line);
+      background: #f8fafc; cursor: pointer;
+    }
+    .sales-team-card .st-members label:has(input:checked) {
+      background: #efeefe; border-color: #c4b5fd; color: #5b21b6;
+    }
+    .sales-team-card .st-members label input { accent-color: var(--accent); }
+    .sales-team-card .st-members label.is-disabled {
+      opacity: .45; cursor: not-allowed;
+    }
     .board-dash {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -3778,6 +3808,7 @@
             <button type="button" data-view="mgmt" data-mgmt="customers">客戶管理</button>
             <button type="button" data-view="mgmt" data-mgmt="partners">Partner 管理</button>
             <button type="button" data-view="mgmt" data-mgmt="sales">銷售員管理</button>
+            <button type="button" data-view="mgmt" data-mgmt="teams" data-admin-only="1">Team Leader</button>
             <button type="button" data-view="mgmt" data-mgmt="users" data-admin-only="1">使用者權限</button>
           </div>
         </div>
@@ -4201,7 +4232,7 @@
       </div>
       <div id="mgmtAlterBanner" class="setup-box hidden" style="margin-top:12px">
         <strong>建議執行欄位升級 SQL</strong>
-        <p class="muted" style="margin:8px 0">為啟用「下次跟進日期」、Team Leader、本公司銷售員、公司地址、客戶名片圖片表，請在 Supabase SQL Editor Run：<code>supabase/mgmt_alter.sql</code></p>
+        <p class="muted" style="margin:8px 0">為啟用「下次跟進日期」、Case Team Leader、本公司銷售員、公司地址、客戶名片、Sales Team Leader 編制表，請在 Supabase SQL Editor Run：<code>supabase/mgmt_alter.sql</code></p>
         <p class="muted" style="margin:0 0 8px">Raw：<a href="https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql" target="_blank" rel="noopener">mgmt_alter.sql</a></p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-teal btn-sm" id="btnCopyMgmtSql">複製升級 SQL</button>
@@ -4253,6 +4284,23 @@
           <tbody id="salesBody"></tbody>
         </table></div>
         <div id="salesUnassigned" style="margin-top:12px"></div>
+      </div>
+
+      <div class="mgmt-panel" id="mgmt-teams">
+        <div class="page-head" style="margin-bottom:8px">
+          <div>
+            <div class="eyebrow">組織編制</div>
+            <h2 style="margin:0;font-size:1.1rem">Team Leader 設定</h2>
+            <p class="muted page-head-sub">設定邊個係 Team Leader，以及其下嘅 Sales 成員（本公司銷售員）。</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn btn-ghost btn-sm" id="btnAddSalesTeam">＋ 新增 Team Leader</button>
+            <button type="button" class="btn btn-teal btn-sm" id="btnSaveSalesTeams">儲存編制</button>
+          </div>
+        </div>
+        <div id="salesTeamsAlert"></div>
+        <div id="salesTeamsEditor" class="sales-teams-editor"></div>
+        <div id="salesTeamsUnassigned" style="margin-top:12px"></div>
       </div>
 
       <div class="mgmt-panel" id="mgmt-users">
@@ -4619,6 +4667,90 @@
     // 本公司銷售員（唔係 Partner Sales）
     const COMPANY_SALES = ["Vincent", "Tim", "Andrew", "Kelly", "Sophia"];
 
+    /* -------- Company Team Leader roster (TL → Sales members) -------- */
+    let salesTeamsTableReady = false;
+    let salesTeamsCache = null;
+    function normalizeSalesTeamRows(raw) {
+      const list = Array.isArray(raw) ? raw : [];
+      const out = [];
+      const usedLeaders = new Set();
+      for (const row of list) {
+        const leader = normalizeCompanySales(row?.leader || row?.leader_name || "");
+        if (!leader || usedLeaders.has(leader)) continue;
+        usedLeaders.add(leader);
+        const members = [...new Set(
+          (Array.isArray(row?.members) ? row.members : [])
+            .map((n) => normalizeCompanySales(n))
+            .filter((n) => n && n !== leader)
+        )];
+        out.push({ leader, members });
+      }
+      return out;
+    }
+    function loadSalesTeamsLocal() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("crm_sales_teams") || "null");
+        return normalizeSalesTeamRows(raw);
+      } catch (_) {
+        return [];
+      }
+    }
+    function saveSalesTeamsLocal(list) {
+      const rows = normalizeSalesTeamRows(list);
+      localStorage.setItem("crm_sales_teams", JSON.stringify(rows));
+      salesTeamsCache = rows;
+      return rows;
+    }
+    function getSalesTeams() {
+      if (salesTeamsCache) return salesTeamsCache;
+      salesTeamsCache = loadSalesTeamsLocal();
+      return salesTeamsCache;
+    }
+    async function fetchSalesTeamsFromDb() {
+      if (!dbReady) return loadSalesTeamsLocal();
+      const { data, error } = await db.from("crm_sales_teams").select("leader_name,members");
+      if (error) {
+        salesTeamsTableReady = false;
+        return loadSalesTeamsLocal();
+      }
+      salesTeamsTableReady = true;
+      const rows = normalizeSalesTeamRows(
+        (data || []).map((r) => ({ leader: r.leader_name, members: r.members || [] }))
+      );
+      return saveSalesTeamsLocal(rows);
+    }
+    async function persistSalesTeams(list) {
+      const rows = saveSalesTeamsLocal(list);
+      if (!salesTeamsTableReady || !dbReady) return { ok: true, synced: false, rows };
+      const payload = rows.map((r) => ({
+        leader_name: r.leader,
+        members: r.members,
+        updated_at: new Date().toISOString(),
+      }));
+      const { data: existing } = await db.from("crm_sales_teams").select("leader_name");
+      const keep = new Set(rows.map((r) => r.leader));
+      const toDelete = (existing || []).map((r) => r.leader_name).filter((n) => !keep.has(n));
+      if (toDelete.length) {
+        const { error: delErr } = await db.from("crm_sales_teams").delete().in("leader_name", toDelete);
+        if (delErr) return { ok: false, error: delErr.message, rows };
+      }
+      if (payload.length) {
+        const { error: upErr } = await db.from("crm_sales_teams").upsert(payload, { onConflict: "leader_name" });
+        if (upErr) return { ok: false, error: upErr.message, rows };
+      }
+      return { ok: true, synced: true, rows };
+    }
+    function salesAssignedInTeams(teams, { excludeLeader } = {}) {
+      const taken = new Set();
+      for (const t of teams || []) {
+        if (t.leader && t.leader !== excludeLeader) taken.add(t.leader);
+        for (const m of t.members || []) {
+          if (m !== excludeLeader) taken.add(m);
+        }
+      }
+      return taken;
+    }
+
     /* -------- Auth / Users / Roles (ADMIN | SALES) -------- */
     function hashPassword(pw) {
       const s = `achiever-crm:${String(pw || "")}`;
@@ -4829,6 +4961,7 @@
     let potentialLevelFilter = localStorage.getItem("crm_potential_level") || "all";
     let potentialSalesFilter = localStorage.getItem("crm_potential_sales") || "all";
     let cardsTableReady = false;
+    // salesTeamsTableReady declared with Team Leader roster helpers above
     let portalSalesSelected = localStorage.getItem("crm_portal_sales") || COMPANY_SALES[0];
     let portalTab = localStorage.getItem("crm_portal_tab") || "today";
     let portalCardImageData = "";
@@ -6190,7 +6323,10 @@
         potentialColReady = !potProbe.error;
         const cardsProbe = await db.from("crm_case_cards").select("id").limit(1);
         cardsTableReady = !cardsProbe.error;
-        document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady && addressColReady && cardsTableReady);
+        const teamsProbe = await db.from("crm_sales_teams").select("leader_name").limit(1);
+        salesTeamsTableReady = !teamsProbe.error;
+        if (salesTeamsTableReady) await fetchSalesTeamsFromDb();
+        document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady && addressColReady && cardsTableReady && salesTeamsTableReady);
       }
       if (error || contactsProbe.error) {
         console.warn(error || contactsProbe.error);
@@ -10440,6 +10576,7 @@
       customers: { title: "客戶管理", sub: "客戶統計與跟進提示", top: "客戶管理" },
       partners: { title: "Partner 管理", sub: "Achiever（本公司）／外部 Partner → Team Leader → Sales", top: "Partner 管理" },
       sales: { title: "銷售員管理", sub: "KPI 同 Closing 目標設計", top: "銷售員管理" },
+      teams: { title: "Team Leader 設定", sub: "設定 Team Leader 同其下 Sales 成員", top: "Team Leader" },
       users: { title: "使用者權限", sub: "ADMIN／SALES 帳號與屬性", top: "使用者權限" },
     };
 
@@ -10467,7 +10604,7 @@
 
     function setMgmtTab(tab) {
       mgmtTab = tab || "customers";
-      if (mgmtTab === "users" && !isAdmin()) mgmtTab = "customers";
+      if ((mgmtTab === "users" || mgmtTab === "teams") && !isAdmin()) mgmtTab = "customers";
       localStorage.setItem("crm_mgmt_tab", mgmtTab);
       document.querySelectorAll(".mgmt-panel").forEach((p) => p.classList.toggle("active", p.id === `mgmt-${mgmtTab}`));
       syncMgmtNav();
@@ -10475,14 +10612,107 @@
     }
 
     function renderMgmt() {
-      document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady && addressColReady && cardsTableReady);
-      if (mgmtTab === "users" && !isAdmin()) mgmtTab = "customers";
+      document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady && addressColReady && cardsTableReady && salesTeamsTableReady);
+      if ((mgmtTab === "users" || mgmtTab === "teams") && !isAdmin()) mgmtTab = "customers";
       syncMgmtNav();
       syncAuthUi();
       if (mgmtTab === "customers") renderCustomersMgmt();
       else if (mgmtTab === "partners") renderPartnersMgmt();
       else if (mgmtTab === "users") renderUsersMgmt();
+      else if (mgmtTab === "teams") renderSalesTeamsMgmt();
       else renderSalesMgmt();
+    }
+
+    function readSalesTeamsFromEditor() {
+      const root = document.getElementById("salesTeamsEditor");
+      if (!root) return getSalesTeams();
+      const rows = [];
+      root.querySelectorAll(".sales-team-card").forEach((card) => {
+        const leader = normalizeCompanySales(card.querySelector(".st-leader")?.value || "");
+        if (!leader) return;
+        const members = [...card.querySelectorAll(".st-member:checked")]
+          .map((el) => normalizeCompanySales(el.value))
+          .filter((n) => n && n !== leader);
+        rows.push({ leader, members });
+      });
+      return normalizeSalesTeamRows(rows);
+    }
+
+    function renderSalesTeamsMgmt() {
+      const editor = document.getElementById("salesTeamsEditor");
+      const alert = document.getElementById("salesTeamsAlert");
+      const unEl = document.getElementById("salesTeamsUnassigned");
+      if (!editor || !alert) return;
+      if (!isAdmin()) {
+        editor.innerHTML = `<div class="breakdown-empty">只有 ADMIN 可設定 Team Leader 編制</div>`;
+        alert.innerHTML = "";
+        if (unEl) unEl.innerHTML = "";
+        return;
+      }
+      const teams = getSalesTeams();
+      alert.innerHTML = salesTeamsTableReady
+        ? `<div class="mgmt-alert ok">已連接資料庫 <code>crm_sales_teams</code> · 儲存後可多人同步</div>`
+        : `<div class="mgmt-alert">編制暫存於本機；請 Run <code>supabase/mgmt_alter.sql</code> 建立 <code>crm_sales_teams</code> 後可多人同步</div>`;
+
+      if (!teams.length) {
+        editor.innerHTML = `<div class="breakdown-empty">尚未設定 Team Leader — 撳「＋ 新增 Team Leader」開始</div>`;
+      } else {
+        editor.innerHTML = teams.map((t, idx) => {
+          const takenElsewhere = salesAssignedInTeams(teams, { excludeLeader: t.leader });
+          const leaderOpts = COMPANY_SALES.map((n) => {
+            const blocked = takenElsewhere.has(n) && n !== t.leader;
+            return `<option value="${escapeAttr(n)}" ${n === t.leader ? "selected" : ""} ${blocked ? "disabled" : ""}>${escapeHtml(n)}${blocked ? "（已在其他團隊）" : ""}</option>`;
+          }).join("");
+          const memberChecks = COMPANY_SALES.filter((n) => n !== t.leader).map((n) => {
+            const blocked = takenElsewhere.has(n);
+            const checked = t.members.includes(n);
+            return `<label class="${blocked && !checked ? "is-disabled" : ""}">
+              <input type="checkbox" class="st-member" value="${escapeAttr(n)}" ${checked ? "checked" : ""} ${blocked && !checked ? "disabled" : ""} />
+              ${escapeHtml(n)}
+            </label>`;
+          }).join("");
+          return `<div class="sales-team-card" data-team-idx="${idx}">
+            <div class="st-head">
+              <label class="field" style="margin:0;min-width:180px"><span>Team Leader</span>
+                <select class="st-leader">${leaderOpts}</select>
+              </label>
+              <button type="button" class="btn btn-ghost btn-sm st-remove" data-team-idx="${idx}">移除團隊</button>
+            </div>
+            <div class="eyebrow" style="margin-bottom:8px">其下 Sales 成員</div>
+            <div class="st-members">${memberChecks || `<span class="muted">沒有可選成員</span>`}</div>
+          </div>`;
+        }).join("");
+      }
+
+      const assigned = salesAssignedInTeams(teams);
+      const free = COMPANY_SALES.filter((n) => !assigned.has(n));
+      if (unEl) {
+        unEl.innerHTML = `<div class="panel" style="padding:12px 14px">
+          <div class="eyebrow">未編入團隊</div>
+          <p style="margin:6px 0 0;font-size:.82rem;font-weight:700">${free.length ? free.map(escapeHtml).join(" · ") : "全部銷售員已編入團隊"}</p>
+        </div>`;
+      }
+
+      editor.querySelectorAll(".st-leader").forEach((sel) => {
+        sel.onchange = () => {
+          salesTeamsCache = readSalesTeamsFromEditor();
+          renderSalesTeamsMgmt();
+        };
+      });
+      editor.querySelectorAll(".st-member").forEach((cb) => {
+        cb.onchange = () => {
+          salesTeamsCache = readSalesTeamsFromEditor();
+          renderSalesTeamsMgmt();
+        };
+      });
+      editor.querySelectorAll(".st-remove").forEach((btn) => {
+        btn.onclick = () => {
+          const idx = Number(btn.dataset.teamIdx);
+          const next = readSalesTeamsFromEditor().filter((_, i) => i !== idx);
+          salesTeamsCache = next;
+          renderSalesTeamsMgmt();
+        };
+      });
     }
 
     function fillUserSalesSelect() {
@@ -13988,9 +14218,31 @@
     };
     document.getElementById("btnRefreshMgmt").onclick = async () => {
       await loadCases();
+      if (salesTeamsTableReady) await fetchSalesTeamsFromDb();
       renderMgmt();
       toast("已重新整理");
     };
+    document.getElementById("btnAddSalesTeam")?.addEventListener("click", () => {
+      if (!isAdmin()) return toast("只有 ADMIN 可設定");
+      const cur = readSalesTeamsFromEditor();
+      const taken = salesAssignedInTeams(cur);
+      const nextLeader = COMPANY_SALES.find((n) => !taken.has(n));
+      if (!nextLeader) return toast("所有銷售員已編入團隊");
+      salesTeamsCache = [...cur, { leader: nextLeader, members: [] }];
+      renderSalesTeamsMgmt();
+    });
+    document.getElementById("btnSaveSalesTeams")?.addEventListener("click", async () => {
+      if (!isAdmin()) return toast("只有 ADMIN 可設定");
+      const rows = readSalesTeamsFromEditor();
+      const leaders = rows.map((r) => r.leader);
+      if (new Set(leaders).size !== leaders.length) return toast("Team Leader 唔可以重複");
+      const result = await persistSalesTeams(rows);
+      if (!result.ok) return toast("儲存失敗：" + (result.error || ""));
+      renderSalesTeamsMgmt();
+      toast(result.synced
+        ? `已儲存 ${result.rows.length} 個 Team Leader（已同步資料庫）`
+        : `已儲存 ${result.rows.length} 個 Team Leader（本機；Run mgmt_alter.sql 後可同步）`);
+    });
     document.getElementById("customerSearch").oninput = () => renderCustomersMgmt();
     document.getElementById("customerOnlyOverdue").onchange = () => renderCustomersMgmt();
     document.getElementById("partnerSearch").oninput = () => renderPartnersMgmt();
@@ -14212,9 +14464,9 @@
     document.getElementById("btnRecheckMgmtSchema").onclick = async () => {
       await loadCases();
       renderMgmt();
-      toast(mgmtColsReady && addressColReady && cardsTableReady
+      toast(mgmtColsReady && addressColReady && cardsTableReady && salesTeamsTableReady
         ? "欄位已就緒，橫幅已收埋"
-        : "仍偵測唔到新欄位／名片表，請確認已 Run SQL");
+        : "仍偵測唔到新欄位／名片表／Sales Teams，請確認已 Run SQL");
     };
     document.getElementById("btnOpenMgmtSql").onclick = () => {
       window.open("https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql", "_blank", "noopener");

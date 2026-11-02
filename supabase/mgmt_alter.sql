@@ -52,3 +52,13 @@ update public.crm_cases
 set team_leader = trim(both from regexp_replace(ricoh_house, '.*\(([^)]+) Team\).*', '\1'))
 where coalesce(team_leader, '') = ''
   and ricoh_house ~ '\([^)]+ Team\)';
+
+-- 本公司 Team Leader 編制：邊個 TL 帶邊啲 Sales 成員（可多人同步）
+create table if not exists public.crm_sales_teams (
+  leader_name text primary key,
+  members text[] not null default '{}',
+  updated_at timestamptz not null default now()
+);
+alter table public.crm_sales_teams enable row level security;
+drop policy if exists crm_sales_teams_all on public.crm_sales_teams;
+create policy crm_sales_teams_all on public.crm_sales_teams for all to anon, authenticated using (true) with check (true);
