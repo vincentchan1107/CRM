@@ -230,6 +230,13 @@
     }
     .nav-group.open .nav-sub,
     .nav-group.active-group .nav-sub { display: flex; }
+    .case-mode-bar {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      margin: 0 0 12px;
+    }
+    .case-mode-bar .case-mode-hint {
+      font-size: .75rem; font-weight: 650;
+    }
     .nav-sub button {
       border: 0;
       background: transparent;
@@ -3595,8 +3602,13 @@
       </div>
       <nav class="nav-pills" id="navPills">
         <button data-view="dashboard" class="active"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V10M10 19V5M16 19v-7M22 19H2"/></svg></span><span class="nav-label">Dashboard</span></button>
-        <button data-view="board"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="5.5" height="16" rx="1.5"/><rect x="9.25" y="4" width="5.5" height="11" rx="1.5"/><rect x="15.5" y="4" width="5.5" height="14" rx="1.5"/></svg></span><span class="nav-label">Case Management</span></button>
-        <button data-view="cases"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span><span class="nav-label">列表</span></button>
+        <div class="nav-group" id="navCaseGroup">
+          <button type="button" data-view="board" data-case-mode="folder" class="nav-group-parent"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="5.5" height="16" rx="1.5"/><rect x="9.25" y="4" width="5.5" height="11" rx="1.5"/><rect x="15.5" y="4" width="5.5" height="14" rx="1.5"/></svg></span><span class="nav-label">Case Management</span></button>
+          <div class="nav-sub" id="navCaseSub">
+            <button type="button" data-view="board" data-case-mode="folder">文件夾</button>
+            <button type="button" data-view="cases" data-case-mode="list">列表</button>
+          </div>
+        </div>
         <button data-view="agenda"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></span><span class="nav-label">會議／跟進</span></button>
         <div class="nav-group" id="navMgmtGroup">
           <button type="button" data-view="mgmt" data-mgmt="customers" class="nav-group-parent"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><span class="nav-label">資料庫</span></button>
@@ -3927,6 +3939,13 @@
     <!-- BOARD -->
     <section id="view-board" class="hidden">
       <div id="boardOverdueAlert"></div>
+      <div class="case-mode-bar" data-case-mode-bar>
+        <div class="seg" role="tablist" aria-label="Case Management 展示方式">
+          <button type="button" data-case-mode="folder" class="active">文件夾</button>
+          <button type="button" data-case-mode="list">列表</button>
+        </div>
+        <span class="muted case-mode-hint">用文件夾（狀態欄）或列表方式睇案件</span>
+      </div>
       <div class="board-toolbar">
         <div class="board-toolbar-left">
           <div class="board-search-wrap">
@@ -3968,6 +3987,13 @@
 
     <!-- CASES LIST -->
     <section id="view-cases" class="hidden">
+      <div class="case-mode-bar" data-case-mode-bar>
+        <div class="seg" role="tablist" aria-label="Case Management 展示方式">
+          <button type="button" data-case-mode="folder">文件夾</button>
+          <button type="button" data-case-mode="list" class="active">列表</button>
+        </div>
+        <span class="muted case-mode-hint">用文件夾（狀態欄）或列表方式睇案件</span>
+      </div>
       <div class="page-head" style="margin-bottom:12px">
         <h1>案件列表</h1>
         <p class="muted page-head-sub">可排序、顯示欄位、批量更新、匯出 CSV</p>
@@ -5619,13 +5645,46 @@
       home: "Dashboard",
       portal: "手機 Portal",
       dashboard: "Dashboard",
-      board: "Case Management · Case 跟進",
-      cases: "案件列表",
+      board: "Case Management · 文件夾",
+      cases: "Case Management · 列表",
       agenda: "銷售員會議及 Case 跟進",
       mgmt: "資料庫管理",
       marketing: "市場推廣",
       logs: "Log History",
     };
+    let caseMgmtMode = localStorage.getItem("crm_case_mgmt_mode") === "list" ? "list" : "folder";
+    function caseModeToView(mode) {
+      return mode === "list" ? "cases" : "board";
+    }
+    function viewToCaseMode(name) {
+      if (name === "cases") return "list";
+      if (name === "board") return "folder";
+      return caseMgmtMode;
+    }
+    function setCaseMgmtMode(mode, { navigate = true } = {}) {
+      caseMgmtMode = mode === "list" ? "list" : "folder";
+      localStorage.setItem("crm_case_mgmt_mode", caseMgmtMode);
+      syncCaseMgmtNav();
+      syncCaseModeBars();
+      if (navigate) showView(caseModeToView(caseMgmtMode));
+    }
+    function syncCaseModeBars() {
+      document.querySelectorAll("[data-case-mode-bar] .seg button[data-case-mode]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.caseMode === caseMgmtMode);
+      });
+    }
+    function syncCaseMgmtNav() {
+      const group = document.getElementById("navCaseGroup");
+      if (!group) return;
+      const onCase = !document.getElementById("view-board")?.classList.contains("hidden")
+        || !document.getElementById("view-cases")?.classList.contains("hidden");
+      group.classList.toggle("active-group", onCase);
+      group.classList.toggle("open", onCase);
+      group.querySelector(".nav-group-parent")?.classList.toggle("active", onCase);
+      group.querySelectorAll("#navCaseSub button[data-case-mode]").forEach((b) => {
+        b.classList.toggle("active", b.dataset.caseMode === caseMgmtMode && onCase);
+      });
+    }
 
     function prefersReducedMotion() {
       try {
@@ -5805,6 +5864,10 @@
         return;
       }
       if (name === "home") name = "dashboard";
+      if (name === "board" || name === "cases") {
+        caseMgmtMode = viewToCaseMode(name);
+        localStorage.setItem("crm_case_mgmt_mode", caseMgmtMode);
+      }
       ["home", "portal", "dashboard", "board", "cases", "agenda", "mgmt", "marketing", "logs"].forEach((v) => {
         document.getElementById(`view-${v}`).classList.toggle("hidden", v !== name);
       });
@@ -5816,6 +5879,8 @@
         mgmtGroup.classList.toggle("open", name === "mgmt");
         document.querySelector("#navMgmtGroup .nav-group-parent")?.classList.toggle("active", name === "mgmt");
       }
+      syncCaseMgmtNav();
+      syncCaseModeBars();
       const titleEl = document.getElementById("topbarTitle");
       if (titleEl) {
         if (name === "mgmt") titleEl.textContent = (MGMT_META[mgmtTab] || MGMT_META.customers).top;
@@ -12886,12 +12951,23 @@
       const btn = e.target.closest("button[data-view]");
       if (!btn) return;
       if (btn.dataset.view === "mgmt") {
+        document.getElementById("navCaseGroup")?.classList.remove("open");
         if (btn.dataset.mgmt) mgmtTab = btn.dataset.mgmt;
         else if (!mgmtTab) mgmtTab = "customers";
         localStorage.setItem("crm_mgmt_tab", mgmtTab);
         showView("mgmt");
+      } else if (btn.dataset.view === "board" || btn.dataset.view === "cases") {
+        document.getElementById("navMgmtGroup")?.classList.remove("open");
+        const mode = btn.dataset.caseMode || (btn.dataset.view === "cases" ? "list" : caseMgmtMode);
+        // parent Case Management：用上次選擇；子項文件夾／列表：明確切換
+        if (btn.classList.contains("nav-group-parent") && !btn.dataset.caseModeForced) {
+          showView(caseModeToView(caseMgmtMode));
+        } else {
+          setCaseMgmtMode(mode, { navigate: true });
+        }
       } else {
         document.getElementById("navMgmtGroup")?.classList.remove("open");
+        document.getElementById("navCaseGroup")?.classList.remove("open");
         showView(btn.dataset.view);
       }
       // mobile：選完頁面自動收埋側欄
@@ -12899,6 +12975,13 @@
         document.getElementById("appShell").classList.remove("sidebar-open-mobile");
       }
     };
+    document.querySelectorAll("[data-case-mode-bar]").forEach((bar) => {
+      bar.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-case-mode]");
+        if (!btn) return;
+        setCaseMgmtMode(btn.dataset.caseMode, { navigate: true });
+      });
+    });
     document.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => showView(b.dataset.go));
     document.getElementById("btnToggleBoardUpper").onclick = () => {
       const next = localStorage.getItem("crm_board_upper_collapsed") === "1" ? "0" : "1";
