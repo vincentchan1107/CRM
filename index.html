@@ -3349,7 +3349,8 @@
     .agenda-new-lead { padding: 16px 18px; }
     .agenda-new-lead .field { margin-bottom: 10px; }
     @media (max-width: 700px) {
-      .agenda-new-lead .row2 { grid-template-columns: 1fr; }
+      .agenda-new-lead .row2,
+      .agenda-new-lead .row3 { grid-template-columns: 1fr; }
     }
     .home-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
     .dash-period {
@@ -4340,6 +4341,11 @@
               <option value="">未指派</option>
             </select>
           </label>
+        </div>
+        <div class="row3">
+          <label class="field"><span>聯絡人</span><input id="agendaLeadContact" name="contact" placeholder="聯絡人姓名" autocomplete="name" /></label>
+          <label class="field"><span>聯絡電話</span><input id="agendaLeadPhone" name="phone" type="tel" placeholder="手提／電話" autocomplete="tel" /></label>
+          <label class="field"><span>電郵</span><input id="agendaLeadEmail" name="email" type="email" placeholder="email@company.com" autocomplete="email" /></label>
         </div>
         <label class="field"><span>Customer Address（客戶地址）</span><input id="agendaLeadAddress" name="address" placeholder="地址" /></label>
         <label class="field"><span>Remark（備註）</span><textarea id="agendaLeadRemark" name="remark" rows="3" placeholder="備註／跟進重點"></textarea></label>
@@ -14114,6 +14120,9 @@
       const partnerSales = String(document.getElementById("agendaLeadPartnerSales").value || "").trim();
       let companySales = normalizeCompanySales(document.getElementById("agendaLeadCompanySales").value) || "";
       if (isSales()) companySales = currentSalesName() || companySales;
+      const contactName = String(document.getElementById("agendaLeadContact").value || "").trim();
+      const contactPhone = String(document.getElementById("agendaLeadPhone").value || "").trim();
+      const contactEmail = String(document.getElementById("agendaLeadEmail").value || "").trim();
       const address = String(document.getElementById("agendaLeadAddress").value || "").trim();
       const remark = String(document.getElementById("agendaLeadRemark").value || "").trim();
       const followUp = String(document.getElementById("agendaLeadFollowUp").value || "").trim();
@@ -14157,6 +14166,20 @@
       row.created_at = item.createdAt;
       const { error } = await db.from("crm_cases").insert(row);
       if (error) return toast("建立失敗：" + error.message);
+      if (contactName || contactPhone || contactEmail) {
+        const contactRow = {
+          id: `ct-${crypto.randomUUID().slice(0, 10)}`,
+          case_id: item.id,
+          name: contactName || customer,
+          title: "",
+          tel: "",
+          mobile: contactPhone,
+          email: contactEmail,
+          fax: "",
+        };
+        const { error: contactErr } = await db.from("crm_contacts").insert(contactRow);
+        if (contactErr) toast("Lead 已建立，但聯絡人儲存失敗：" + contactErr.message);
+      }
       if (remark) {
         try {
           await db.from("crm_activity_logs").insert({
@@ -14169,7 +14192,7 @@
           });
         } catch (_) {}
       }
-      toast(`已新增新 Lead：${customer}`);
+      toast(`已新增新 Lead：${customer}${contactName ? ` · ${contactName}` : ""}`);
       e.target.reset();
       openAgendaNewLeadPanel(false);
       await loadCases();
