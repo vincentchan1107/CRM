@@ -2548,6 +2548,8 @@
     tr.agenda-today-meet td { background: rgba(107, 70, 254, .06); }
     tr.agenda-overdue td:first-child { box-shadow: inset 3px 0 0 #e11d48; }
     tr.agenda-today-meet td:first-child { box-shadow: inset 3px 0 0 #6b46fe; }
+    #agendaBody tr[data-case-id] { cursor: pointer; }
+    #agendaBody tr[data-case-id]:hover td { filter: brightness(0.985); }
     /* keep <td> as table-cell; flex belongs on an inner wrapper */
     td.agenda-actions { white-space: nowrap; vertical-align: middle; }
     td.agenda-actions .agenda-actions-inner {
@@ -10877,13 +10879,11 @@
         const s = stageMeta(c.stage);
         const kindClass = it.kind === "meeting" ? "tag-ok" : (it.overdue ? "tag-overdue" : "tag-ok");
         const trClass = it.overdue ? "agenda-overdue" : (it.isTodayMeet ? "agenda-today-meet" : "");
-        const actions = [
-          `<button class="btn btn-ghost btn-sm" data-open="${escapeAttr(c.id)}">詳情</button>`,
-        ];
-        if (it.kind === "meeting" && !c.meetingDone) {
-          actions.unshift(`<button class="btn btn-teal btn-sm" data-complete-meet="${escapeAttr(c.id)}">完成會面</button>`);
-        }
-        return `<tr class="${trClass}">
+        const canComplete = it.kind === "meeting" && !c.meetingDone;
+        const actions = canComplete
+          ? `<button type="button" class="btn btn-teal btn-sm" data-complete-meet="${escapeAttr(c.id)}">完成會面</button>`
+          : "";
+        return `<tr class="${trClass}" data-case-id="${escapeAttr(c.id)}" title="雙擊開啟詳情">
           <td>
             <strong>${escapeHtml(it.dateText)}</strong>
             ${it.timeText ? `<div class="muted" style="font-size:.72rem">${escapeHtml(it.timeText)}</div>` : ""}
@@ -10899,15 +10899,21 @@
           <td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>
           <td class="muted" style="font-size:.75rem">${escapeHtml(c.ricohSales || "—")}</td>
           <td class="muted" style="font-size:.75rem">${escapeHtml(it.note || "—")}</td>
-          <td class="agenda-actions"><div class="agenda-actions-inner">${actions.join("")}</div></td>
+          <td class="agenda-actions"><div class="agenda-actions-inner">${actions}</div></td>
         </tr>`;
       }).join("") || `<tr><td colspan="8"><div class="empty-state">${range.incomplete ? "請先套用日期範圍" : "沒有符合項目"}</div></td></tr>`;
 
-      document.querySelectorAll("#agendaBody [data-open]").forEach((b) => {
-        b.onclick = () => openDrawer(b.dataset.open);
+      document.querySelectorAll("#agendaBody tr[data-case-id]").forEach((tr) => {
+        tr.ondblclick = (e) => {
+          if (e.target.closest("button, a, input, select, textarea, label")) return;
+          openDrawer(tr.dataset.caseId);
+        };
       });
       document.querySelectorAll("#agendaBody [data-complete-meet]").forEach((b) => {
-        b.onclick = () => completeMeetingQuick(b.dataset.completeMeet);
+        b.onclick = (e) => {
+          e.stopPropagation();
+          completeMeetingQuick(b.dataset.completeMeet);
+        };
       });
 
       // auto local reminder once per day when overdue
