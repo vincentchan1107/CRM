@@ -1533,32 +1533,48 @@
       overscroll-behavior: contain;
       width: 100%;
       max-width: 100vw;
+      height: 100%;
+      height: 100dvh;
+      max-height: 100dvh;
+      overflow: hidden;
       box-sizing: border-box;
     }
     .drawer {
+      position: relative;
       width: 100%;
       max-width: 100%;
       height: 100%;
-      max-height: 100%;
+      height: 100dvh;
+      max-height: 100dvh;
       background: #fff;
-      overflow-x: hidden;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 18px 22px calc(88px + env(safe-area-inset-bottom, 0px));
+      overflow: hidden;
+      padding: 0;
       border-radius: 0;
       box-shadow: none;
       border: 0;
       box-sizing: border-box;
       min-width: 0;
+      min-height: 0;
       display: flex;
       flex-direction: column;
     }
     body.drawer-open {
       overflow: hidden !important;
       position: relative;
+      height: 100%;
+      height: 100dvh;
     }
     body.drawer-open .drawer {
       touch-action: pan-y;
+      overscroll-behavior: contain;
+    }
+    .drawer-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 4px 22px 18px;
       overscroll-behavior: contain;
     }
     .drawer .field,
@@ -1586,7 +1602,12 @@
       justify-content: space-between;
       align-items: flex-start;
       gap: 10px;
-      margin-bottom: 14px;
+      margin-bottom: 0;
+      flex: 0 0 auto;
+      padding: 18px 22px 12px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+      z-index: 3;
     }
     .drawer-head > div:first-child { min-width: 0; flex: 1; }
     .drawer-head h2 {
@@ -1621,6 +1642,26 @@
     .drawer-potential-btn.High { background: #ecfdf5; color: #15803d; border-color: #86efac; }
     .drawer-potential-btn.Mid { background: #fff7ed; color: #c2410c; border-color: #fdba74; }
     .drawer-potential-btn.Low { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+    .lead-status-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: .68rem;
+      font-weight: 800;
+      line-height: 1.3;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    .lead-status-chip select {
+      border: 0; background: transparent; outline: none;
+      font: inherit; font-weight: 800; color: inherit;
+      padding: 0; margin: 0; cursor: pointer;
+      appearance: auto; max-width: 110px;
+    }
+    .lead-status-chip.Qualified { background: #ecfdf5; color: #15803d; border-color: #86efac; }
+    .lead-status-chip.Undefined { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+    .lead-status-chip.DQ { background: #ffe4e6; color: #9f1239; border-color: #fda4af; }
     @media (max-width: 700px) {
       .drawer-bg {
         align-items: stretch;
@@ -1634,12 +1675,18 @@
       .drawer {
         width: 100vw;
         max-width: 100vw;
-        min-height: 100%;
-        max-height: 100%;
-        height: 100%;
+        min-height: 0;
+        max-height: 100dvh;
+        height: 100dvh;
         border-radius: 0;
-        padding: calc(12px + env(safe-area-inset-top, 0px)) 12px calc(88px + env(safe-area-inset-bottom, 0px));
+        padding: 0;
         margin: 0;
+      }
+      .drawer-head {
+        padding: calc(12px + env(safe-area-inset-top, 0px)) 12px 10px;
+      }
+      .drawer-body {
+        padding: 4px 12px 16px;
       }
       .drawer .row2,
       .drawer .row3 {
@@ -1652,16 +1699,10 @@
       .drawer .check-row {
         grid-template-columns: 1fr !important;
       }
-      .modal-actions {
-        position: sticky;
-        bottom: 0;
-        margin-top: 12px;
-        background: #fff;
-        border-top: 1px solid var(--line);
-        padding: 12px 0 calc(8px + env(safe-area-inset-bottom, 0px));
-        z-index: 2;
+      .drawer .modal-actions {
+        padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
       }
-      .modal-actions .btn {
+      .drawer .modal-actions .btn {
         min-width: 0;
         flex: 1 1 calc(50% - 8px);
       }
@@ -1706,16 +1747,28 @@
       flex-wrap: wrap;
       gap: 8px;
       justify-content: flex-end;
-      margin-top: auto;
+      margin-top: 6px;
       padding-top: 14px;
       border-top: 1px solid var(--line);
-      position: sticky;
-      bottom: 0;
-      background: #fff;
-      z-index: 2;
     }
     .modal-actions .btn { min-width: 120px; }
-    .drawer .modal-grid { flex: 1 1 auto; }
+    /* In-flow footer only — never sticky/fixed over the form */
+    .drawer .modal-actions {
+      position: relative !important;
+      top: auto !important;
+      bottom: auto !important;
+      inset: auto !important;
+      flex: 0 0 auto;
+      align-items: center;
+      align-self: stretch;
+      margin: 0 !important;
+      padding: 12px 22px calc(14px + env(safe-area-inset-bottom, 0px));
+      border-top: 1px solid var(--line);
+      background: #fff;
+      box-shadow: 0 -10px 28px rgba(31, 36, 48, .08);
+      z-index: 5;
+    }
+    .drawer .modal-grid { flex: none; }
     .modal-log-list {
       max-height: min(58vh, 560px);
       overflow: auto;
@@ -4294,7 +4347,7 @@
           <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerExpandAll">全部展開</button>
           <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerCollapseAll">全部收合</button>
         </div>
-        <p class="muted" style="margin-bottom:10px;font-size:.78rem">預設 Partner：Achiever（本公司）／RICOH／HKBN／HPE／ICO · Case 唔一定有外部 Partner · 按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Qualified = 非 DQ 且（已會面／有跟進機會／報價或之後階段）</p>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">預設 Partner：Achiever（本公司）／RICOH／HKBN／HPE／ICO · Case 唔一定有外部 Partner · 按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Qualification 必選：Qualified／Undefined／DQ（舊 Processing＝Undefined）</p>
         <div class="partner-tree" id="partnersTree"></div>
       </div>
 
@@ -5153,6 +5206,7 @@
       { id: "sales", label: "本公司銷售", sort: "sales" },
       { id: "systems", label: "系統" },
       { id: "stage", label: "階段", sort: "stage" },
+      { id: "qualify", label: "Qualification", sort: "qualify" },
       { id: "amount", label: "金額", sort: "amount" },
       { id: "target", label: "Target Closing", sort: "target" },
       { id: "appt", label: "約見", sort: "appt" },
@@ -6084,6 +6138,35 @@
     const ALL_BOARD_STAGES = () => STAGES.map((s) => s.id);
     let visibleStages = loadVisibleStages();
     const QUALIFIED_STAGES = new Set(["first_interview", "quotation", "follow_up", "final_stage", "confirmation"]);
+    const LEAD_STATUS_LEVELS = ["Qualified", "Undefined", "DQ"];
+    const LEAD_STATUS_META = {
+      Qualified: { label: "Qualified", color: "#15803d", bg: "#ecfdf5" },
+      Undefined: { label: "Undefined", color: "#64748b", bg: "#f1f5f9" },
+      DQ: { label: "DQ", color: "#9f1239", bg: "#ffe4e6" },
+    };
+    function normalizeLeadStatus(v) {
+      const s = String(v || "").trim();
+      if (s === "DQ" || /^disqualif/i.test(s)) return "DQ";
+      if (s === "Qualified") return "Qualified";
+      // Legacy Processing → Undefined
+      if (s === "Undefined" || s === "Processing" || s === "") return "Undefined";
+      return "Undefined";
+    }
+    function leadStatusMeta(v) {
+      return LEAD_STATUS_META[normalizeLeadStatus(v)] || LEAD_STATUS_META.Undefined;
+    }
+    function leadStatusBadgeHtml(v, { selectId, caseId } = {}) {
+      const cur = normalizeLeadStatus(v);
+      const meta = leadStatusMeta(cur);
+      if (selectId) {
+        return `<label class="lead-status-chip ${cur}" title="Qualification：Qualified／Undefined／DQ">
+          <select id="${escapeAttr(selectId)}" ${caseId ? `data-case-id="${escapeAttr(caseId)}" data-lead-status-quick="1"` : ""} aria-label="Qualification">
+            ${LEAD_STATUS_LEVELS.map((x) => `<option value="${x}" ${cur === x ? "selected" : ""}>${x}</option>`).join("")}
+          </select>
+        </label>`;
+      }
+      return `<span class="lead-status-chip ${cur}" style="color:${meta.color};background:${meta.bg}">${meta.label}</span>`;
+    }
 
     function loadVisibleStages() {
       try {
@@ -6559,7 +6642,7 @@
         meetingNotes: r.meeting_notes || "",
         followUpOpportunity: !!r.follow_up_opportunity,
         nextFollowUpAt: r.next_follow_up_at || localFollowUpGet(r.id) || "",
-        leadStatus: r.lead_status || "Processing",
+        leadStatus: normalizeLeadStatus(r.lead_status),
         sourceEvent: r.source_event || "",
         teamLeader: r.team_leader || parseTeamLeader(r.ricoh_house || "") || "",
         createdAt: r.created_at,
@@ -6593,7 +6676,7 @@
         meeting_done: !!c.meetingDone,
         meeting_notes: c.meetingNotes || "",
         follow_up_opportunity: !!c.followUpOpportunity,
-        lead_status: c.leadStatus || "Processing",
+        lead_status: normalizeLeadStatus(c.leadStatus),
         source_event: c.sourceEvent || "",
         updated_at: new Date().toISOString(),
       };
@@ -6682,12 +6765,12 @@
     }
 
     function isDq(c) {
-      return c.leadStatus === "DQ" || c.closeReason === "disqualified";
+      return normalizeLeadStatus(c.leadStatus) === "DQ" || c.closeReason === "disqualified";
     }
 
     function isQualified(c) {
       if (isDq(c) || c.closeReason === "failed") return false;
-      return !!c.meetingDone || !!c.followUpOpportunity || QUALIFIED_STAGES.has(c.stage) || c.closeReason === "won";
+      return normalizeLeadStatus(c.leadStatus) === "Qualified";
     }
 
     function isWon(c) {
@@ -9357,7 +9440,7 @@
             <td class="num">${money(totals.closingAmt)}</td>
           </tr></tfoot>` : ""}
         </table></div>
-        <p class="muted" style="margin-top:8px;font-size:.72rem">LEAD＝期間新建案件 · DQ＝Disqualified · POTENTIAL＝有跟進機會／報價或之後階段 · CLOSING＝期間確認簽單</p>
+        <p class="muted" style="margin-top:8px;font-size:.72rem">LEAD＝期間新建案件 · DQ／Qualified＝案件 Qualification 欄位 · POTENTIAL＝有跟進機會／報價或之後階段 · CLOSING＝期間確認簽單</p>
       `;
       syncPartnerPerfUi();
       bindPartnerPerfControls();
@@ -10407,6 +10490,29 @@
         }
         el.onclick = () => openDrawer(el.dataset.id);
       });
+      root.querySelectorAll("[data-lead-status-quick]").forEach((sel) => {
+        sel.onclick = (e) => e.stopPropagation();
+        sel.onmousedown = (e) => e.stopPropagation();
+        sel.ondragstart = (e) => { e.preventDefault(); e.stopPropagation(); };
+        sel.onchange = async (e) => {
+          e.stopPropagation();
+          const id = sel.dataset.caseId;
+          const lead = normalizeLeadStatus(sel.value);
+          const chip = sel.closest(".lead-status-chip");
+          if (chip) {
+            chip.classList.remove("Qualified", "Undefined", "DQ");
+            chip.classList.add(lead);
+          }
+          const patch = { leadStatus: lead };
+          if (lead === "DQ") {
+            patch.stage = "closed";
+            patch.closeReason = "disqualified";
+          }
+          await updateCase(id, patch, { silent: true, source: "看板 · Qualification" });
+          toast(`Qualification → ${lead}`);
+          paintKanbanColumns();
+        };
+      });
       root.querySelectorAll(".col").forEach((col) => {
         if (!canDragBoard) return;
         col.ondragover = (e) => {
@@ -10473,7 +10579,10 @@
         : "未設跟進";
       const sales = normalizeCompanySales(c.companySales) || "未指派";
       return `<article class="card-case" data-id="${c.id}" title="拖曳可改 Stage">
-        <strong style="white-space:pre-line;font-size:.9rem">${escapeHtml(companyLine)}</strong>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <strong style="white-space:pre-line;font-size:.9rem;min-width:0;flex:1">${escapeHtml(companyLine)}</strong>
+          ${leadStatusBadgeHtml(c.leadStatus, { selectId: `card_lead_${c.id}`, caseId: c.id })}
+        </div>
         <div class="muted" style="font-size:.7rem;margin-top:3px">${escapeHtml(sales)} · ${escapeHtml(c.partner || "—")} · ${contacts.length} contacts</div>
         <div class="card-meta-row">
           <span>💰 ${money(c.amount)}</span>
@@ -10483,8 +10592,8 @@
         <div class="tags" style="margin-top:6px">${(c.systems || []).slice(0, 3).map((x) => `<span class="tag on" style="cursor:default;padding:2px 8px">${escapeHtml(x)}</span>`).join("")}</div>
         <div style="margin-top:6px;font-size:.7rem;color:var(--ink-soft)">
           ${c.meetingDone ? "✅ 已會面 · " : ""}${c.followUpOpportunity ? "有跟進機會 · " : ""}${logs.length} logs
+          ${c.stage === "closed" && c.closeReason && c.closeReason !== "disqualified" ? ` · ${c.closeReason === "won" ? "成功簽單" : "失敗"}` : ""}
         </div>
-        ${c.leadStatus === "DQ" || (c.stage === "closed" && c.closeReason) ? `<div style="margin-top:6px;font-size:.68rem;color:var(--rose);font-weight:700">${c.leadStatus === "DQ" || c.closeReason === "disqualified" ? "DQ" : "失敗"}</div>` : ""}
         <div style="margin-top:6px"><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></div>
       </article>`;
     }
@@ -10565,6 +10674,7 @@
           case "partner": return c.partner || "";
           case "sales": return normalizeCompanySales(c.companySales) || "";
           case "stage": return STAGES.findIndex((s) => s.id === c.stage);
+          case "qualify": return normalizeLeadStatus(c.leadStatus);
           case "amount": return Number(c.amount) || 0;
           case "target": return caseForecastDate(c)?.getTime() || 0;
           case "appt": return c.appointmentAt ? new Date(c.appointmentAt).getTime() : 0;
@@ -10642,6 +10752,7 @@
           sales: `<td>${escapeHtml(normalizeCompanySales(c.companySales) || "未指派")}</td>`,
           systems: `<td>${(c.systems || []).map((x) => `<span class="badge" style="background:var(--accent-soft);color:var(--accent);margin:1px">${escapeHtml(x)}</span>`).join(" ") || "—"}</td>`,
           stage: `<td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>`,
+          qualify: `<td>${leadStatusBadgeHtml(c.leadStatus)}</td>`,
           amount: `<td><strong>${money(c.amount)}</strong></td>`,
           target: `<td>${c.targetClosingDate ? formatLocalDate(parseLocalDate(c.targetClosingDate) || caseForecastDate(c)) : (caseForecastDate(c) ? formatLocalDate(caseForecastDate(c)) : "—")}</td>`,
           appt: `<td>${c.appointmentAt ? new Date(c.appointmentAt).toLocaleString("zh-HK") : "—"}<div class="muted" style="font-size:.68rem">${c.appointmentConfirmed ? "已確認" : (c.appointmentFlag ? "待確認" : "")}</div></td>`,
@@ -10665,7 +10776,7 @@
 
     function exportCasesCsv(asExcel) {
       const list = sortCasesList(getFilteredCasesForTable());
-      const headers = ["公司", "Partner", "House", "本公司銷售", "系統", "階段", "金額", "Target Closing", "約見", "會面", "跟進機會", "下次跟進"];
+      const headers = ["公司", "Partner", "House", "本公司銷售", "系統", "階段", "Qualification", "金額", "Target Closing", "約見", "會面", "跟進機會", "下次跟進"];
       const rows = list.map((c) => [
         companyKey(c),
         c.partner || "",
@@ -10673,6 +10784,7 @@
         normalizeCompanySales(c.companySales) || "",
         (c.systems || []).join("|"),
         stageMeta(c.stage).label,
+        normalizeLeadStatus(c.leadStatus),
         c.amount || 0,
         c.targetClosingDate || "",
         c.appointmentAt || "",
@@ -12806,6 +12918,7 @@
           <button class="btn btn-ghost btn-sm" id="drawerClose">關閉</button>
         </div>
 
+        <div class="drawer-body">
         <div class="modal-grid">
           <div class="modal-col">
             <div class="eyebrow">本公司銷售員</div>
@@ -12878,8 +12991,10 @@
               <label class="field"><span>Stage</span>
                 <select id="d_stage">${STAGES.map((s) => `<option value="${s.id}" ${s.id === c.stage ? "selected" : ""}>${s.label}</option>`).join("")}</select>
               </label>
-              <label class="field"><span>Lead Status</span>
-                <select id="d_lead"><option value="Processing" ${c.leadStatus!=="DQ"?"selected":""}>Processing</option><option value="DQ" ${c.leadStatus==="DQ"?"selected":""}>DQ</option></select>
+              <label class="field"><span>Qualification（必選）</span>
+                <select id="d_lead" required>
+                  ${LEAD_STATUS_LEVELS.map((x) => `<option value="${x}" ${normalizeLeadStatus(c.leadStatus) === x ? "selected" : ""}>${x}</option>`).join("")}
+                </select>
               </label>
               <label class="field"><span>關閉原因</span>
                 <select id="d_close"><option value="">—</option><option value="disqualified" ${c.closeReason === "disqualified" ? "selected" : ""}>Disqualified</option><option value="failed" ${c.closeReason === "failed" ? "selected" : ""}>失敗</option><option value="won" ${c.closeReason === "won" ? "selected" : ""}>成功簽單</option></select>
@@ -12926,6 +13041,7 @@
           <div class="modal-col">
             ${renderCaseHistoryPanels(c, logs)}
           </div>
+        </div>
         </div>
 
         <div class="modal-actions">
@@ -13010,7 +13126,7 @@
       document.getElementById("drawerSave").onclick = async () => {
         const stage = document.getElementById("d_stage").value;
         const appt = document.getElementById("d_appt").value;
-        const lead = document.getElementById("d_lead").value;
+        const lead = normalizeLeadStatus(document.getElementById("d_lead").value);
         const closeVal = document.getElementById("d_close").value;
         const nextFollow = document.getElementById("d_nextFollow").value || "";
         localFollowUpSet(c.id, nextFollow);
@@ -13154,7 +13270,7 @@
     const TRACKED_FIELDS = [
       { key: "stage", label: "Stage", fmt: (v) => stageMeta(v).label },
       { key: "closeReason", label: "關閉原因", fmt: (v) => v || "—" },
-      { key: "leadStatus", label: "Lead Status", fmt: (v) => v || "—" },
+      { key: "leadStatus", label: "Qualification", fmt: (v) => normalizeLeadStatus(v) },
       { key: "companySales", label: "本公司銷售員", fmt: (v) => v || "未指派" },
       { key: "teamLeader", label: "Team Leader", fmt: (v) => v || "—" },
       { key: "partner", label: "Partner", fmt: (v) => v || "—" },
@@ -14296,7 +14412,7 @@
         meetingNotes: "",
         followUpOpportunity: false,
         nextFollowUpAt: "",
-        leadStatus: "Processing",
+        leadStatus: "Undefined",
         sourceEvent: "Portal 語音建案",
         teamLeader: "",
         ricohHouse: "",
@@ -14576,7 +14692,7 @@
         meetingNotes: "",
         followUpOpportunity: false,
         nextFollowUpAt: followUp || formatLocalDate(new Date()),
-        leadStatus: "Processing",
+        leadStatus: "Undefined",
         sourceEvent: "Agenda 新增新 Lead",
         teamLeader: "",
         createdAt: new Date().toISOString(),
