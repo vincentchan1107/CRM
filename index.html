@@ -1528,27 +1528,30 @@
     .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: var(--shadow); }
     .drawer-bg {
       position: fixed; inset: 0; background: rgba(31, 36, 48, .28); backdrop-filter: blur(4px);
-      display: flex; justify-content: center; align-items: center; z-index: 90;
-      padding: 16px;
+      display: flex; justify-content: stretch; align-items: stretch; z-index: 90;
+      padding: 0;
       overscroll-behavior: contain;
       width: 100%;
       max-width: 100vw;
       box-sizing: border-box;
     }
     .drawer {
-      width: min(100%, 960px);
+      width: 100%;
       max-width: 100%;
-      max-height: min(92vh, 880px);
+      height: 100%;
+      max-height: 100%;
       background: #fff;
       overflow-x: hidden;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      padding: 20px 22px 18px;
-      border-radius: 20px;
-      box-shadow: 0 24px 60px rgba(31, 36, 48, .18);
-      border: 1px solid var(--line);
+      padding: 18px 22px calc(88px + env(safe-area-inset-bottom, 0px));
+      border-radius: 0;
+      box-shadow: none;
+      border: 0;
       box-sizing: border-box;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
     }
     body.drawer-open {
       overflow: hidden !important;
@@ -1703,16 +1706,34 @@
       flex-wrap: wrap;
       gap: 8px;
       justify-content: flex-end;
-      margin-top: 6px;
+      margin-top: auto;
       padding-top: 14px;
       border-top: 1px solid var(--line);
+      position: sticky;
+      bottom: 0;
+      background: #fff;
+      z-index: 2;
     }
     .modal-actions .btn { min-width: 120px; }
+    .drawer .modal-grid { flex: 1 1 auto; }
     .modal-log-list {
-      max-height: 220px;
+      max-height: min(58vh, 560px);
       overflow: auto;
       margin: 8px 0 10px;
       padding-right: 4px;
+    }
+    .drawer-hist-actions {
+      display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px;
+    }
+    .drawer-add-panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #faf9fd;
+      padding: 12px;
+      margin: 0 0 12px;
+    }
+    .drawer-add-panel .am-actions {
+      display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 10px;
     }
     .drawer-hist-tabs {
       display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px;
@@ -12457,6 +12478,7 @@
     }
 
     function buildCaseAppointmentHistory(c, logs) {
+      // 只顯示明確新增嘅 Appointment／會面 Log（唔再夾雜欄位變更噪音）
       const items = [];
       const APPT_TYPES = new Set(["appointment", "appointment_confirmed", "meeting_done"]);
       for (const l of logs || []) {
@@ -12471,50 +12493,11 @@
           source: "log",
         });
       }
-      // Current appointment snapshot (if not already covered by a recent log)
-      if (c.appointmentAt) {
-        const d = new Date(c.appointmentAt);
-        if (!Number.isNaN(d.getTime())) {
-          const status = c.meetingDone
-            ? "現況：會面已完成"
-            : (c.appointmentConfirmed ? "現況：已確認會面" : "現況：已約會面");
-          items.push({
-            sort: d.getTime() + 1,
-            when: d,
-            title: status,
-            detail: c.meetingNotes ? String(c.meetingNotes).trim() : (c.appointmentFlag ? "有約見記錄" : ""),
-            source: "case",
-          });
-        }
-      } else if (c.meetingDone || c.appointmentFlag) {
-        const d = c.updatedAt ? new Date(c.updatedAt) : new Date();
-        items.push({
-          sort: d.getTime(),
-          when: Number.isNaN(d.getTime()) ? null : d,
-          title: c.meetingDone ? "現況：會面已完成" : "現況：已約會面（未有時間）",
-          detail: c.meetingNotes ? String(c.meetingNotes).trim() : "",
-          source: "case",
-        });
-      }
-      // Field-change lines about appointment
-      for (const l of logs || []) {
-        if (l.log_type !== "field_change") continue;
-        const content = String(l.content || "");
-        if (!/約見時間|會面已確認|會面已完成|已約會面/.test(content)) continue;
-        const when = logWhen(l);
-        const lines = content.split("\n").filter((line) => /約見時間|會面已確認|會面已完成|已約會面/.test(line));
-        items.push({
-          sort: when ? when.getTime() : 0,
-          when,
-          title: "約見欄位變更",
-          detail: lines.join("\n") || content,
-          source: "change",
-        });
-      }
       return items.sort((a, b) => b.sort - a.sort);
     }
 
     function buildCaseFollowUpHistory(c, logs) {
+      // 只顯示明確新增嘅跟進／聯絡 Log
       const items = [];
       for (const l of logs || []) {
         if (l.log_type === "follow_up") {
@@ -12538,40 +12521,7 @@
             source: "log",
             overdue: false,
           });
-        } else if (l.log_type === "field_change") {
-          const content = String(l.content || "");
-          if (!/下次跟進|跟進機會|Stage/.test(content)) continue;
-          const when = logWhen(l);
-          const lines = content.split("\n").filter((line) => /下次跟進|跟進機會|Stage/.test(line));
-          items.push({
-            sort: when ? when.getTime() : 0,
-            when,
-            title: "跟進欄位變更",
-            detail: lines.join("\n") || content,
-            source: "change",
-            overdue: false,
-          });
         }
-      }
-      if (c.nextFollowUpAt) {
-        const d = parseLocalDate(c.nextFollowUpAt);
-        items.push({
-          sort: d ? d.getTime() + 2 : Date.now(),
-          when: d,
-          title: isFollowUpOverdue(c) ? "下次跟進（已逾期）" : "下次跟進日期",
-          detail: formatLocalDate(d) + (c.followUpOpportunity ? " · 有機會跟進" : ""),
-          source: "case",
-          overdue: isFollowUpOverdue(c),
-        });
-      } else if (c.followUpOpportunity) {
-        items.push({
-          sort: Date.now(),
-          when: null,
-          title: "現況：有機會跟進",
-          detail: "尚未設定下次跟進日期",
-          source: "case",
-          overdue: false,
-        });
       }
       return items.sort((a, b) => b.sort - a.sort);
     }
@@ -12600,23 +12550,16 @@
     }
 
     function renderAllLogsList(logs) {
-      if (!logs.length) return `<div class="breakdown-empty">未有 log</div>`;
-      return logs.map((l) => {
+      // Drawer timeline 只顯示主動新增嘅 Log（唔顯示自動欄位變更）
+      const manual = (logs || []).filter((l) => l.log_type !== "field_change");
+      if (!manual.length) return `<div class="breakdown-empty">未有 log — 請用「新增 Log／Appointment」加入</div>`;
+      return manual.map((l) => {
         const typeLabel = (LOG_TYPES.find((t) => t.id === l.log_type) || { label: l.log_type }).label;
         const when = l.happened_at || l.created_at;
-        const isChange = l.log_type === "field_change";
-        const body = isChange
-          ? `<div class="log-change-lines">${String(l.content || "").split("\n").map((line, idx) => {
-              if (idx === 0) return `<div class="log-actor">${escapeHtml(line)}</div>`;
-              const m = line.match(/^·\s*(.+?):\s*(.*?)\s*→\s*(.*)$/);
-              if (m) return `<div class="ch">· <b>${escapeHtml(m[1])}</b>: ${escapeHtml(m[2])} → <b>${escapeHtml(m[3])}</b></div>`;
-              return `<div class="ch">${escapeHtml(line)}</div>`;
-            }).join("")}</div>`
-          : `<div class="breakdown-meta">${escapeHtml(l.content || "")}</div>`;
-        return `<div class="breakdown-item${isChange ? " log-item change" : ""}">
+        return `<div class="breakdown-item">
           <div><strong>${escapeHtml(typeLabel)}</strong></div>
           <div class="muted" style="font-size:.68rem">${when ? new Date(when).toLocaleString("zh-HK") : ""}</div>
-          ${body}
+          <div class="breakdown-meta">${escapeHtml(l.content || "")}</div>
         </div>`;
       }).join("");
     }
@@ -12624,6 +12567,7 @@
     function renderCaseHistoryPanels(c, logs) {
       const apptItems = buildCaseAppointmentHistory(c, logs);
       const followItems = buildCaseFollowUpHistory(c, logs);
+      const manualLogs = (logs || []).filter((l) => l.log_type !== "field_change");
       const apptNow = c.appointmentAt
         ? new Date(c.appointmentAt).toLocaleString("zh-HK")
         : (c.meetingDone ? "已會面（無時間）" : (c.appointmentFlag ? "已約（無時間）" : "未約"));
@@ -12636,13 +12580,50 @@
           <div class="hs"><div class="lbl">約見時間</div><div class="val">${escapeHtml(apptNow)}</div></div>
           <div class="hs"><div class="lbl">下次跟進</div><div class="val">${escapeHtml(followNow)}</div></div>
         </div>
+        <div class="drawer-hist-actions">
+          <button type="button" class="btn btn-ink btn-sm" id="btnToggleAddLog">＋ 新增 Log</button>
+          <button type="button" class="btn btn-teal btn-sm" id="btnToggleAddAppt">＋ 新增 Appointment</button>
+        </div>
+        <form class="drawer-add-panel hidden" id="drawerAddLogPanel">
+          <div class="eyebrow" style="margin-bottom:8px">新增 Log</div>
+          <div class="row2">
+            <label class="field"><span>Log 類型</span>
+              <select id="d_logType">${LOG_TYPES.filter((t) => t.id !== "field_change" && t.id !== "appointment" && t.id !== "appointment_confirmed" && t.id !== "meeting_done").map((t) => `<option value="${t.id}">${t.label}</option>`).join("")}</select>
+            </label>
+            <label class="field"><span>Log 內容</span><textarea id="d_logContent" rows="3" placeholder="例如：3/10 上午致電無人接聽" required></textarea></label>
+          </div>
+          <div class="am-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="btnCancelAddLog">取消</button>
+            <button type="submit" class="btn btn-ink btn-sm" id="drawerAddLog">加入 Log</button>
+          </div>
+        </form>
+        <form class="drawer-add-panel hidden" id="drawerAddApptPanel">
+          <div class="eyebrow" style="margin-bottom:8px">新增 Appointment</div>
+          <div class="row2">
+            <label class="field"><span>約見時間 *</span><input id="d_newApptAt" type="datetime-local" required /></label>
+            <label class="field"><span>狀態</span>
+              <select id="d_newApptStatus">
+                <option value="appointment">已約會面</option>
+                <option value="appointment_confirmed">客人確認會面</option>
+                <option value="meeting_done">會面完成</option>
+              </select>
+            </label>
+          </div>
+          <label class="field"><span>Appointment 備註</span>
+            <textarea id="d_newApptNote" rows="3" placeholder="例如：下週二下午見客戶討論方案"></textarea>
+          </label>
+          <div class="am-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="btnCancelAddAppt">取消</button>
+            <button type="submit" class="btn btn-teal btn-sm" id="drawerAddAppt">加入 Appointment</button>
+          </div>
+        </form>
         <div class="drawer-hist-tabs" id="drawerHistTabs">
           <button type="button" data-drawer-hist="appt" class="active">Appointment History（${apptItems.length}）</button>
           <button type="button" data-drawer-hist="follow">Case 跟進 History（${followItems.length}）</button>
-          <button type="button" data-drawer-hist="all">全部 Log（${logs.length}）</button>
+          <button type="button" data-drawer-hist="all">全部 Log（${manualLogs.length}）</button>
         </div>
-        <div class="modal-log-list" data-drawer-hist-panel="appt">${renderHistoryItemList(apptItems, "未有 appointment history")}</div>
-        <div class="modal-log-list hidden" data-drawer-hist-panel="follow">${renderHistoryItemList(followItems, "未有 case 跟進 history")}</div>
+        <div class="modal-log-list" data-drawer-hist-panel="appt">${renderHistoryItemList(apptItems, "未有 appointment — 撳「新增 Appointment」加入")}</div>
+        <div class="modal-log-list hidden" data-drawer-hist-panel="follow">${renderHistoryItemList(followItems, "未有跟進 log — 撳「新增 Log」加入")}</div>
         <div class="modal-log-list hidden" data-drawer-hist-panel="all">${renderAllLogsList(logs)}</div>
       `;
     }
@@ -12805,13 +12786,6 @@
 
           <div class="modal-col">
             ${renderCaseHistoryPanels(c, logs)}
-            <div class="row2">
-              <label class="field"><span>新增 Log 類型</span>
-                <select id="d_logType">${LOG_TYPES.filter((t) => t.id !== "field_change").map((t) => `<option value="${t.id}">${t.label}</option>`).join("")}</select>
-              </label>
-              <label class="field"><span>Log 內容</span><textarea id="d_logContent" rows="2" placeholder="例如：3/10 上午致電無人接聽"></textarea></label>
-            </div>
-            <button class="btn btn-ink" style="width:100%" id="drawerAddLog">加入 Log Record</button>
           </div>
         </div>
 
@@ -12836,14 +12810,35 @@
           root.querySelectorAll("[data-drawer-hist-panel]").forEach((p) => {
             p.classList.toggle("hidden", p.dataset.drawerHistPanel !== key);
           });
-          // Prefill log type for faster entry
-          const logType = document.getElementById("d_logType");
-          if (logType) {
-            if (key === "appt" && [...logType.options].some((o) => o.value === "appointment")) logType.value = "appointment";
-            if (key === "follow" && [...logType.options].some((o) => o.value === "follow_up")) logType.value = "follow_up";
-          }
         };
       });
+      const logPanel = document.getElementById("drawerAddLogPanel");
+      const apptPanel = document.getElementById("drawerAddApptPanel");
+      const btnToggleAddLog = document.getElementById("btnToggleAddLog");
+      const btnToggleAddAppt = document.getElementById("btnToggleAddAppt");
+      const showAddPanel = (which) => {
+        const showLog = which === "log";
+        const showAppt = which === "appt";
+        logPanel?.classList.toggle("hidden", !showLog);
+        apptPanel?.classList.toggle("hidden", !showAppt);
+        if (btnToggleAddLog) btnToggleAddLog.textContent = showLog ? "收起新增 Log" : "＋ 新增 Log";
+        if (btnToggleAddAppt) btnToggleAddAppt.textContent = showAppt ? "收起新增 Appointment" : "＋ 新增 Appointment";
+        if (showLog) document.getElementById("d_logContent")?.focus();
+        if (showAppt) {
+          const at = document.getElementById("d_newApptAt");
+          if (at && !at.value) {
+            const base = c.appointmentAt ? new Date(c.appointmentAt) : new Date();
+            if (!Number.isNaN(base.getTime())) {
+              at.value = new Date(base.getTime() - base.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            }
+          }
+          at?.focus();
+        }
+      };
+      btnToggleAddLog.onclick = () => showAddPanel(logPanel?.classList.contains("hidden") ? "log" : null);
+      btnToggleAddAppt.onclick = () => showAddPanel(apptPanel?.classList.contains("hidden") ? "appt" : null);
+      document.getElementById("btnCancelAddLog").onclick = () => showAddPanel(null);
+      document.getElementById("btnCancelAddAppt").onclick = () => showAddPanel(null);
       const potHead = document.getElementById("d_potentialHead");
       const potBody = document.getElementById("d_potential");
       const potLabel = potHead?.closest(".drawer-potential-btn");
@@ -12952,7 +12947,8 @@
         openDrawer(c.id);
       };
 
-      document.getElementById("drawerAddLog").onclick = async () => {
+      logPanel.onsubmit = async (e) => {
+        e.preventDefault();
         const content = document.getElementById("d_logContent").value.trim();
         const logType = document.getElementById("d_logType").value;
         if (!content) return toast("請輸入 log 內容");
@@ -12966,19 +12962,52 @@
         };
         const { error } = await db.from("crm_activity_logs").insert(row);
         if (error) return toast("Log 失敗：" + error.message);
-        // auto stage hints
         if (logType === "call_no_answer" && ["new_lead", "contacting"].includes(c.stage)) {
-          await updateCase(c.id, { stage: "contacting" }, { source: "加入 Log" });
-        } else if (logType === "appointment_confirmed") {
-          await updateCase(c.id, { stage: "appointment_set", appointmentConfirmed: true, appointmentFlag: true }, { source: "加入 Log" });
-        } else if (logType === "meeting_done") {
-          await updateCase(c.id, { stage: "first_interview", meetingDone: true, meetingNotes: (c.meetingNotes ? c.meetingNotes + "\n" : "") + content }, { source: "加入 Log" });
+          await updateCase(c.id, { stage: "contacting" }, { source: "新增 Log" });
         } else if (logType === "follow_up") {
-          await updateCase(c.id, { followUpOpportunity: true, stage: c.stage === "first_interview" ? "follow_up" : c.stage }, { source: "加入 Log" });
+          await updateCase(c.id, { followUpOpportunity: true, stage: c.stage === "first_interview" ? "follow_up" : c.stage }, { source: "新增 Log" });
         } else {
           await loadCases();
         }
-        toast("已加入 log");
+        toast("已加入 Log，已更新下方時間線");
+        openDrawer(c.id);
+      };
+
+      apptPanel.onsubmit = async (e) => {
+        e.preventDefault();
+        const apptRaw = document.getElementById("d_newApptAt").value;
+        if (!apptRaw) return toast("請填約見時間");
+        const status = document.getElementById("d_newApptStatus").value || "appointment";
+        const note = document.getElementById("d_newApptNote").value.trim();
+        const apptIso = new Date(apptRaw).toISOString();
+        const statusLabel = (LOG_TYPES.find((t) => t.id === status) || { label: "約會面" }).label;
+        const content = note || `${statusLabel} · ${new Date(apptRaw).toLocaleString("zh-HK")}`;
+        const row = {
+          id: `log-${crypto.randomUUID().slice(0, 10)}`,
+          case_id: c.id,
+          contact_id: null,
+          log_type: status,
+          content,
+          happened_at: new Date().toISOString(),
+        };
+        const { error } = await db.from("crm_activity_logs").insert(row);
+        if (error) return toast("Appointment 失敗：" + error.message);
+        const patch = {
+          appointmentFlag: true,
+          appointmentAt: apptIso,
+          appointmentConfirmed: status === "appointment_confirmed" || status === "meeting_done" || c.appointmentConfirmed,
+          meetingDone: status === "meeting_done" ? true : c.meetingDone,
+        };
+        if (status === "meeting_done" && note) {
+          patch.meetingNotes = (c.meetingNotes ? c.meetingNotes + "\n" : "") + note;
+        }
+        if (["new_lead", "contacting", "unreachable"].includes(c.stage)) {
+          patch.stage = status === "meeting_done" ? "first_interview" : "appointment_set";
+        } else if (status === "meeting_done" && c.stage === "appointment_set") {
+          patch.stage = "first_interview";
+        }
+        await updateCase(c.id, patch, { source: "新增 Appointment" });
+        toast("已加入 Appointment，已更新下方時間線");
         openDrawer(c.id);
       };
     }
