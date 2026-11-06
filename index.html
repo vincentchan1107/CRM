@@ -1533,13 +1533,19 @@
       overscroll-behavior: contain;
       width: 100%;
       max-width: 100vw;
+      height: 100%;
+      height: 100dvh;
+      max-height: 100dvh;
+      overflow: hidden;
       box-sizing: border-box;
     }
     .drawer {
+      position: relative;
       width: 100%;
       max-width: 100%;
       height: 100%;
-      max-height: 100%;
+      height: 100dvh;
+      max-height: 100dvh;
       background: #fff;
       overflow: hidden;
       padding: 0;
@@ -1548,12 +1554,15 @@
       border: 0;
       box-sizing: border-box;
       min-width: 0;
+      min-height: 0;
       display: flex;
       flex-direction: column;
     }
     body.drawer-open {
       overflow: hidden !important;
       position: relative;
+      height: 100%;
+      height: 100dvh;
     }
     body.drawer-open .drawer {
       touch-action: pan-y;
@@ -1666,9 +1675,9 @@
       .drawer {
         width: 100vw;
         max-width: 100vw;
-        min-height: 100%;
-        max-height: 100%;
-        height: 100%;
+        min-height: 0;
+        max-height: 100dvh;
+        height: 100dvh;
         border-radius: 0;
         padding: 0;
         margin: 0;
@@ -1743,16 +1752,21 @@
       border-top: 1px solid var(--line);
     }
     .modal-actions .btn { min-width: 120px; }
+    /* In-flow footer only — never sticky/fixed over the form */
     .drawer .modal-actions {
-      position: static;
+      position: relative !important;
+      top: auto !important;
+      bottom: auto !important;
+      inset: auto !important;
       flex: 0 0 auto;
       align-items: center;
-      margin-top: 0;
+      align-self: stretch;
+      margin: 0 !important;
       padding: 12px 22px calc(14px + env(safe-area-inset-bottom, 0px));
       border-top: 1px solid var(--line);
       background: #fff;
-      box-shadow: 0 -10px 28px rgba(31, 36, 48, .06);
-      z-index: 4;
+      box-shadow: 0 -10px 28px rgba(31, 36, 48, .08);
+      z-index: 5;
     }
     .drawer .modal-grid { flex: none; }
     .modal-log-list {
