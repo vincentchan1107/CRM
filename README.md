@@ -7,8 +7,9 @@ GitHub 放網頁程式，Supabase 做 Database。
 Anon key **唔可以**建表。請你做呢一步：
 
 1. 打開 [Supabase SQL Editor](https://supabase.com/dashboard/project/xdjzkcqhwamfajsjyclq/sql)
-2. 貼上並 **Run** 整個 [`supabase/ricoh_import.sql`](./supabase/ricoh_import.sql)  
-   Raw：https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/ricoh_import.sql
+2. 貼上並 **Run** 整個 [`supabase/ricoh_import.sql`](https://github.com/vincentchan1107/CRM/blob/main/supabase/ricoh_import.sql)  
+   - GitHub：https://github.com/vincentchan1107/CRM/blob/main/supabase/ricoh_import.sql  
+   - Raw：https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/ricoh_import.sql
    - 刪除舊 sample cases
    - 新建 `crm_cases` / `crm_contacts` / `crm_activity_logs`
    - 匯入 Ricoh Event Excel（同一公司合併為 1 個 case，多聯絡人 + log）
@@ -18,9 +19,10 @@ Anon key **唔可以**建表。請你做呢一步：
 
 ### 資料庫管理欄位升級（建議）
 
-若已跑過舊版 `ricoh_import.sql`，請再 Run [`supabase/mgmt_alter.sql`](./supabase/mgmt_alter.sql)（唔會刪資料）：
+若已跑過舊版 `ricoh_import.sql`，請再 Run [`supabase/mgmt_alter.sql`](https://github.com/vincentchan1107/CRM/blob/main/supabase/mgmt_alter.sql)（唔會刪資料）：
 
-Raw：https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql
+- GitHub：https://github.com/vincentchan1107/CRM/blob/main/supabase/mgmt_alter.sql  
+- Raw：https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql
 
 - 新增 `next_follow_up_at`（下次跟進日期）
 - 新增 `team_leader`
