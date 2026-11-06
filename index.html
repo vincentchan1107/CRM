@@ -3800,7 +3800,7 @@
       <label class="field"><span>使用者名稱</span><input id="loginUsername" name="username" autocomplete="username" required placeholder="例如 admin 或 vincent" /></label>
       <label class="field"><span>密碼</span><input id="loginPassword" name="password" type="password" autocomplete="current-password" required placeholder="輸入密碼" /></label>
       <button type="submit" class="btn btn-teal" style="width:100%;margin-top:6px">登入</button>
-      <p class="login-hint">預設帳號：<br/>ADMIN — <code>admin</code> / <code>admin123</code><br/>SALES — <code>vincent</code>（或 tim／andrew／kelly／sophia）/ 密碼同用戶名+<code>123</code></p>
+      <p class="login-hint">預設帳號：<br/>ADMIN — <code>admin</code> / <code>admin123</code><br/>SALES — <code>vincent</code>（或 tim／andrew／kelly／sophia）/ 密碼同用戶名+<code>123</code><br/>新銷售員可於「資料庫 → 銷售員管理」新增 Login</p>
     </form>
   </div>
   <div class="app-shell" id="appShell">
@@ -4300,7 +4300,20 @@
 
       <div class="mgmt-panel" id="mgmt-sales">
         <div class="mgmt-stats" id="salesStats"></div>
-        <p class="muted" style="margin-bottom:10px;font-size:.78rem">本公司銷售員：Vincent／Tim／Andrew／Kelly／Sophia · 可設計每人 KPI，並預先規劃未來每年 12 個月 Closing 目標同表現對照 · Dashboard 會顯示目標 vs 實際</p>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem" id="salesMgmtIntro">本公司銷售員可新增 · 可設計每人 KPI，並預先規劃未來每年 12 個月 Closing 目標同表現對照 · Dashboard 會顯示目標 vs 實際</p>
+        <div class="mkt-panel" id="addSalesLoginPanel" data-admin-only="1" style="margin-bottom:12px">
+          <div class="mkt-panel-head">
+            <strong>新增銷售員 ＋ Login</strong>
+            <button type="button" class="btn btn-teal btn-sm" id="btnCreateSalesLogin">建立帳號</button>
+          </div>
+          <div class="users-form-grid">
+            <label class="field"><span>銷售員名稱 *</span><input id="newSalesName" placeholder="例如 Jason" autocomplete="name" /></label>
+            <label class="field"><span>Login 用戶名 *</span><input id="newSalesUsername" placeholder="例如 jason" autocomplete="username" /></label>
+            <label class="field"><span>Login 密碼 *</span><input id="newSalesPassword" type="password" placeholder="最少 4 位" autocomplete="new-password" /></label>
+            <label class="field"><span>電郵（可選）</span><input id="newSalesEmail" type="email" placeholder="optional@" autocomplete="email" /></label>
+          </div>
+          <p class="muted" style="margin:8px 0 0;font-size:.72rem">建立後角色為 SALES，可用呢組帳密登入；只會睇自己嘅案件資料。</p>
+        </div>
         <div class="sales-kpi-grid">
           <div class="sales-kpi-nav" id="salesKpiNav"></div>
           <div class="sales-kpi-panel" id="salesKpiPanel"></div>
@@ -4724,8 +4737,42 @@
     ];
     // Partner 管理預設清單：Achiever = 本公司（Case 唔一定有外部 Partner）
     const PARTNERS = ["Achiever", "RICOH", "HKBN", "HPE", "ICO"];
-    // 本公司銷售員（唔係 Partner Sales）
-    const COMPANY_SALES = ["Vincent", "Tim", "Andrew", "Kelly", "Sophia"];
+    // 本公司銷售員（唔係 Partner Sales）— 可新增；本機保存
+    const DEFAULT_COMPANY_SALES = ["Vincent", "Tim", "Andrew", "Kelly", "Sophia"];
+    const COMPANY_SALES = [...DEFAULT_COMPANY_SALES];
+    function normalizeSalesNameInput(raw) {
+      return String(raw || "").trim().replace(/\s+/g, " ");
+    }
+    function refreshCompanySalesFromStorage() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("crm_company_sales") || "null");
+        if (Array.isArray(raw) && raw.length) {
+          const next = [...new Set(raw.map((n) => normalizeSalesNameInput(n)).filter(Boolean))];
+          if (next.length) {
+            COMPANY_SALES.splice(0, COMPANY_SALES.length, ...next);
+            return COMPANY_SALES;
+          }
+        }
+      } catch (_) {}
+      localStorage.setItem("crm_company_sales", JSON.stringify(COMPANY_SALES));
+      return COMPANY_SALES;
+    }
+    function saveCompanySalesList(list) {
+      const next = [...new Set((list || []).map((n) => normalizeSalesNameInput(n)).filter(Boolean))];
+      if (!next.length) return COMPANY_SALES;
+      COMPANY_SALES.splice(0, COMPANY_SALES.length, ...next);
+      localStorage.setItem("crm_company_sales", JSON.stringify(COMPANY_SALES));
+      return COMPANY_SALES;
+    }
+    function addCompanySalesName(name) {
+      const n = normalizeSalesNameInput(name);
+      if (!n) return { ok: false, error: "請填銷售員名稱" };
+      const exists = COMPANY_SALES.find((x) => x.toLowerCase() === n.toLowerCase());
+      if (exists) return { ok: false, error: "銷售員已存在", name: exists };
+      saveCompanySalesList([...COMPANY_SALES, n]);
+      return { ok: true, name: n };
+    }
+    refreshCompanySalesFromStorage();
 
     /* -------- Company Team Leader roster (TL → Sales members) -------- */
     let salesTeamsTableReady = false;
@@ -5140,7 +5187,8 @@
       try {
         const raw = JSON.parse(localStorage.getItem("crm_sales_plans") || "{}");
         const out = {};
-        for (const name of COMPANY_SALES) {
+        const names = [...new Set([...COMPANY_SALES, ...Object.keys(raw || {})])];
+        for (const name of names) {
           const src = raw[name] || {};
           out[name] = {
             kpi: { ...DEFAULT_SALES_KPI, ...(src.kpi || {}) },
@@ -6560,10 +6608,55 @@
     }
 
     function normalizeCompanySales(raw) {
-      const s = String(raw || "").trim();
+      const s = normalizeSalesNameInput(raw);
       if (!s) return "";
       const hit = COMPANY_SALES.find((n) => n.toLowerCase() === s.toLowerCase());
       return hit || "";
+    }
+
+    function createSalesWithLogin({ name, username, password, email } = {}) {
+      if (!isAdmin()) return { ok: false, error: "只有 ADMIN 可以新增銷售員" };
+      const salesName = normalizeSalesNameInput(name);
+      const user = String(username || "").trim().toLowerCase();
+      const pw = String(password || "");
+      const mail = String(email || "").trim();
+      if (!salesName) return { ok: false, error: "請填銷售員名稱" };
+      if (!user) return { ok: false, error: "請填 Login 用戶名" };
+      if (!/^[a-z0-9._-]{2,32}$/i.test(user)) return { ok: false, error: "用戶名只用英數／. _ -（2–32 位）" };
+      if (pw.length < 4) return { ok: false, error: "密碼最少 4 位" };
+      const add = addCompanySalesName(salesName);
+      if (!add.ok && add.error !== "銷售員已存在") return add;
+      const finalName = add.name || normalizeCompanySales(salesName) || salesName;
+      if (add.ok) {
+        // ensure KPI plan slot exists
+        const plans = loadSalesPlans();
+        if (!plans[finalName]) {
+          plans[finalName] = { kpi: { ...DEFAULT_SALES_KPI }, months: {} };
+          saveSalesPlans(plans);
+        }
+      }
+      const list = loadUsers();
+      const dup = list.find((u) => String(u.username || "").toLowerCase() === user);
+      if (dup) {
+        if (add.ok) {
+          // sales created but login name taken — keep sales, ask rename login
+          return { ok: false, error: `銷售員「${finalName}」已加入，但用戶名「${user}」已存在，請改 Login 用戶名後再試`, partial: true, name: finalName };
+        }
+        return { ok: false, error: "Login 用戶名已存在" };
+      }
+      list.push({
+        id: `user-${crypto.randomUUID().slice(0, 8)}`,
+        username: user,
+        displayName: finalName,
+        role: "SALES",
+        salesName: finalName,
+        email: mail,
+        active: true,
+        passwordHash: hashPassword(pw),
+        createdAt: new Date().toISOString(),
+      });
+      saveUsers(list);
+      return { ok: true, name: finalName, username: user };
     }
 
     function parseTeamLeader(house) {
@@ -12393,6 +12486,14 @@
       const teamYearClosed = salesNames.reduce((s, n) => s + salesYearClosedAmount(n, planYear), 0);
       const teamYearPct = attainPct(teamYearClosed, teamYearTarget);
       const scopeLabel = isSales() ? "我的" : "團隊";
+      const intro = document.getElementById("salesMgmtIntro");
+      if (intro) {
+        intro.textContent = isAdmin()
+          ? `本公司銷售員：${COMPANY_SALES.join("／")} · 可新增銷售員並設定 Login／密碼 · 可設計每人 KPI 同 Closing 目標`
+          : `我的銷售員資料 · 可設計 KPI，並預先規劃未來每年 12 個月 Closing 目標`;
+      }
+      const addPanel = document.getElementById("addSalesLoginPanel");
+      if (addPanel) addPanel.classList.toggle("hidden", !isAdmin());
 
       document.getElementById("salesStats").innerHTML = [
         renderStatCard({ label: isSales() ? "銷售員" : "本公司銷售員", value: salesNames.length, sub: salesNames.join(" · ") || "—", tone: "purple", icon: "people" }),
@@ -14614,6 +14715,39 @@
       if (!salesSel) return;
       salesSel.disabled = role === "ADMIN";
       if (role === "ADMIN") salesSel.value = "";
+    });
+    document.getElementById("newSalesName")?.addEventListener("input", () => {
+      const nameEl = document.getElementById("newSalesName");
+      const userEl = document.getElementById("newSalesUsername");
+      if (!nameEl || !userEl) return;
+      if (userEl.dataset.touched === "1") return;
+      const slug = String(nameEl.value || "").trim().toLowerCase().replace(/[^a-z0-9._-]+/g, "").slice(0, 32);
+      userEl.value = slug;
+    });
+    document.getElementById("newSalesUsername")?.addEventListener("input", (e) => {
+      e.target.dataset.touched = "1";
+    });
+    document.getElementById("btnCreateSalesLogin")?.addEventListener("click", () => {
+      if (!isAdmin()) return toast("只有 ADMIN 可以新增銷售員");
+      const name = document.getElementById("newSalesName")?.value || "";
+      const username = document.getElementById("newSalesUsername")?.value || "";
+      const password = document.getElementById("newSalesPassword")?.value || "";
+      const email = document.getElementById("newSalesEmail")?.value || "";
+      const result = createSalesWithLogin({ name, username, password, email });
+      if (!result.ok) return toast(result.error || "建立失敗");
+      salesKpiSelected = result.name;
+      localStorage.setItem("crm_sales_kpi_selected", salesKpiSelected);
+      document.getElementById("newSalesName").value = "";
+      document.getElementById("newSalesUsername").value = "";
+      document.getElementById("newSalesUsername").dataset.touched = "";
+      document.getElementById("newSalesPassword").value = "";
+      document.getElementById("newSalesEmail").value = "";
+      fillUserSalesSelect();
+      renderSalesMgmt();
+      if (!document.getElementById("view-mgmt").classList.contains("hidden") && mgmtTab === "users") {
+        renderUsersMgmt();
+      }
+      toast(`已新增銷售員 ${result.name} · Login：${result.username}`);
     });
 
     // boot
