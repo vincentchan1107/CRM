@@ -3862,7 +3862,11 @@
     <div id="setupBanner" class="setup-box hidden">
       <strong>需要匯入 Ricoh Excel／重建資料表</strong>
       <p class="muted" style="margin:8px 0">請打開 Supabase → SQL Editor，執行完整檔案 <code>supabase/ricoh_import.sql</code>（會刪除 sample cases，匯入 Ricoh Event leads、多聯絡人與 log）。完成後按「重新檢查」。</p>
-      <p class="muted" style="margin:0 0 8px">Raw 連結：<a href="https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/ricoh_import.sql" target="_blank" rel="noopener">ricoh_import.sql</a></p>
+      <p class="muted" style="margin:0 0 8px">GitHub：
+        <a href="https://github.com/vincentchan1107/CRM/blob/main/supabase/ricoh_import.sql" target="_blank" rel="noopener">ricoh_import.sql</a>
+        ·
+        <a href="https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/ricoh_import.sql" target="_blank" rel="noopener">Raw</a>
+      </p>
       <pre id="setupSqlPreview">載入中…</pre>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
         <button class="btn btn-teal btn-sm" id="btnCopySql">複製 SQL（開頭預覽）</button>
@@ -4254,11 +4258,15 @@
       <div id="mgmtAlterBanner" class="setup-box hidden" style="margin-top:12px">
         <strong>建議執行欄位升級 SQL</strong>
         <p class="muted" style="margin:8px 0">為啟用「下次跟進日期」、Case Team Leader、本公司銷售員、公司地址、客戶名片、Sales Team Leader 編制表，請在 Supabase SQL Editor Run：<code>supabase/mgmt_alter.sql</code></p>
-        <p class="muted" style="margin:0 0 8px">Raw：<a href="https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql" target="_blank" rel="noopener">mgmt_alter.sql</a></p>
+        <p class="muted" style="margin:0 0 8px">GitHub：
+          <a href="https://github.com/vincentchan1107/CRM/blob/main/supabase/mgmt_alter.sql" target="_blank" rel="noopener">mgmt_alter.sql</a>
+          ·
+          <a href="https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql" target="_blank" rel="noopener">Raw</a>
+        </p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-teal btn-sm" id="btnCopyMgmtSql">複製升級 SQL</button>
           <button class="btn btn-ghost btn-sm" id="btnRecheckMgmtSchema">我已 Run，重新偵測</button>
-          <button class="btn btn-ghost btn-sm" id="btnOpenMgmtSql">開啟 Raw SQL</button>
+          <button class="btn btn-ghost btn-sm" id="btnOpenMgmtSql">開啟 GitHub SQL</button>
         </div>
         <p class="muted" style="margin:8px 0 0;font-size:.72rem">靜態 HTML 無法直接代你 Run SQL；一鍵複製後到 Supabase SQL Editor 貼上即可。偵測成功後橫幅會自動收埋。</p>
       </div>
@@ -4670,6 +4678,37 @@
     const SUPABASE_URL = "https://xdjzkcqhwamfajsjyclq.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkanprY3Fod2FtZmFqc2p5Y2xxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMTMzNjksImV4cCI6MjA5Mjc4OTM2OX0.-jQ0kcFD5CYWejJsg54BWogvr_upKwKWeDSaungnAo8";
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // GitHub SQL（main）— 複製／開啟／預覽一律用呢啲 link
+    const GITHUB_REPO = "https://github.com/vincentchan1107/CRM";
+    const GITHUB_RAW = "https://raw.githubusercontent.com/vincentchan1107/CRM/main";
+    const GITHUB_SQL = {
+      ricohImport: {
+        path: "supabase/ricoh_import.sql",
+        raw: `${GITHUB_RAW}/supabase/ricoh_import.sql`,
+        blob: `${GITHUB_REPO}/blob/main/supabase/ricoh_import.sql`,
+        local: "./supabase/ricoh_import.sql",
+      },
+      mgmtAlter: {
+        path: "supabase/mgmt_alter.sql",
+        raw: `${GITHUB_RAW}/supabase/mgmt_alter.sql`,
+        blob: `${GITHUB_REPO}/blob/main/supabase/mgmt_alter.sql`,
+        local: "./supabase/mgmt_alter.sql",
+      },
+    };
+    async function fetchGithubSql(entry) {
+      const urls = [entry.raw, entry.local].filter(Boolean);
+      let lastErr = null;
+      for (const url of urls) {
+        try {
+          const r = await fetch(url, { cache: "no-store" });
+          if (!r.ok) throw new Error(`${url} → ${r.status}`);
+          return await r.text();
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error("無法載入 SQL");
+    }
 
     const STAGES = [
       { id: "new_lead", label: "新 Lead", short: "新客", color: "#0891b2", bg: "#e0f7fa", desc: "活動／渠道新進客戶" },
@@ -6354,10 +6393,9 @@
         const preview = document.getElementById("setupSqlPreview");
         if (preview && !preview.dataset.ricoh) {
           preview.dataset.ricoh = "1";
-          fetch("./supabase/ricoh_import.sql")
-            .then((r) => r.text())
-            .then((t) => { preview.textContent = t.slice(0, 2500) + "\n\n…（完整檔案請開 supabase/ricoh_import.sql）"; })
-            .catch(() => {});
+          fetchGithubSql(GITHUB_SQL.ricohImport)
+            .then((t) => { preview.textContent = t.slice(0, 2500) + `\n\n…（完整檔案：${GITHUB_SQL.ricohImport.blob}）`; })
+            .catch(() => { preview.textContent = `請打開 ${GITHUB_SQL.ricohImport.blob}`; });
         }
         return false;
       }
@@ -14222,18 +14260,18 @@
       };
     })();
 
-    // Setup SQL preview
-    const SETUP_SQL_URL = "./supabase/ricoh_import.sql";
+    // Setup SQL preview（優先 GitHub raw，失敗先用本機相對路徑）
     let cachedSetupSql = "";
-    fetch(SETUP_SQL_URL).then((r) => r.text()).then((t) => {
+    fetchGithubSql(GITHUB_SQL.ricohImport).then((t) => {
       cachedSetupSql = t;
-      document.getElementById("setupSqlPreview").textContent = t.slice(0, 2500) + "\n\n…完整內容請用「複製 SQL」或開 raw 檔";
+      document.getElementById("setupSqlPreview").textContent = t.slice(0, 2500) + "\n\n…完整內容請用「複製 SQL」或開 GitHub";
       document.getElementById("btnCopySql").onclick = async () => {
         await navigator.clipboard.writeText(cachedSetupSql || t);
         toast("已複製完整 ricoh_import.sql");
       };
     }).catch(() => {
-      document.getElementById("setupSqlPreview").textContent = "請打開 repo 內 supabase/ricoh_import.sql";
+      document.getElementById("setupSqlPreview").textContent =
+        `請打開 GitHub：${GITHUB_SQL.ricohImport.blob}`;
     });
     document.getElementById("btnRecheck").onclick = async () => {
       await loadCases();
@@ -14483,13 +14521,18 @@
     document.getElementById("btnFindDupCustomers").onclick = () => renderCustomerMergeBox();
 
     let cachedMgmtSql = "";
-    fetch("./supabase/mgmt_alter.sql").then((r) => r.text()).then((t) => {
+    fetchGithubSql(GITHUB_SQL.mgmtAlter).then((t) => {
       cachedMgmtSql = t;
       document.getElementById("btnCopyMgmtSql").onclick = async () => {
-        await navigator.clipboard.writeText(t);
+        await navigator.clipboard.writeText(cachedMgmtSql || t);
         toast("已複製 mgmt_alter.sql — 請到 Supabase SQL Editor 貼上 Run");
       };
-    }).catch(() => {});
+    }).catch(() => {
+      document.getElementById("btnCopyMgmtSql").onclick = () => {
+        window.open(GITHUB_SQL.mgmtAlter.raw, "_blank", "noopener");
+        toast("無法直接複製，已開啟 GitHub Raw SQL");
+      };
+    });
     document.getElementById("btnRecheckMgmtSchema").onclick = async () => {
       await loadCases();
       renderMgmt();
@@ -14498,7 +14541,7 @@
         : "仍偵測唔到新欄位／名片表／Sales Teams，請確認已 Run SQL");
     };
     document.getElementById("btnOpenMgmtSql").onclick = () => {
-      window.open("https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql", "_blank", "noopener");
+      window.open(GITHUB_SQL.mgmtAlter.blob, "_blank", "noopener");
     };
 
     document.getElementById("logSearch").oninput = () => renderLogHistory();
