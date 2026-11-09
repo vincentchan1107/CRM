@@ -24,6 +24,15 @@ Anon key **唔可以**建表。請你做呢一步：
 - GitHub：https://github.com/vincentchan1107/CRM/blob/main/supabase/mgmt_alter.sql  
 - Raw：https://raw.githubusercontent.com/vincentchan1107/CRM/main/supabase/mgmt_alter.sql
 
+**重要：** 喺 Supabase SQL Editor 要貼「整句」`alter table … add column …;`，唔好只貼 `add column` 嗰行（否則會 `syntax error at or near "add"`）。
+
+若只要加 DQ REASON 欄，可單獨 Run：
+
+```sql
+alter table public.crm_cases add column if not exists dq_reason text not null default '';
+create index if not exists crm_cases_dq_reason_idx on public.crm_cases(dq_reason);
+```
+
 - 新增 `next_follow_up_at`（下次跟進日期）
 - 新增 `team_leader`
 - 新增 `company_sales`（本公司銷售員：Vincent／Tim／Andrew／Kelly／Sophia；`ricoh_sales` 仍係 Partner Sales）
