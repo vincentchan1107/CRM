@@ -4347,7 +4347,7 @@
           <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerExpandAll">全部展開</button>
           <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerCollapseAll">全部收合</button>
         </div>
-        <p class="muted" style="margin-bottom:10px;font-size:.78rem">預設 Partner：Achiever（本公司）／RICOH／HKBN／HPE／ICO · Case 唔一定有外部 Partner · 按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Qualification 必選：Qualified／Undefined／DQ（舊 Processing＝Undefined）</p>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">預設 Partner：Achiever（本公司）／RICOH／HKBN／HPE／ICO · Case 唔一定有外部 Partner · 按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Lead Status：Undefined／Qualified／DQ（舊 Processing＝Undefined）</p>
         <div class="partner-tree" id="partnersTree"></div>
       </div>
 
@@ -4484,6 +4484,14 @@
               <option value="">未指派</option>
             </select>
           </label>
+        </div>
+        <div class="row2">
+          <label class="field"><span>Partner Team Leader</span><input id="agendaLeadPartnerTL" name="partnerTL" placeholder="例如 Polly Lee／MA (Polly Lee Team)" /></label>
+          <label class="field"><span>Partner Consultant</span><input id="agendaLeadConsultant" name="consultant" placeholder="Partner Consultant" /></label>
+        </div>
+        <div class="row2">
+          <label class="field"><span>CALLER（邊個 Call）</span><input id="agendaLeadCaller" name="caller" placeholder="例如 Vincent／來電人姓名" /></label>
+          <div class="field"></div>
         </div>
         <div class="row3">
           <label class="field"><span>聯絡人</span><input id="agendaLeadContact" name="contact" placeholder="聯絡人姓名" autocomplete="name" /></label>
@@ -5115,9 +5123,84 @@
     let selectedSystems = new Set();
     let dragId = null;
     let dbReady = false;
+    const DQ_REASON_OPTIONS = [
+      { id: "no_budget", label: "預算不足 / No budget" },
+      { id: "no_need", label: "沒有需求 / No need" },
+      { id: "competitor", label: "選擇對手 / Chose competitor" },
+      { id: "no_contact", label: "聯絡不到 / Cannot contact" },
+      { id: "wrong_person", label: "錯誤決策人 / Wrong contact" },
+      { id: "timing", label: "時機不合 / Timing not right" },
+      { id: "duplicate", label: "重複 Case / Duplicate" },
+      { id: "other", label: "其他 / Other" },
+    ];
+    function normalizeDqReason(v) {
+      const s = String(v || "").trim();
+      if (!s) return "";
+      if (DQ_REASON_OPTIONS.some((o) => o.id === s)) return s;
+      const byLabel = DQ_REASON_OPTIONS.find((o) => o.label === s || o.label.split(" / ")[0] === s);
+      return byLabel ? byLabel.id : "";
+    }
+    function dqReasonLabel(v) {
+      const id = normalizeDqReason(v);
+      return DQ_REASON_OPTIONS.find((o) => o.id === id)?.label || "";
+    }
+    function dqReasonOptionsHtml(selected) {
+      const cur = normalizeDqReason(selected);
+      return `<option value="">— 請選擇 REASON —</option>` +
+        DQ_REASON_OPTIONS.map((o) => `<option value="${o.id}" ${cur === o.id ? "selected" : ""}>${escapeHtml(o.label)}</option>`).join("");
+    }
+    function pickDqReasonDialog(existing) {
+      return new Promise((resolve) => {
+        const bg = document.createElement("div");
+        bg.className = "drawer-bg";
+        bg.style.zIndex = "120";
+        bg.innerHTML = `<div class="drawer" style="max-width:420px;height:auto;max-height:90dvh;margin:auto;border-radius:18px;overflow:auto;padding:18px 20px">
+          <div class="eyebrow">Disqualified</div>
+          <h2 style="margin:4px 0 10px;font-size:1.05rem">請選擇 DQ REASON</h2>
+          <label class="field"><span>REASON（必選）</span>
+            <select id="pickDqReasonSel">${dqReasonOptionsHtml(existing)}</select>
+          </label>
+          <div class="modal-actions" style="margin-top:14px">
+            <button type="button" class="btn btn-ghost" id="pickDqReasonCancel">取消</button>
+            <button type="button" class="btn btn-teal" id="pickDqReasonOk">確認</button>
+          </div>
+        </div>`;
+        document.body.appendChild(bg);
+        const close = (val) => { bg.remove(); resolve(val); };
+        bg.addEventListener("click", (e) => { if (e.target === bg) close(""); });
+        bg.querySelector("#pickDqReasonCancel").onclick = () => close("");
+        bg.querySelector("#pickDqReasonOk").onclick = () => {
+          const v = normalizeDqReason(bg.querySelector("#pickDqReasonSel").value);
+          if (!v) { toast("請選擇 DQ REASON"); return; }
+          close(v);
+        };
+        bg.querySelector("#pickDqReasonSel")?.focus();
+      });
+    }
     let mgmtColsReady = false;
     let addressColReady = false;
     let potentialColReady = false;
+    let dqReasonColReady = false;
+    let callerColReady = false;
+    const CALLER_LS_KEY = "crm_case_caller";
+    function loadCallerMap() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(CALLER_LS_KEY) || "{}");
+        return raw && typeof raw === "object" ? raw : {};
+      } catch (_) {
+        return {};
+      }
+    }
+    function localCallerGet(id) {
+      return String(loadCallerMap()[id] || "").trim();
+    }
+    function localCallerSet(id, name) {
+      const map = loadCallerMap();
+      const v = String(name || "").trim();
+      if (v) map[id] = v;
+      else delete map[id];
+      localStorage.setItem(CALLER_LS_KEY, JSON.stringify(map));
+    }
     let potentialLevelFilter = localStorage.getItem("crm_potential_level") || "all";
     let potentialSalesFilter = localStorage.getItem("crm_potential_sales") || "all";
     let cardsTableReady = false;
@@ -5206,7 +5289,7 @@
       { id: "sales", label: "本公司銷售", sort: "sales" },
       { id: "systems", label: "系統" },
       { id: "stage", label: "階段", sort: "stage" },
-      { id: "qualify", label: "Qualification", sort: "qualify" },
+      { id: "qualify", label: "Lead Status", sort: "qualify" },
       { id: "amount", label: "金額", sort: "amount" },
       { id: "target", label: "Target Closing", sort: "target" },
       { id: "appt", label: "約見", sort: "appt" },
@@ -6138,10 +6221,10 @@
     const ALL_BOARD_STAGES = () => STAGES.map((s) => s.id);
     let visibleStages = loadVisibleStages();
     const QUALIFIED_STAGES = new Set(["first_interview", "quotation", "follow_up", "final_stage", "confirmation"]);
-    const LEAD_STATUS_LEVELS = ["Qualified", "Undefined", "DQ"];
+    const LEAD_STATUS_LEVELS = ["Undefined", "Qualified", "DQ"];
     const LEAD_STATUS_META = {
-      Qualified: { label: "Qualified", color: "#15803d", bg: "#ecfdf5" },
       Undefined: { label: "Undefined", color: "#64748b", bg: "#f1f5f9" },
+      Qualified: { label: "Qualified", color: "#15803d", bg: "#ecfdf5" },
       DQ: { label: "DQ", color: "#9f1239", bg: "#ffe4e6" },
     };
     function normalizeLeadStatus(v) {
@@ -6159,8 +6242,8 @@
       const cur = normalizeLeadStatus(v);
       const meta = leadStatusMeta(cur);
       if (selectId) {
-        return `<label class="lead-status-chip ${cur}" title="Qualification：Qualified／Undefined／DQ">
-          <select id="${escapeAttr(selectId)}" ${caseId ? `data-case-id="${escapeAttr(caseId)}" data-lead-status-quick="1"` : ""} aria-label="Qualification">
+        return `<label class="lead-status-chip ${cur}" title="Lead Status：Undefined／Qualified／DQ">
+          <select id="${escapeAttr(selectId)}" ${caseId ? `data-case-id="${escapeAttr(caseId)}" data-lead-status-quick="1"` : ""} aria-label="Lead Status">
             ${LEAD_STATUS_LEVELS.map((x) => `<option value="${x}" ${cur === x ? "selected" : ""}>${x}</option>`).join("")}
           </select>
         </label>`;
@@ -6237,6 +6320,25 @@
     }
     function localPotentialGet(id) {
       return normalizePotential(loadPotentialMap()[id]);
+    }
+    const DQ_REASON_LS_KEY = "crm_case_dq_reason";
+    function loadDqReasonMap() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(DQ_REASON_LS_KEY) || "{}");
+        return raw && typeof raw === "object" ? raw : {};
+      } catch (_) {
+        return {};
+      }
+    }
+    function localDqReasonGet(id) {
+      return normalizeDqReason(loadDqReasonMap()[id]);
+    }
+    function localDqReasonSet(id, reason) {
+      const map = loadDqReasonMap();
+      const v = normalizeDqReason(reason);
+      if (v) map[id] = v;
+      else delete map[id];
+      localStorage.setItem(DQ_REASON_LS_KEY, JSON.stringify(map));
     }
     function localPotentialSet(id, level) {
       const map = loadPotentialMap();
@@ -6512,6 +6614,10 @@
         addressColReady = !addrProbe.error;
         const potProbe = await db.from("crm_cases").select("potential").limit(1);
         potentialColReady = !potProbe.error;
+        const dqProbe = await db.from("crm_cases").select("dq_reason").limit(1);
+        dqReasonColReady = !dqProbe.error;
+        const callerProbe = await db.from("crm_cases").select("caller").limit(1);
+        callerColReady = !callerProbe.error;
         const cardsProbe = await db.from("crm_case_cards").select("id").limit(1);
         cardsTableReady = !cardsProbe.error;
         const teamsProbe = await db.from("crm_sales_teams").select("leader_name").limit(1);
@@ -6629,6 +6735,8 @@
         potential: normalizePotential(r.potential) || localPotentialGet(r.id) || "",
         stage: r.stage || "new_lead",
         closeReason: r.close_reason,
+        dqReason: normalizeDqReason(r.dq_reason) || localDqReasonGet(r.id) || "",
+        caller: String(r.caller || "").trim() || localCallerGet(r.id) || "",
         notes,
         customerAddress,
         ricohHouse: r.ricoh_house || "",
@@ -6686,6 +6794,8 @@
         row.company_sales = c.companySales || "";
       }
       if (potentialColReady) row.potential = normalizePotential(c.potential) || "";
+      if (dqReasonColReady) row.dq_reason = normalizeDqReason(c.dqReason) || "";
+      if (callerColReady) row.caller = String(c.caller || "").trim();
       if (addressColReady) row.customer_address = address;
       return row;
     }
@@ -9440,7 +9550,7 @@
             <td class="num">${money(totals.closingAmt)}</td>
           </tr></tfoot>` : ""}
         </table></div>
-        <p class="muted" style="margin-top:8px;font-size:.72rem">LEAD＝期間新建案件 · DQ／Qualified＝案件 Qualification 欄位 · POTENTIAL＝有跟進機會／報價或之後階段 · CLOSING＝期間確認簽單</p>
+        <p class="muted" style="margin-top:8px;font-size:.72rem">LEAD＝期間新建案件 · DQ／Qualified＝案件 Lead Status · POTENTIAL＝有跟進機會／報價或之後階段 · CLOSING＝期間確認簽單</p>
       `;
       syncPartnerPerfUi();
       bindPartnerPerfControls();
@@ -10505,11 +10615,24 @@
           }
           const patch = { leadStatus: lead };
           if (lead === "DQ") {
+            const prevCase = cases.find((x) => x.id === id);
+            const reason = await pickDqReasonDialog(prevCase?.dqReason);
+            if (!reason) {
+              sel.value = normalizeLeadStatus(prevCase?.leadStatus);
+              chip?.classList.remove("Qualified", "Undefined", "DQ");
+              chip?.classList.add(normalizeLeadStatus(prevCase?.leadStatus));
+              return toast("已取消：未揀 DQ REASON");
+            }
             patch.stage = "closed";
             patch.closeReason = "disqualified";
+            patch.dqReason = reason;
+            localDqReasonSet(id, reason);
+          } else {
+            patch.dqReason = "";
+            localDqReasonSet(id, "");
           }
           await updateCase(id, patch, { silent: true, source: "看板 · Qualification" });
-          toast(`Qualification → ${lead}`);
+          toast(lead === "DQ" ? `DQ · ${dqReasonLabel(patch.dqReason)}` : `Lead Status → ${lead}`);
           paintKanbanColumns();
         };
       });
@@ -10530,10 +10653,26 @@
           const prev = cases.find((c) => c.id === id);
           if (prev && prev.stage === stage) return;
           let closeReason = null;
+          let dqReason = prev?.dqReason || "";
           if (stage === "closed") {
             closeReason = confirm("按「確定」= Disqualified；「取消」= 失敗") ? "disqualified" : "failed";
+            if (closeReason === "disqualified") {
+              const reason = await pickDqReasonDialog(prev?.dqReason);
+              if (!reason) return toast("已取消：未揀 DQ REASON");
+              dqReason = reason;
+              localDqReasonSet(id, reason);
+            } else {
+              dqReason = "";
+              localDqReasonSet(id, "");
+            }
           }
-          await updateCase(id, { stage, closeReason, successRate: stage === "closed" ? 0 : undefined }, { source: "拖曳看板" });
+          await updateCase(id, {
+            stage,
+            closeReason,
+            dqReason: closeReason === "disqualified" ? dqReason : "",
+            leadStatus: closeReason === "disqualified" ? "DQ" : undefined,
+            successRate: stage === "closed" ? 0 : undefined,
+          }, { source: "拖曳看板" });
           toast(`已移至 ${stageMeta(stage).label}`);
         };
       });
@@ -10593,6 +10732,9 @@
         <div style="margin-top:6px;font-size:.7rem;color:var(--ink-soft)">
           ${c.meetingDone ? "✅ 已會面 · " : ""}${c.followUpOpportunity ? "有跟進機會 · " : ""}${logs.length} logs
           ${c.stage === "closed" && c.closeReason && c.closeReason !== "disqualified" ? ` · ${c.closeReason === "won" ? "成功簽單" : "失敗"}` : ""}
+          ${normalizeLeadStatus(c.leadStatus) === "DQ" || c.closeReason === "disqualified"
+            ? ` · DQ${dqReasonLabel(c.dqReason) ? `：${escapeHtml(dqReasonLabel(c.dqReason).split(" / ")[0])}` : ""}`
+            : ""}
         </div>
         <div style="margin-top:6px"><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></div>
       </article>`;
@@ -10776,7 +10918,7 @@
 
     function exportCasesCsv(asExcel) {
       const list = sortCasesList(getFilteredCasesForTable());
-      const headers = ["公司", "Partner", "House", "本公司銷售", "系統", "階段", "Qualification", "金額", "Target Closing", "約見", "會面", "跟進機會", "下次跟進"];
+      const headers = ["公司", "Partner", "House", "本公司銷售", "系統", "階段", "Lead Status", "金額", "Target Closing", "約見", "會面", "跟進機會", "下次跟進"];
       const rows = list.map((c) => [
         companyKey(c),
         c.partner || "",
@@ -12931,12 +13073,16 @@
 
             <div class="eyebrow">PARTNER 跟進</div>
             <div class="row2">
-              <label class="field"><span>Partner House</span><input id="d_house" value="${escapeAttr(c.ricohHouse)}" /></label>
+              <label class="field"><span>Partner Team Leader</span><input id="d_house" value="${escapeAttr(c.ricohHouse)}" placeholder="例如 Polly Lee Team／MA" /></label>
               <label class="field"><span>Partner Sales</span><input id="d_sales" value="${escapeAttr(c.ricohSales)}" /></label>
             </div>
             <div class="row2">
               <label class="field"><span>Team Leader</span><input id="d_leader" value="${escapeAttr(c.teamLeader || parseTeamLeader(c.ricohHouse))}" placeholder="例如 Polly Lee" /></label>
               <label class="field"><span>Partner Consultant</span><input id="d_consultant" value="${escapeAttr(c.ricohConsultant)}" /></label>
+            </div>
+            <div class="row2">
+              <label class="field"><span>CALLER（邊個 Call）</span><input id="d_caller" value="${escapeAttr(c.caller || "")}" placeholder="例如 Vincent／來電人姓名" /></label>
+              <div class="field"></div>
             </div>
 
             <div class="eyebrow" style="margin-top:4px">公司地址</div>
@@ -12991,7 +13137,7 @@
               <label class="field"><span>Stage</span>
                 <select id="d_stage">${STAGES.map((s) => `<option value="${s.id}" ${s.id === c.stage ? "selected" : ""}>${s.label}</option>`).join("")}</select>
               </label>
-              <label class="field"><span>Qualification（必選）</span>
+              <label class="field"><span>Lead Status</span>
                 <select id="d_lead" required>
                   ${LEAD_STATUS_LEVELS.map((x) => `<option value="${x}" ${normalizeLeadStatus(c.leadStatus) === x ? "selected" : ""}>${x}</option>`).join("")}
                 </select>
@@ -12999,6 +13145,12 @@
               <label class="field"><span>關閉原因</span>
                 <select id="d_close"><option value="">—</option><option value="disqualified" ${c.closeReason === "disqualified" ? "selected" : ""}>Disqualified</option><option value="failed" ${c.closeReason === "failed" ? "selected" : ""}>失敗</option><option value="won" ${c.closeReason === "won" ? "selected" : ""}>成功簽單</option></select>
               </label>
+            </div>
+            <div class="row2 ${normalizeLeadStatus(c.leadStatus) === "DQ" || c.closeReason === "disqualified" ? "" : "hidden"}" id="d_dqReasonRow">
+              <label class="field"><span>DQ REASON（必選）</span>
+                <select id="d_dqReason">${dqReasonOptionsHtml(c.dqReason)}</select>
+              </label>
+              <div class="field"><span class="muted" style="font-size:.72rem;line-height:1.45">選 Disqualified 或 Lead Status＝DQ 時必須揀原因</span></div>
             </div>
             <div class="row2">
               <label class="field"><span>約見時間</span><input id="d_appt" type="datetime-local" value="${escapeAttr(apptValue)}" /></label>
@@ -13123,13 +13275,35 @@
         potBody.onchange = () => applyPotentialUi(potBody.value);
       }
 
+      const syncDqReasonRow = () => {
+        const leadNow = normalizeLeadStatus(document.getElementById("d_lead")?.value);
+        const closeNow = document.getElementById("d_close")?.value;
+        const need = leadNow === "DQ" || closeNow === "disqualified";
+        document.getElementById("d_dqReasonRow")?.classList.toggle("hidden", !need);
+        if (need && closeNow !== "disqualified" && leadNow === "DQ") {
+          const closeEl = document.getElementById("d_close");
+          if (closeEl && !closeEl.value) closeEl.value = "disqualified";
+        }
+      };
+      document.getElementById("d_lead")?.addEventListener("change", syncDqReasonRow);
+      document.getElementById("d_close")?.addEventListener("change", syncDqReasonRow);
+      syncDqReasonRow();
+
       document.getElementById("drawerSave").onclick = async () => {
         const stage = document.getElementById("d_stage").value;
         const appt = document.getElementById("d_appt").value;
         const lead = normalizeLeadStatus(document.getElementById("d_lead").value);
-        const closeVal = document.getElementById("d_close").value;
+        let closeVal = document.getElementById("d_close").value;
+        const dqReason = normalizeDqReason(document.getElementById("d_dqReason")?.value);
         const nextFollow = document.getElementById("d_nextFollow").value || "";
         localFollowUpSet(c.id, nextFollow);
+        if (lead === "DQ" && closeVal !== "disqualified") closeVal = "disqualified";
+        const needsDqReason = lead === "DQ" || closeVal === "disqualified";
+        if (needsDqReason && !dqReason) {
+          document.getElementById("d_dqReasonRow")?.classList.remove("hidden");
+          document.getElementById("d_dqReason")?.focus();
+          return toast("請選擇 DQ REASON");
+        }
         const won = closeVal === "won" || stage === "confirmation";
         const budgetRaw = document.getElementById("d_budget").value;
         const amountRaw = document.getElementById("d_amount").value;
@@ -13140,17 +13314,22 @@
             || ""
         );
         localPotentialSet(c.id, potential);
+        localDqReasonSet(c.id, needsDqReason ? dqReason : "");
+        const callerVal = document.getElementById("d_caller").value.trim();
+        localCallerSet(c.id, callerVal);
         await updateCase(c.id, {
           companySales: document.getElementById("d_companySales").value || "Vincent",
           ricohHouse: document.getElementById("d_house").value.trim(),
           ricohSales: document.getElementById("d_sales").value.trim(),
           ricohConsultant: document.getElementById("d_consultant").value.trim(),
           teamLeader: document.getElementById("d_leader").value.trim(),
+          caller: callerVal,
           systems: document.getElementById("d_systems").value.split(",").map((x) => x.trim()).filter(Boolean),
           requirements: document.getElementById("d_requirements").value,
           stage: lead === "DQ" ? "closed" : stage,
           closeReason: lead === "DQ" ? (closeVal || "disqualified")
             : (stage === "closed" || won ? (closeVal || (won ? "won" : null)) : null),
+          dqReason: needsDqReason ? dqReason : "",
           leadStatus: lead,
           appointmentFlag: !!appt || c.appointmentFlag,
           appointmentAt: appt ? new Date(appt).toISOString() : null,
@@ -13270,13 +13449,15 @@
     const TRACKED_FIELDS = [
       { key: "stage", label: "Stage", fmt: (v) => stageMeta(v).label },
       { key: "closeReason", label: "關閉原因", fmt: (v) => v || "—" },
-      { key: "leadStatus", label: "Qualification", fmt: (v) => normalizeLeadStatus(v) },
+      { key: "leadStatus", label: "Lead Status", fmt: (v) => normalizeLeadStatus(v) },
       { key: "companySales", label: "本公司銷售員", fmt: (v) => v || "未指派" },
       { key: "teamLeader", label: "Team Leader", fmt: (v) => v || "—" },
       { key: "partner", label: "Partner", fmt: (v) => v || "—" },
       { key: "ricohSales", label: "Partner Sales", fmt: (v) => v || "—" },
-      { key: "ricohHouse", label: "Partner House", fmt: (v) => v || "—" },
+      { key: "ricohHouse", label: "Partner Team Leader", fmt: (v) => v || "—" },
       { key: "ricohConsultant", label: "Partner Consultant", fmt: (v) => v || "—" },
+      { key: "caller", label: "CALLER", fmt: (v) => v || "—" },
+      { key: "dqReason", label: "DQ REASON", fmt: (v) => dqReasonLabel(v) || "—" },
       { key: "amount", label: "Contract Amount", fmt: (v) => money(Number(v) || 0) },
       { key: "budget", label: "Client Budget", fmt: (v) => money(Number(v) || 0) },
       { key: "potential", label: "Potential", fmt: (v) => normalizePotential(v) || "未設" },
@@ -14418,6 +14599,8 @@
         ricohHouse: "",
         ricohSales: "",
         ricohConsultant: "",
+        dqReason: "",
+        caller: "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -14654,6 +14837,9 @@
       const customer = String(document.getElementById("agendaLeadCustomer").value || "").trim();
       const partner = normalizePartner(document.getElementById("agendaLeadPartner").value) || "Achiever";
       const partnerSales = String(document.getElementById("agendaLeadPartnerSales").value || "").trim();
+      const partnerTL = String(document.getElementById("agendaLeadPartnerTL").value || "").trim();
+      const partnerConsultant = String(document.getElementById("agendaLeadConsultant").value || "").trim();
+      const caller = String(document.getElementById("agendaLeadCaller").value || "").trim();
       let companySales = normalizeCompanySales(document.getElementById("agendaLeadCompanySales").value) || "";
       if (isSales()) companySales = currentSalesName() || companySales;
       const contactName = String(document.getElementById("agendaLeadContact").value || "").trim();
@@ -14679,11 +14865,13 @@
         potential: "",
         stage: "new_lead",
         closeReason: null,
+        dqReason: "",
+        caller,
         notes: noteParts.join("\n\n"),
         customerAddress: address,
-        ricohHouse: "",
+        ricohHouse: partnerTL,
         ricohSales: partnerSales,
-        ricohConsultant: "",
+        ricohConsultant: partnerConsultant,
         companySales,
         appointmentFlag: false,
         appointmentAt: "",
@@ -14694,7 +14882,7 @@
         nextFollowUpAt: followUp || formatLocalDate(new Date()),
         leadStatus: "Undefined",
         sourceEvent: "Agenda 新增新 Lead",
-        teamLeader: "",
+        teamLeader: parseTeamLeader(partnerTL) || partnerTL,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -14702,6 +14890,7 @@
       row.created_at = item.createdAt;
       const { error } = await db.from("crm_cases").insert(row);
       if (error) return toast("建立失敗：" + error.message);
+      if (caller) localCallerSet(item.id, caller);
       if (contactName || contactPhone || contactEmail) {
         const contactRow = {
           id: `ct-${crypto.randomUUID().slice(0, 10)}`,

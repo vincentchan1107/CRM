@@ -1,20 +1,19 @@
 -- 資料庫管理欄位（可重跑）
--- 在 Supabase SQL Editor 執行此檔，唔會刪除現有資料
+-- 在 Supabase SQL Editor 執行「整份」此檔，唔會刪除現有資料
+-- 注意：每句 ALTER 請連 alter table … 一齊 Run，唔好只貼 add column 行
 
-alter table public.crm_cases
-  add column if not exists next_follow_up_at date;
+-- 跟進日期
+alter table public.crm_cases add column if not exists next_follow_up_at date;
 
-alter table public.crm_cases
-  add column if not exists team_leader text not null default '';
+-- Case Team Leader
+alter table public.crm_cases add column if not exists team_leader text not null default '';
 
 -- 本公司銷售員（Vincent / Tim / Andrew / Kelly / Sophia）
 -- 注意：ricoh_sales 係 Partner Sales，唔係本公司銷售員
-alter table public.crm_cases
-  add column if not exists company_sales text not null default '';
+alter table public.crm_cases add column if not exists company_sales text not null default '';
 
 -- 公司地址（Customer Address）
-alter table public.crm_cases
-  add column if not exists customer_address text not null default '';
+alter table public.crm_cases add column if not exists customer_address text not null default '';
 
 -- 客戶名片圖片（Portal 影相／上載）
 create table if not exists public.crm_case_cards (
@@ -42,9 +41,16 @@ create index if not exists crm_cases_team_leader_idx on public.crm_cases(team_le
 create index if not exists crm_cases_company_sales_idx on public.crm_cases(company_sales);
 
 -- Case Potential：Low / Mid / High
-alter table public.crm_cases
-  add column if not exists potential text not null default '';
+alter table public.crm_cases add column if not exists potential text not null default '';
 create index if not exists crm_cases_potential_idx on public.crm_cases(potential);
+
+-- Disqualified 原因（選 Disqualified／DQ 時必填）
+alter table public.crm_cases add column if not exists dq_reason text not null default '';
+create index if not exists crm_cases_dq_reason_idx on public.crm_cases(dq_reason);
+
+-- CALLER（邊個 Call／來電／轉介）
+alter table public.crm_cases add column if not exists caller text not null default '';
+create index if not exists crm_cases_caller_idx on public.crm_cases(caller);
 
 -- 由 ricoh_house 自動填 team_leader（只填空值）
 -- 例：MA (Polly Lee Team) → Polly Lee
