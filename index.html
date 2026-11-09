@@ -4489,6 +4489,10 @@
           <label class="field"><span>Partner Team Leader</span><input id="agendaLeadPartnerTL" name="partnerTL" placeholder="例如 Polly Lee／MA (Polly Lee Team)" /></label>
           <label class="field"><span>Partner Consultant</span><input id="agendaLeadConsultant" name="consultant" placeholder="Partner Consultant" /></label>
         </div>
+        <div class="row2">
+          <label class="field"><span>CALLER（邊個 Call）</span><input id="agendaLeadCaller" name="caller" placeholder="例如 Vincent／來電人姓名" /></label>
+          <div class="field"></div>
+        </div>
         <div class="row3">
           <label class="field"><span>聯絡人</span><input id="agendaLeadContact" name="contact" placeholder="聯絡人姓名" autocomplete="name" /></label>
           <label class="field"><span>聯絡電話</span><input id="agendaLeadPhone" name="phone" type="tel" placeholder="手提／電話" autocomplete="tel" /></label>
@@ -5177,6 +5181,26 @@
     let addressColReady = false;
     let potentialColReady = false;
     let dqReasonColReady = false;
+    let callerColReady = false;
+    const CALLER_LS_KEY = "crm_case_caller";
+    function loadCallerMap() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(CALLER_LS_KEY) || "{}");
+        return raw && typeof raw === "object" ? raw : {};
+      } catch (_) {
+        return {};
+      }
+    }
+    function localCallerGet(id) {
+      return String(loadCallerMap()[id] || "").trim();
+    }
+    function localCallerSet(id, name) {
+      const map = loadCallerMap();
+      const v = String(name || "").trim();
+      if (v) map[id] = v;
+      else delete map[id];
+      localStorage.setItem(CALLER_LS_KEY, JSON.stringify(map));
+    }
     let potentialLevelFilter = localStorage.getItem("crm_potential_level") || "all";
     let potentialSalesFilter = localStorage.getItem("crm_potential_sales") || "all";
     let cardsTableReady = false;
@@ -6592,6 +6616,8 @@
         potentialColReady = !potProbe.error;
         const dqProbe = await db.from("crm_cases").select("dq_reason").limit(1);
         dqReasonColReady = !dqProbe.error;
+        const callerProbe = await db.from("crm_cases").select("caller").limit(1);
+        callerColReady = !callerProbe.error;
         const cardsProbe = await db.from("crm_case_cards").select("id").limit(1);
         cardsTableReady = !cardsProbe.error;
         const teamsProbe = await db.from("crm_sales_teams").select("leader_name").limit(1);
@@ -6710,6 +6736,7 @@
         stage: r.stage || "new_lead",
         closeReason: r.close_reason,
         dqReason: normalizeDqReason(r.dq_reason) || localDqReasonGet(r.id) || "",
+        caller: String(r.caller || "").trim() || localCallerGet(r.id) || "",
         notes,
         customerAddress,
         ricohHouse: r.ricoh_house || "",
@@ -6768,6 +6795,7 @@
       }
       if (potentialColReady) row.potential = normalizePotential(c.potential) || "";
       if (dqReasonColReady) row.dq_reason = normalizeDqReason(c.dqReason) || "";
+      if (callerColReady) row.caller = String(c.caller || "").trim();
       if (addressColReady) row.customer_address = address;
       return row;
     }
@@ -13052,6 +13080,10 @@
               <label class="field"><span>Team Leader</span><input id="d_leader" value="${escapeAttr(c.teamLeader || parseTeamLeader(c.ricohHouse))}" placeholder="例如 Polly Lee" /></label>
               <label class="field"><span>Partner Consultant</span><input id="d_consultant" value="${escapeAttr(c.ricohConsultant)}" /></label>
             </div>
+            <div class="row2">
+              <label class="field"><span>CALLER（邊個 Call）</span><input id="d_caller" value="${escapeAttr(c.caller || "")}" placeholder="例如 Vincent／來電人姓名" /></label>
+              <div class="field"></div>
+            </div>
 
             <div class="eyebrow" style="margin-top:4px">公司地址</div>
             <label class="field"><span>Customer Address</span>
@@ -13283,12 +13315,15 @@
         );
         localPotentialSet(c.id, potential);
         localDqReasonSet(c.id, needsDqReason ? dqReason : "");
+        const callerVal = document.getElementById("d_caller").value.trim();
+        localCallerSet(c.id, callerVal);
         await updateCase(c.id, {
           companySales: document.getElementById("d_companySales").value || "Vincent",
           ricohHouse: document.getElementById("d_house").value.trim(),
           ricohSales: document.getElementById("d_sales").value.trim(),
           ricohConsultant: document.getElementById("d_consultant").value.trim(),
           teamLeader: document.getElementById("d_leader").value.trim(),
+          caller: callerVal,
           systems: document.getElementById("d_systems").value.split(",").map((x) => x.trim()).filter(Boolean),
           requirements: document.getElementById("d_requirements").value,
           stage: lead === "DQ" ? "closed" : stage,
@@ -13421,6 +13456,7 @@
       { key: "ricohSales", label: "Partner Sales", fmt: (v) => v || "—" },
       { key: "ricohHouse", label: "Partner Team Leader", fmt: (v) => v || "—" },
       { key: "ricohConsultant", label: "Partner Consultant", fmt: (v) => v || "—" },
+      { key: "caller", label: "CALLER", fmt: (v) => v || "—" },
       { key: "dqReason", label: "DQ REASON", fmt: (v) => dqReasonLabel(v) || "—" },
       { key: "amount", label: "Contract Amount", fmt: (v) => money(Number(v) || 0) },
       { key: "budget", label: "Client Budget", fmt: (v) => money(Number(v) || 0) },
@@ -14564,6 +14600,7 @@
         ricohSales: "",
         ricohConsultant: "",
         dqReason: "",
+        caller: "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -14802,6 +14839,7 @@
       const partnerSales = String(document.getElementById("agendaLeadPartnerSales").value || "").trim();
       const partnerTL = String(document.getElementById("agendaLeadPartnerTL").value || "").trim();
       const partnerConsultant = String(document.getElementById("agendaLeadConsultant").value || "").trim();
+      const caller = String(document.getElementById("agendaLeadCaller").value || "").trim();
       let companySales = normalizeCompanySales(document.getElementById("agendaLeadCompanySales").value) || "";
       if (isSales()) companySales = currentSalesName() || companySales;
       const contactName = String(document.getElementById("agendaLeadContact").value || "").trim();
@@ -14828,6 +14866,7 @@
         stage: "new_lead",
         closeReason: null,
         dqReason: "",
+        caller,
         notes: noteParts.join("\n\n"),
         customerAddress: address,
         ricohHouse: partnerTL,
@@ -14851,6 +14890,7 @@
       row.created_at = item.createdAt;
       const { error } = await db.from("crm_cases").insert(row);
       if (error) return toast("建立失敗：" + error.message);
+      if (caller) localCallerSet(item.id, caller);
       if (contactName || contactPhone || contactEmail) {
         const contactRow = {
           id: `ct-${crypto.randomUUID().slice(0, 10)}`,

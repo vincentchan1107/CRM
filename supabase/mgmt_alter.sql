@@ -48,6 +48,10 @@ create index if not exists crm_cases_potential_idx on public.crm_cases(potential
 alter table public.crm_cases add column if not exists dq_reason text not null default '';
 create index if not exists crm_cases_dq_reason_idx on public.crm_cases(dq_reason);
 
+-- CALLER（邊個 Call／來電／轉介）
+alter table public.crm_cases add column if not exists caller text not null default '';
+create index if not exists crm_cases_caller_idx on public.crm_cases(caller);
+
 -- 由 ricoh_house 自動填 team_leader（只填空值）
 -- 例：MA (Polly Lee Team) → Polly Lee
 update public.crm_cases
