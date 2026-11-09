@@ -1660,6 +1660,7 @@
       padding: 0; margin: 0; cursor: pointer;
       appearance: auto; max-width: 110px;
     }
+    .lead-status-chip.unset { background: #fff; color: #94a3b8; border-color: #e2e8f0; }
     .lead-status-chip.Undefined { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
     .lead-status-chip.Qualified { background: #ecfdf5; color: #15803d; border-color: #86efac; }
     .lead-status-chip.DQ { background: #ffe4e6; color: #9f1239; border-color: #fda4af; }
@@ -4348,7 +4349,7 @@
           <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerExpandAll">全部展開</button>
           <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerCollapseAll">全部收合</button>
         </div>
-        <p class="muted" style="margin-bottom:10px;font-size:.78rem">預設 Partner：Achiever（本公司）／RICOH／HKBN／HPE／ICO · Case 唔一定有外部 Partner · 按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Lead Status：Undefined／Qualified／DQ（舊 Processing＝Undefined）</p>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">預設 Partner：Achiever（本公司）／RICOH／HKBN／HPE／ICO · Case 唔一定有外部 Partner · 按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Lead Status 預設 —，可選 Undefined／Qualified／DQ（舊 Processing＝—）</p>
         <div class="partner-tree" id="partnersTree"></div>
       </div>
 
@@ -6224,32 +6225,46 @@
     const QUALIFIED_STAGES = new Set(["first_interview", "quotation", "follow_up", "final_stage", "confirmation"]);
     const LEAD_STATUS_LEVELS = ["Undefined", "Qualified", "DQ"];
     const LEAD_STATUS_META = {
+      "": { label: "—", color: "#94a3b8", bg: "#fff" },
       Undefined: { label: "Undefined", color: "#64748b", bg: "#f1f5f9" },
       Qualified: { label: "Qualified", color: "#15803d", bg: "#ecfdf5" },
       DQ: { label: "DQ", color: "#9f1239", bg: "#ffe4e6" },
     };
     function normalizeLeadStatus(v) {
       const s = String(v || "").trim();
+      if (!s || s === "-" || s === "—" || s === "--") return "";
       if (s === "DQ" || /^disqualif/i.test(s)) return "DQ";
       if (s === "Qualified") return "Qualified";
-      // Legacy Processing → Undefined
-      if (s === "Undefined" || s === "Processing" || s === "") return "Undefined";
-      return "Undefined";
+      if (s === "Undefined") return "Undefined";
+      // Legacy Processing was a placeholder → treat as unset (—)
+      if (s === "Processing") return "";
+      return "";
     }
     function leadStatusMeta(v) {
-      return LEAD_STATUS_META[normalizeLeadStatus(v)] || LEAD_STATUS_META.Undefined;
+      const cur = normalizeLeadStatus(v);
+      return LEAD_STATUS_META[cur] || LEAD_STATUS_META[""];
+    }
+    function leadStatusChipClass(v) {
+      const cur = normalizeLeadStatus(v);
+      return cur || "unset";
+    }
+    function leadStatusOptionsHtml(selected) {
+      const cur = normalizeLeadStatus(selected);
+      return `<option value="" ${cur === "" ? "selected" : ""}>—</option>` +
+        LEAD_STATUS_LEVELS.map((x) => `<option value="${x}" ${cur === x ? "selected" : ""}>${x}</option>`).join("");
     }
     function leadStatusBadgeHtml(v, { selectId, caseId } = {}) {
       const cur = normalizeLeadStatus(v);
       const meta = leadStatusMeta(cur);
+      const chipClass = leadStatusChipClass(cur);
       if (selectId) {
-        return `<label class="lead-status-chip ${cur}" title="Lead Status：Undefined／Qualified／DQ">
+        return `<label class="lead-status-chip ${chipClass}" title="Lead Status：—／Undefined／Qualified／DQ">
           <select id="${escapeAttr(selectId)}" ${caseId ? `data-case-id="${escapeAttr(caseId)}" data-lead-status-quick="1"` : ""} aria-label="Lead Status">
-            ${LEAD_STATUS_LEVELS.map((x) => `<option value="${x}" ${cur === x ? "selected" : ""}>${x}</option>`).join("")}
+            ${leadStatusOptionsHtml(cur)}
           </select>
         </label>`;
       }
-      return `<span class="lead-status-chip ${cur}" style="color:${meta.color};background:${meta.bg}">${meta.label}</span>`;
+      return `<span class="lead-status-chip ${chipClass}" style="color:${meta.color};background:${meta.bg}">${meta.label}</span>`;
     }
 
     function loadVisibleStages() {
@@ -10611,17 +10626,18 @@
           const lead = normalizeLeadStatus(sel.value);
           const chip = sel.closest(".lead-status-chip");
           if (chip) {
-            chip.classList.remove("Qualified", "Undefined", "DQ");
-            chip.classList.add(lead);
+            chip.classList.remove("Qualified", "Undefined", "DQ", "unset");
+            chip.classList.add(leadStatusChipClass(lead));
           }
           const patch = { leadStatus: lead };
           if (lead === "DQ") {
             const prevCase = cases.find((x) => x.id === id);
             const reason = await pickDqReasonDialog(prevCase?.dqReason);
             if (!reason) {
-              sel.value = normalizeLeadStatus(prevCase?.leadStatus);
-              chip?.classList.remove("Qualified", "Undefined", "DQ");
-              chip?.classList.add(normalizeLeadStatus(prevCase?.leadStatus));
+              const prevLead = normalizeLeadStatus(prevCase?.leadStatus);
+              sel.value = prevLead;
+              chip?.classList.remove("Qualified", "Undefined", "DQ", "unset");
+              chip?.classList.add(leadStatusChipClass(prevLead));
               return toast("已取消：未揀 DQ REASON");
             }
             patch.stage = "closed";
@@ -10633,7 +10649,7 @@
             localDqReasonSet(id, "");
           }
           await updateCase(id, patch, { silent: true, source: "看板 · Lead Status" });
-          toast(lead === "DQ" ? `DQ · ${dqReasonLabel(patch.dqReason)}` : `Lead Status → ${lead}`);
+          toast(lead === "DQ" ? `DQ · ${dqReasonLabel(patch.dqReason)}` : `Lead Status → ${lead || "—"}`);
           paintKanbanColumns();
         };
       });
@@ -13139,8 +13155,8 @@
                 <select id="d_stage">${STAGES.map((s) => `<option value="${s.id}" ${s.id === c.stage ? "selected" : ""}>${s.label}</option>`).join("")}</select>
               </label>
               <label class="field"><span>Lead Status</span>
-                <select id="d_lead" required>
-                  ${LEAD_STATUS_LEVELS.map((x) => `<option value="${x}" ${normalizeLeadStatus(c.leadStatus) === x ? "selected" : ""}>${x}</option>`).join("")}
+                <select id="d_lead">
+                  ${leadStatusOptionsHtml(c.leadStatus)}
                 </select>
               </label>
               <label class="field"><span>關閉原因</span>
@@ -13450,7 +13466,7 @@
     const TRACKED_FIELDS = [
       { key: "stage", label: "Stage", fmt: (v) => stageMeta(v).label },
       { key: "closeReason", label: "關閉原因", fmt: (v) => v || "—" },
-      { key: "leadStatus", label: "Lead Status", fmt: (v) => normalizeLeadStatus(v) },
+      { key: "leadStatus", label: "Lead Status", fmt: (v) => leadStatusMeta(v).label },
       { key: "companySales", label: "本公司銷售員", fmt: (v) => v || "未指派" },
       { key: "teamLeader", label: "Team Leader", fmt: (v) => v || "—" },
       { key: "partner", label: "Partner", fmt: (v) => v || "—" },
@@ -14594,7 +14610,7 @@
         meetingNotes: "",
         followUpOpportunity: false,
         nextFollowUpAt: "",
-        leadStatus: "Undefined",
+        leadStatus: "",
         sourceEvent: "Portal 語音建案",
         teamLeader: "",
         ricohHouse: "",
@@ -14881,7 +14897,7 @@
         meetingNotes: "",
         followUpOpportunity: false,
         nextFollowUpAt: followUp || formatLocalDate(new Date()),
-        leadStatus: "Undefined",
+        leadStatus: "",
         sourceEvent: "Agenda 新增新 Lead",
         teamLeader: parseTeamLeader(partnerTL) || partnerTL,
         createdAt: new Date().toISOString(),
