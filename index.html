@@ -1621,6 +1621,27 @@
     .drawer-potential-btn.High { background: #ecfdf5; color: #15803d; border-color: #86efac; }
     .drawer-potential-btn.Mid { background: #fff7ed; color: #c2410c; border-color: #fdba74; }
     .drawer-potential-btn.Low { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+    .lead-status-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: .68rem;
+      font-weight: 800;
+      line-height: 1.3;
+      vertical-align: middle;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .lead-status-chip select {
+      border: 0; background: transparent; outline: none;
+      font: inherit; font-weight: 800; color: inherit;
+      padding: 0; margin: 0; cursor: pointer;
+      appearance: auto; max-width: 110px;
+    }
+    .lead-status-chip.Undefined { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+    .lead-status-chip.Qualified { background: #ecfdf5; color: #15803d; border-color: #86efac; }
+    .lead-status-chip.DQ { background: #ffe4e6; color: #9f1239; border-color: #fda4af; }
     @media (max-width: 700px) {
       .drawer-bg {
         align-items: stretch;
@@ -5153,6 +5174,7 @@
       { id: "sales", label: "本公司銷售", sort: "sales" },
       { id: "systems", label: "系統" },
       { id: "stage", label: "階段", sort: "stage" },
+      { id: "qualify", label: "Lead Status", sort: "qualify" },
       { id: "amount", label: "金額", sort: "amount" },
       { id: "target", label: "Target Closing", sort: "target" },
       { id: "appt", label: "約見", sort: "appt" },
@@ -6085,12 +6107,32 @@
     let visibleStages = loadVisibleStages();
     const QUALIFIED_STAGES = new Set(["first_interview", "quotation", "follow_up", "final_stage", "confirmation"]);
     const LEAD_STATUS_LEVELS = ["Undefined", "Qualified", "DQ"];
+    const LEAD_STATUS_META = {
+      Undefined: { label: "Undefined", color: "#64748b", bg: "#f1f5f9" },
+      Qualified: { label: "Qualified", color: "#15803d", bg: "#ecfdf5" },
+      DQ: { label: "DQ", color: "#9f1239", bg: "#ffe4e6" },
+    };
     function normalizeLeadStatus(v) {
       const s = String(v || "").trim();
       if (s === "DQ" || /^disqualif/i.test(s)) return "DQ";
       if (s === "Qualified") return "Qualified";
       if (s === "Undefined" || s === "Processing" || s === "") return "Undefined";
       return "Undefined";
+    }
+    function leadStatusMeta(v) {
+      return LEAD_STATUS_META[normalizeLeadStatus(v)] || LEAD_STATUS_META.Undefined;
+    }
+    function leadStatusBadgeHtml(v, { selectId, caseId } = {}) {
+      const cur = normalizeLeadStatus(v);
+      const meta = leadStatusMeta(cur);
+      if (selectId) {
+        return `<label class="lead-status-chip ${cur}" title="Lead Status：Undefined／Qualified／DQ">
+          <select id="${escapeAttr(selectId)}" ${caseId ? `data-case-id="${escapeAttr(caseId)}" data-lead-status-quick="1"` : ""} aria-label="Lead Status">
+            ${LEAD_STATUS_LEVELS.map((x) => `<option value="${x}" ${cur === x ? "selected" : ""}>${x}</option>`).join("")}
+          </select>
+        </label>`;
+      }
+      return `<span class="lead-status-chip ${cur}" style="color:${meta.color};background:${meta.bg}">${meta.label}</span>`;
     }
 
     function loadVisibleStages() {
@@ -10415,6 +10457,29 @@
         }
         el.onclick = () => openDrawer(el.dataset.id);
       });
+      root.querySelectorAll("[data-lead-status-quick]").forEach((sel) => {
+        sel.onclick = (e) => e.stopPropagation();
+        sel.onmousedown = (e) => e.stopPropagation();
+        sel.ondragstart = (e) => { e.preventDefault(); e.stopPropagation(); };
+        sel.onchange = async (e) => {
+          e.stopPropagation();
+          const id = sel.dataset.caseId;
+          const lead = normalizeLeadStatus(sel.value);
+          const chip = sel.closest(".lead-status-chip");
+          if (chip) {
+            chip.classList.remove("Qualified", "Undefined", "DQ");
+            chip.classList.add(lead);
+          }
+          const patch = { leadStatus: lead };
+          if (lead === "DQ") {
+            patch.stage = "closed";
+            patch.closeReason = "disqualified";
+          }
+          await updateCase(id, patch, { silent: true, source: "看板 · Lead Status" });
+          toast(`Lead Status → ${lead}`);
+          paintKanbanColumns();
+        };
+      });
       root.querySelectorAll(".col").forEach((col) => {
         if (!canDragBoard) return;
         col.ondragover = (e) => {
@@ -10432,10 +10497,17 @@
           const prev = cases.find((c) => c.id === id);
           if (prev && prev.stage === stage) return;
           let closeReason = null;
+          let leadStatus;
           if (stage === "closed") {
             closeReason = confirm("按「確定」= Disqualified；「取消」= 失敗") ? "disqualified" : "failed";
+            if (closeReason === "disqualified") leadStatus = "DQ";
           }
-          await updateCase(id, { stage, closeReason, successRate: stage === "closed" ? 0 : undefined }, { source: "拖曳看板" });
+          await updateCase(id, {
+            stage,
+            closeReason,
+            leadStatus,
+            successRate: stage === "closed" ? 0 : undefined,
+          }, { source: "拖曳看板" });
           toast(`已移至 ${stageMeta(stage).label}`);
         };
       });
@@ -10481,7 +10553,10 @@
         : "未設跟進";
       const sales = normalizeCompanySales(c.companySales) || "未指派";
       return `<article class="card-case" data-id="${c.id}" title="拖曳可改 Stage">
-        <strong style="white-space:pre-line;font-size:.9rem">${escapeHtml(companyLine)}</strong>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <strong style="white-space:pre-line;font-size:.9rem;min-width:0;flex:1">${escapeHtml(companyLine)}</strong>
+          ${leadStatusBadgeHtml(c.leadStatus, { selectId: `card_lead_${c.id}`, caseId: c.id })}
+        </div>
         <div class="muted" style="font-size:.7rem;margin-top:3px">${escapeHtml(sales)} · ${escapeHtml(c.partner || "—")} · ${contacts.length} contacts</div>
         <div class="card-meta-row">
           <span>💰 ${money(c.amount)}</span>
@@ -10491,8 +10566,8 @@
         <div class="tags" style="margin-top:6px">${(c.systems || []).slice(0, 3).map((x) => `<span class="tag on" style="cursor:default;padding:2px 8px">${escapeHtml(x)}</span>`).join("")}</div>
         <div style="margin-top:6px;font-size:.7rem;color:var(--ink-soft)">
           ${c.meetingDone ? "✅ 已會面 · " : ""}${c.followUpOpportunity ? "有跟進機會 · " : ""}${logs.length} logs
+          ${c.stage === "closed" && c.closeReason && c.closeReason !== "disqualified" ? ` · ${c.closeReason === "won" ? "成功簽單" : "失敗"}` : ""}
         </div>
-        ${c.leadStatus === "DQ" || (c.stage === "closed" && c.closeReason) ? `<div style="margin-top:6px;font-size:.68rem;color:var(--rose);font-weight:700">${c.leadStatus === "DQ" || c.closeReason === "disqualified" ? "DQ" : "失敗"}</div>` : ""}
         <div style="margin-top:6px"><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></div>
       </article>`;
     }
@@ -10573,6 +10648,7 @@
           case "partner": return c.partner || "";
           case "sales": return normalizeCompanySales(c.companySales) || "";
           case "stage": return STAGES.findIndex((s) => s.id === c.stage);
+          case "qualify": return normalizeLeadStatus(c.leadStatus);
           case "amount": return Number(c.amount) || 0;
           case "target": return caseForecastDate(c)?.getTime() || 0;
           case "appt": return c.appointmentAt ? new Date(c.appointmentAt).getTime() : 0;
@@ -10650,6 +10726,7 @@
           sales: `<td>${escapeHtml(normalizeCompanySales(c.companySales) || "未指派")}</td>`,
           systems: `<td>${(c.systems || []).map((x) => `<span class="badge" style="background:var(--accent-soft);color:var(--accent);margin:1px">${escapeHtml(x)}</span>`).join(" ") || "—"}</td>`,
           stage: `<td><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></td>`,
+          qualify: `<td>${leadStatusBadgeHtml(c.leadStatus)}</td>`,
           amount: `<td><strong>${money(c.amount)}</strong></td>`,
           target: `<td>${c.targetClosingDate ? formatLocalDate(parseLocalDate(c.targetClosingDate) || caseForecastDate(c)) : (caseForecastDate(c) ? formatLocalDate(caseForecastDate(c)) : "—")}</td>`,
           appt: `<td>${c.appointmentAt ? new Date(c.appointmentAt).toLocaleString("zh-HK") : "—"}<div class="muted" style="font-size:.68rem">${c.appointmentConfirmed ? "已確認" : (c.appointmentFlag ? "待確認" : "")}</div></td>`,
@@ -10673,7 +10750,7 @@
 
     function exportCasesCsv(asExcel) {
       const list = sortCasesList(getFilteredCasesForTable());
-      const headers = ["公司", "Partner", "House", "本公司銷售", "系統", "階段", "金額", "Target Closing", "約見", "會面", "跟進機會", "下次跟進"];
+      const headers = ["公司", "Partner", "House", "本公司銷售", "系統", "階段", "Lead Status", "金額", "Target Closing", "約見", "會面", "跟進機會", "下次跟進"];
       const rows = list.map((c) => [
         companyKey(c),
         c.partner || "",
@@ -10681,6 +10758,7 @@
         normalizeCompanySales(c.companySales) || "",
         (c.systems || []).join("|"),
         stageMeta(c.stage).label,
+        normalizeLeadStatus(c.leadStatus),
         c.amount || 0,
         c.targetClosingDate || "",
         c.appointmentAt || "",
