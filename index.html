@@ -6084,6 +6084,14 @@
     const ALL_BOARD_STAGES = () => STAGES.map((s) => s.id);
     let visibleStages = loadVisibleStages();
     const QUALIFIED_STAGES = new Set(["first_interview", "quotation", "follow_up", "final_stage", "confirmation"]);
+    const LEAD_STATUS_LEVELS = ["Undefined", "Qualified", "DQ"];
+    function normalizeLeadStatus(v) {
+      const s = String(v || "").trim();
+      if (s === "DQ" || /^disqualif/i.test(s)) return "DQ";
+      if (s === "Qualified") return "Qualified";
+      if (s === "Undefined" || s === "Processing" || s === "") return "Undefined";
+      return "Undefined";
+    }
 
     function loadVisibleStages() {
       try {
@@ -6559,7 +6567,7 @@
         meetingNotes: r.meeting_notes || "",
         followUpOpportunity: !!r.follow_up_opportunity,
         nextFollowUpAt: r.next_follow_up_at || localFollowUpGet(r.id) || "",
-        leadStatus: r.lead_status || "Processing",
+        leadStatus: normalizeLeadStatus(r.lead_status),
         sourceEvent: r.source_event || "",
         teamLeader: r.team_leader || parseTeamLeader(r.ricoh_house || "") || "",
         createdAt: r.created_at,
@@ -6593,7 +6601,7 @@
         meeting_done: !!c.meetingDone,
         meeting_notes: c.meetingNotes || "",
         follow_up_opportunity: !!c.followUpOpportunity,
-        lead_status: c.leadStatus || "Processing",
+        lead_status: normalizeLeadStatus(c.leadStatus),
         source_event: c.sourceEvent || "",
         updated_at: new Date().toISOString(),
       };
@@ -6682,12 +6690,12 @@
     }
 
     function isDq(c) {
-      return c.leadStatus === "DQ" || c.closeReason === "disqualified";
+      return normalizeLeadStatus(c.leadStatus) === "DQ" || c.closeReason === "disqualified";
     }
 
     function isQualified(c) {
       if (isDq(c) || c.closeReason === "failed") return false;
-      return !!c.meetingDone || !!c.followUpOpportunity || QUALIFIED_STAGES.has(c.stage) || c.closeReason === "won";
+      return normalizeLeadStatus(c.leadStatus) === "Qualified";
     }
 
     function isWon(c) {
@@ -12879,7 +12887,11 @@
                 <select id="d_stage">${STAGES.map((s) => `<option value="${s.id}" ${s.id === c.stage ? "selected" : ""}>${s.label}</option>`).join("")}</select>
               </label>
               <label class="field"><span>Lead Status</span>
-                <select id="d_lead"><option value="Processing" ${c.leadStatus!=="DQ"?"selected":""}>Processing</option><option value="DQ" ${c.leadStatus==="DQ"?"selected":""}>DQ</option></select>
+                <select id="d_lead" required>
+                  <option value="Undefined" ${normalizeLeadStatus(c.leadStatus)==="Undefined"?"selected":""}>Undefined</option>
+                  <option value="Qualified" ${normalizeLeadStatus(c.leadStatus)==="Qualified"?"selected":""}>Qualified</option>
+                  <option value="DQ" ${normalizeLeadStatus(c.leadStatus)==="DQ"?"selected":""}>DQ</option>
+                </select>
               </label>
               <label class="field"><span>關閉原因</span>
                 <select id="d_close"><option value="">—</option><option value="disqualified" ${c.closeReason === "disqualified" ? "selected" : ""}>Disqualified</option><option value="failed" ${c.closeReason === "failed" ? "selected" : ""}>失敗</option><option value="won" ${c.closeReason === "won" ? "selected" : ""}>成功簽單</option></select>
@@ -13010,7 +13022,7 @@
       document.getElementById("drawerSave").onclick = async () => {
         const stage = document.getElementById("d_stage").value;
         const appt = document.getElementById("d_appt").value;
-        const lead = document.getElementById("d_lead").value;
+        const lead = normalizeLeadStatus(document.getElementById("d_lead").value);
         const closeVal = document.getElementById("d_close").value;
         const nextFollow = document.getElementById("d_nextFollow").value || "";
         localFollowUpSet(c.id, nextFollow);
@@ -13154,7 +13166,7 @@
     const TRACKED_FIELDS = [
       { key: "stage", label: "Stage", fmt: (v) => stageMeta(v).label },
       { key: "closeReason", label: "關閉原因", fmt: (v) => v || "—" },
-      { key: "leadStatus", label: "Lead Status", fmt: (v) => v || "—" },
+      { key: "leadStatus", label: "Lead Status", fmt: (v) => normalizeLeadStatus(v) },
       { key: "companySales", label: "本公司銷售員", fmt: (v) => v || "未指派" },
       { key: "teamLeader", label: "Team Leader", fmt: (v) => v || "—" },
       { key: "partner", label: "Partner", fmt: (v) => v || "—" },
@@ -14296,7 +14308,7 @@
         meetingNotes: "",
         followUpOpportunity: false,
         nextFollowUpAt: "",
-        leadStatus: "Processing",
+        leadStatus: "Undefined",
         sourceEvent: "Portal 語音建案",
         teamLeader: "",
         ricohHouse: "",
@@ -14576,7 +14588,7 @@
         meetingNotes: "",
         followUpOpportunity: false,
         nextFollowUpAt: followUp || formatLocalDate(new Date()),
-        leadStatus: "Processing",
+        leadStatus: "Undefined",
         sourceEvent: "Agenda 新增新 Lead",
         teamLeader: "",
         createdAt: new Date().toISOString(),
