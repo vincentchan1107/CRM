@@ -4347,7 +4347,7 @@
           <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerExpandAll">全部展開</button>
           <button type="button" class="btn btn-ghost btn-sm" id="btnPartnerCollapseAll">全部收合</button>
         </div>
-        <p class="muted" style="margin-bottom:10px;font-size:.78rem">預設 Partner：Achiever（本公司）／RICOH／HKBN／HPE／ICO · Case 唔一定有外部 Partner · 按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Qualification 必選：Qualified／Undefined／DQ（舊 Processing＝Undefined）</p>
+        <p class="muted" style="margin-bottom:10px;font-size:.78rem">預設 Partner：Achiever（本公司）／RICOH／HKBN／HPE／ICO · Case 唔一定有外部 Partner · 按 Partner → Team Leader → Sales 分層 · 統計依案件建立日期 · Lead Status：Undefined／Qualified／DQ（舊 Processing＝Undefined）</p>
         <div class="partner-tree" id="partnersTree"></div>
       </div>
 
@@ -5289,7 +5289,7 @@
       { id: "sales", label: "本公司銷售", sort: "sales" },
       { id: "systems", label: "系統" },
       { id: "stage", label: "階段", sort: "stage" },
-      { id: "qualify", label: "Qualification", sort: "qualify" },
+      { id: "qualify", label: "Lead Status", sort: "qualify" },
       { id: "amount", label: "金額", sort: "amount" },
       { id: "target", label: "Target Closing", sort: "target" },
       { id: "appt", label: "約見", sort: "appt" },
@@ -6221,10 +6221,10 @@
     const ALL_BOARD_STAGES = () => STAGES.map((s) => s.id);
     let visibleStages = loadVisibleStages();
     const QUALIFIED_STAGES = new Set(["first_interview", "quotation", "follow_up", "final_stage", "confirmation"]);
-    const LEAD_STATUS_LEVELS = ["Qualified", "Undefined", "DQ"];
+    const LEAD_STATUS_LEVELS = ["Undefined", "Qualified", "DQ"];
     const LEAD_STATUS_META = {
-      Qualified: { label: "Qualified", color: "#15803d", bg: "#ecfdf5" },
       Undefined: { label: "Undefined", color: "#64748b", bg: "#f1f5f9" },
+      Qualified: { label: "Qualified", color: "#15803d", bg: "#ecfdf5" },
       DQ: { label: "DQ", color: "#9f1239", bg: "#ffe4e6" },
     };
     function normalizeLeadStatus(v) {
@@ -6242,8 +6242,8 @@
       const cur = normalizeLeadStatus(v);
       const meta = leadStatusMeta(cur);
       if (selectId) {
-        return `<label class="lead-status-chip ${cur}" title="Qualification：Qualified／Undefined／DQ">
-          <select id="${escapeAttr(selectId)}" ${caseId ? `data-case-id="${escapeAttr(caseId)}" data-lead-status-quick="1"` : ""} aria-label="Qualification">
+        return `<label class="lead-status-chip ${cur}" title="Lead Status：Undefined／Qualified／DQ">
+          <select id="${escapeAttr(selectId)}" ${caseId ? `data-case-id="${escapeAttr(caseId)}" data-lead-status-quick="1"` : ""} aria-label="Lead Status">
             ${LEAD_STATUS_LEVELS.map((x) => `<option value="${x}" ${cur === x ? "selected" : ""}>${x}</option>`).join("")}
           </select>
         </label>`;
@@ -9550,7 +9550,7 @@
             <td class="num">${money(totals.closingAmt)}</td>
           </tr></tfoot>` : ""}
         </table></div>
-        <p class="muted" style="margin-top:8px;font-size:.72rem">LEAD＝期間新建案件 · DQ／Qualified＝案件 Qualification 欄位 · POTENTIAL＝有跟進機會／報價或之後階段 · CLOSING＝期間確認簽單</p>
+        <p class="muted" style="margin-top:8px;font-size:.72rem">LEAD＝期間新建案件 · DQ／Qualified＝案件 Lead Status · POTENTIAL＝有跟進機會／報價或之後階段 · CLOSING＝期間確認簽單</p>
       `;
       syncPartnerPerfUi();
       bindPartnerPerfControls();
@@ -10632,7 +10632,7 @@
             localDqReasonSet(id, "");
           }
           await updateCase(id, patch, { silent: true, source: "看板 · Qualification" });
-          toast(lead === "DQ" ? `DQ · ${dqReasonLabel(patch.dqReason)}` : `Qualification → ${lead}`);
+          toast(lead === "DQ" ? `DQ · ${dqReasonLabel(patch.dqReason)}` : `Lead Status → ${lead}`);
           paintKanbanColumns();
         };
       });
@@ -10918,7 +10918,7 @@
 
     function exportCasesCsv(asExcel) {
       const list = sortCasesList(getFilteredCasesForTable());
-      const headers = ["公司", "Partner", "House", "本公司銷售", "系統", "階段", "Qualification", "金額", "Target Closing", "約見", "會面", "跟進機會", "下次跟進"];
+      const headers = ["公司", "Partner", "House", "本公司銷售", "系統", "階段", "Lead Status", "金額", "Target Closing", "約見", "會面", "跟進機會", "下次跟進"];
       const rows = list.map((c) => [
         companyKey(c),
         c.partner || "",
@@ -13137,7 +13137,7 @@
               <label class="field"><span>Stage</span>
                 <select id="d_stage">${STAGES.map((s) => `<option value="${s.id}" ${s.id === c.stage ? "selected" : ""}>${s.label}</option>`).join("")}</select>
               </label>
-              <label class="field"><span>Qualification（必選）</span>
+              <label class="field"><span>Lead Status</span>
                 <select id="d_lead" required>
                   ${LEAD_STATUS_LEVELS.map((x) => `<option value="${x}" ${normalizeLeadStatus(c.leadStatus) === x ? "selected" : ""}>${x}</option>`).join("")}
                 </select>
@@ -13150,7 +13150,7 @@
               <label class="field"><span>DQ REASON（必選）</span>
                 <select id="d_dqReason">${dqReasonOptionsHtml(c.dqReason)}</select>
               </label>
-              <div class="field"><span class="muted" style="font-size:.72rem;line-height:1.45">選 Disqualified 或 Qualification＝DQ 時必須揀原因</span></div>
+              <div class="field"><span class="muted" style="font-size:.72rem;line-height:1.45">選 Disqualified 或 Lead Status＝DQ 時必須揀原因</span></div>
             </div>
             <div class="row2">
               <label class="field"><span>約見時間</span><input id="d_appt" type="datetime-local" value="${escapeAttr(apptValue)}" /></label>
@@ -13449,7 +13449,7 @@
     const TRACKED_FIELDS = [
       { key: "stage", label: "Stage", fmt: (v) => stageMeta(v).label },
       { key: "closeReason", label: "關閉原因", fmt: (v) => v || "—" },
-      { key: "leadStatus", label: "Qualification", fmt: (v) => normalizeLeadStatus(v) },
+      { key: "leadStatus", label: "Lead Status", fmt: (v) => normalizeLeadStatus(v) },
       { key: "companySales", label: "本公司銷售員", fmt: (v) => v || "未指派" },
       { key: "teamLeader", label: "Team Leader", fmt: (v) => v || "—" },
       { key: "partner", label: "Partner", fmt: (v) => v || "—" },
