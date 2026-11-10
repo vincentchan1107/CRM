@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>PDF · HR Personal Setting</title>
+  <link rel="icon" type="image/png" href="./images/achiever-icon.png?v=2" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1a1630;
+      --ink-soft: #5a5470;
+      --muted: #8b849c;
+      --paper: #f6f3fb;
+      --line: #ebe6f4;
+      --accent: #6b46fe;
+      --accent-soft: #efeaff;
+      --blue: #1a6eae;
+      --blue-2: #155f98;
+      --shadow: 0 14px 36px rgba(80, 55, 160, 0.08);
+      --radius: 18px;
+      --font: "IBM Plex Sans", "Noto Sans TC", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      color: var(--ink);
+      font-family: var(--font);
+      background:
+        radial-gradient(900px 520px at 8% -10%, rgba(167, 139, 250, .42), transparent 60%),
+        radial-gradient(820px 480px at 92% 4%, rgba(251, 182, 206, .38), transparent 58%),
+        linear-gradient(165deg, #fbf8ff 0%, #f4f0fb 48%, #eef4ff 100%);
+      background-attachment: fixed;
+    }
+    button, input, select { font-family: inherit; color: inherit; }
+    button { cursor: pointer; }
+    .app { max-width: 1280px; margin: 0 auto; padding: 20px 18px 40px; }
+    header.top {
+      display: flex; flex-wrap: wrap; gap: 14px 18px;
+      align-items: flex-end; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .brand { display: flex; gap: 12px; align-items: center; min-width: 240px; }
+    .brand img { height: 36px; width: auto; }
+    .brand h1 { margin: 0; font-size: 1.25rem; letter-spacing: -0.02em; }
+    .brand p { margin: 2px 0 0; color: var(--ink-soft); font-size: .8rem; }
+    .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .views { display: flex; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
+    .views button, .ghost, .kpi, .emp, .tab, .textbtn {
+      border: 0; background: transparent;
+    }
+    .views button {
+      border-radius: 999px; padding: 8px 12px; font-weight: 700; font-size: .8rem; color: var(--ink-soft);
+    }
+    .views button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+    .search, .select {
+      background: #fff; border: 1px solid var(--line); border-radius: 12px;
+      padding: 9px 12px; font-size: .85rem; min-width: 180px;
+    }
+    .search { min-width: min(320px, 70vw); }
+    .ghost {
+      background: #fff; border: 1px solid var(--line); border-radius: 12px;
+      padding: 9px 12px; font-weight: 700; font-size: .8rem;
+    }
+    .ghost:hover, .textbtn:hover { border-color: #d5c9f5; color: var(--accent); }
+    .kpis { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 12px; }
+    .kpi {
+      text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 14px;
+      padding: 10px 12px; box-shadow: var(--shadow);
+    }
+    .kpi b { display: block; font-size: 1.25rem; letter-spacing: -0.03em; }
+    .kpi span { color: var(--ink-soft); font-size: .72rem; font-weight: 600; }
+    .kpi[aria-pressed="true"] { border-color: #c4b5fd; background: var(--accent-soft); }
+    .split { display: grid; grid-template-columns: 300px 1fr; gap: 12px; align-items: start; }
+    .list, .sheet, .panel {
+      background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+    }
+    .list { overflow: hidden; }
+    .list-head, .panel-head {
+      padding: 12px 14px; border-bottom: 1px solid var(--line);
+      display: flex; justify-content: space-between; gap: 8px; align-items: center;
+      font-size: .78rem; color: var(--ink-soft); font-weight: 700;
+    }
+    .emps { max-height: calc(100vh - 220px); overflow: auto; }
+    .emp {
+      width: 100%; display: grid; grid-template-columns: 36px 1fr; gap: 10px;
+      padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line);
+    }
+    .emp:hover { background: #faf8ff; }
+    .emp[aria-selected="true"] { background: var(--accent-soft); }
+    .av {
+      width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center;
+      background: #e7f2fb; color: var(--blue); font-weight: 700;
+    }
+    .emp[aria-selected="true"] .av { background: var(--accent); color: #fff; }
+    .emp strong { display: block; font-size: .86rem; }
+    .emp small { display: block; margin-top: 2px; color: var(--muted); font-size: .72rem; }
+    .pips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .pips i, .badge {
+      font-style: normal; font-size: .68rem; font-weight: 700;
+      background: #f3f0fa; color: var(--ink-soft); border-radius: 999px; padding: 2px 7px;
+    }
+    .sheet { overflow: hidden; }
+    .sheet-head {
+      background: linear-gradient(90deg, var(--blue-2), #2184c7);
+      color: #fff; padding: 12px 16px;
+      display: flex; justify-content: space-between; gap: 10px; align-items: center;
+    }
+    .sheet-head strong { font-size: .95rem; letter-spacing: .01em; }
+    .sheet-head span { font-size: .75rem; opacity: .85; }
+    .who { display: flex; justify-content: space-between; gap: 12px; padding: 14px 16px 8px; flex-wrap: wrap; }
+    .who h2 { margin: 0; font-size: 1.35rem; letter-spacing: -0.03em; }
+    .who .en { color: var(--ink-soft); font-weight: 600; font-size: .95rem; }
+    .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .badge.hot { background: #fff4d6; color: #92400e; }
+    .badge.ok { background: #e8faf2; color: #047857; }
+    .badge.info { background: #e7f2fb; color: #155f98; }
+    .badge.warn { background: #fde8ef; color: #9f1239; }
+    .tabs { display: flex; gap: 0; overflow: auto; padding: 0 8px; border-bottom: 1px solid var(--line); }
+    .tab {
+      flex: 0 0 auto; padding: 10px 10px 9px; font-size: .72rem; font-weight: 700;
+      color: var(--ink-soft); border-bottom: 2px solid transparent; white-space: nowrap;
+    }
+    .tab small { display: block; font-weight: 600; color: var(--muted); font-size: .65rem; }
+    .tab[aria-selected="true"] { color: var(--blue); border-bottom-color: var(--blue); }
+    .body { padding: 14px 16px 18px; }
+    .note {
+      background: #f7f5ff; border: 1px solid #e4dcff; color: var(--ink-soft);
+      border-radius: 12px; padding: 10px 12px; font-size: .78rem; margin-bottom: 12px;
+    }
+    .form-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 8px 16px; }
+    .stack { display: grid; gap: 8px; align-content: start; }
+    .photo {
+      display: grid; grid-template-columns: 176px 1fr; gap: 16px; align-items: start;
+      margin-bottom: 8px;
+    }
+    .photo .ph {
+      height: 104px; border-radius: 12px; background: #eceff3; color: #9aa3af;
+      display: grid; place-items: center; font-size: .72rem; text-align: center; padding: 8px;
+    }
+    .photo-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .photo-actions button { border-radius: 6px; padding: 6px 10px; font-size: .72rem; font-weight: 700; color: #fff; }
+    .photo-actions .ins { background: #2f9e98; }
+    .photo-actions .rm { background: #7d8798; }
+    .move-head { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+    .fld { display: grid; gap: 4px; }
+    .fld span { font-size: .7rem; font-weight: 700; color: var(--ink-soft); }
+    .fld input, .fld textarea {
+      width: 100%; border: 1px solid #e3e8ef; background: #fbfcfe; border-radius: 8px;
+      padding: 8px 10px; font-size: .88rem;
+    }
+    .fld textarea { min-height: 64px; resize: vertical; }
+    .dob { display: grid; grid-template-columns: 1fr 88px; gap: 8px; }
+    .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 12px; }
+    table.data { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    table.data th, table.data td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    table.data th { font-size: .68rem; letter-spacing: .02em; color: var(--muted); background: #f6f8fb; white-space: nowrap; }
+    table.data tr:last-child td { border-bottom: 0; }
+    .empty { padding: 22px 8px; color: var(--ink-soft); }
+    .empty strong { display: block; color: var(--ink); margin-bottom: 4px; }
+    .textbtn {
+      margin-top: 8px; border: 1px solid var(--line); background: #fff; border-radius: 10px;
+      padding: 8px 10px; font-weight: 700; font-size: .8rem;
+    }
+    .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .site-card, .skill-row {
+      border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: #fff;
+    }
+    .site-card b, .skill-row b { display: block; }
+    .site-card span, .skill-row span { color: var(--ink-soft); font-size: .78rem; }
+    .linkish { color: var(--blue); font-weight: 700; background: none; border: 0; padding: 0; }
+    .panel { padding: 0; overflow: hidden; }
+    .filters { display: flex; gap: 8px; align-items: center; }
+    dialog { border: 0; border-radius: 18px; padding: 0; width: min(720px, calc(100vw - 24px)); box-shadow: var(--shadow); }
+    dialog::backdrop { background: rgba(26, 22, 48, .35); }
+    dialog header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+    dialog header h3 { margin: 0; font-size: 1rem; }
+    dialog .pad { padding: 12px 16px 16px; }
+    .map td:first-child { white-space: nowrap; font-weight: 700; }
+    .foot { margin-top: 10px; color: var(--muted); font-size: .72rem; }
+    .foot a { color: var(--accent); }
+    @media (max-width: 980px) {
+      .kpis { grid-template-columns: repeat(3, 1fr); }
+      .split, .form-grid, .cards, .photo, .move-head { grid-template-columns: 1fr; }
+      .emps { max-height: 280px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <img src="./images/achiever-logo.png" alt="Achiever" />
+        <div>
+          <h1>HR 員工檔</h1>
+          <p>Personal Setting · 按客戶 PDF 的畫面入數</p>
+        </div>
+      </div>
+      <div class="tools">
+        <div class="views" role="tablist">
+          <button type="button" data-view="people" aria-pressed="true">員工檔案</button>
+          <button type="button" data-view="sites">當值地盤</button>
+          <button type="button" data-view="skills">技能證明</button>
+        </div>
+        <input id="q" class="search" type="search" placeholder="搜尋編號、姓名、地盤、技能" />
+        <select id="position" class="select" aria-label="職位"></select>
+        <button type="button" class="ghost" id="openMap">欄位對照</button>
+      </div>
+    </header>
+    <section class="kpis" id="kpis"></section>
+    <div id="workspace"></div>
+    <p class="foot">版面用 <a href="./R2.html">R2.html</a>。這頁的 LPL-001 跟 PDF：Chan Tai Man、HKID Z485304(7)、Single，以及三筆 Shop Change。其餘員工、地盤欄、技能欄來自 PDF 裡的員工表。<a href="./index.html">返回 CRM</a></p>
+  </div>
+
+  <dialog id="map">
+    <header>
+      <h3>Excel 欄位點入 HR</h3>
+      <button type="button" class="ghost" id="closeMap">關閉</button>
+    </header>
+    <div class="pad">
+      <div class="table-wrap">
+        <table class="data map">
+          <thead><tr><th>Excel</th><th>HR 畫面</th><th>這份 sample</th></tr></thead>
+          <tbody>
+            <tr><td>職員編號</td><td>Employee No.</td><td>LPL-001 至 LPL-008</td></tr>
+            <tr><td>姓 名</td><td>中文姓、英文姓</td><td>只有姓氏，沒有名字</td></tr>
+            <tr><td>身份證號碼</td><td>HKID No.</td><td>八位都空白</td></tr>
+            <tr><td>出生日期、滿65歲</td><td>Date of Birth、歲數</td><td>有出生日期；旁邊數字是歲數</td></tr>
+            <tr><td>東亞戶口號碼</td><td>Bank / Fund</td><td>只有銀行代號 015，沒有完整戶口</td></tr>
+            <tr><td>強積金號碼</td><td>MPF</td><td>滿65歲，或 0150xxxxxx</td></tr>
+            <tr><td>性別、電話、地址</td><td>Gender、Mobile、Address</td><td>性別有；電話同地址空白</td></tr>
+            <tr><td>職位、薪金、入職日期</td><td>Title、Salary、入職</td><td>職位同入職有；薪金空白</td></tr>
+            <tr><td>地盤欄打 X</td><td>Employment、Work Experiences</td><td>判頭在第 1 行，地盤名在第 2 行</td></tr>
+            <tr><td>銀咭、工藝測試打 X</td><td>Skills、Education / Qualification</td><td>證明書編號在第 1 行</td></tr>
+            <tr><td>平安咭、工人註冊證、智能咭</td><td>Security</td><td>欄位已開，sample 未填號碼</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    const DATA = {"source":"Copy of 員工檔 sample (003).xlsx","companyHint":"東亞銀行戶口前綴 015","sites":[{"col":"O","contractor":"新輝","site":"啟德 6568"},{"col":"P","contractor":"新輝","site":"(B)啟德 6568"},{"col":"Q","contractor":"其士","site":"雲地利道"},{"col":"R","contractor":"新輝","site":"高鐵站 KIL11262"},{"col":"S","contractor":"新輝","site":"高鐵站 (搭架、鐵模)"},{"col":"T","contractor":"新輝","site":"高鐵站(大樓鋁板模)"},{"col":"U","contractor":"裕民","site":"(G)機利士南路46-50號"},{"col":"V","contractor":"陶記","site":"第三街44-50號-釘板"},{"col":"W","contractor":"北京城建-其士","site":"消防局(機場第三跑道)"},{"col":"X","contractor":"保華","site":"洪水橋洪元路二期"},{"col":"Y","contractor":"保華建業","site":"香港大學浦飛路體育館"},{"col":"Z","contractor":"恒達建築","site":"大埔美新里 3號"},{"col":"AA","contractor":"中國海外","site":"錦上路大樓(鋁模)"},{"col":"AB","contractor":"金門","site":"東京街(鋁模)"},{"col":"AC","contractor":"安保","site":"大潭香港國際學校"},{"col":"AD","contractor":"國宇","site":"筲箕灣東大街121號"},{"col":"AE","contractor":"華營","site":"荃灣柴灣角街嘉民工貿中心"},{"col":"AF","contractor":"新輝","site":"天榮站"},{"col":"AG","contractor":"新輝","site":"高鐵站 (平台釘板)"},{"col":"AH","contractor":"裕民","site":"黃埔街1號-紅磡B區(大樓鋁模)"},{"col":"AI","contractor":"金門","site":"數碼港"},{"col":"AJ","contractor":"安保保華JV","site":"將軍澳政府聯用辦公大樓-SSH502"},{"col":"AK","contractor":"亮雅(安保)","site":"勵業街7號"},{"col":"AL","contractor":"偉工","site":"青山公路(大窩口)"},{"col":"AM","contractor":"利基建築","site":"安達臣領展商場"},{"col":"AN","contractor":"俊和","site":"沙田濾水廠"},{"col":"AO","contractor":"安保","site":"新界東文化中心"},{"col":"AP","contractor":"新輝","site":"將軍澳數據中心二期 TKO131"},{"col":"AQ","contractor":"金門","site":"油塘高超道通風樓住宅項目"},{"col":"AR","contractor":"中國海外","site":"日出康城13期(平台釘板)"},{"col":"AS","contractor":"恒順建築","site":"黃埔街26-40號F區地盤"},{"col":"AT","contractor":"恒麗","site":"大角咀萬安街16-30號"},{"col":"AU","contractor":"華營","site":"火炭數據中心"},{"col":"AV","contractor":"","site":"梁杯倉"},{"col":"AW","contractor":"金門","site":"啟德2B1大樓鋁模"},{"col":"AX","contractor":"華營","site":"山頂道 75號"},{"col":"AY","contractor":"北京城建-其士","site":"機場第三跑道"},{"col":"AZ","contractor":"利基建築","site":"古洞北波樓路"},{"col":"BA","contractor":"利基建築","site":"春田街"},{"col":"BB","contractor":"恒順建築","site":"黃埔街2-16號C1區地盤"},{"col":"BC","contractor":"恒達建築","site":"深水埗巴域街1-27號"},{"col":"BD","contractor":"恒達建築","site":"灣仔活道13-21號"},{"col":"BE","contractor":"華營","site":"白田13期"},{"col":"BF","contractor":"中國建築","site":"天水圍文物修復資源中心SSL514"},{"col":"BG","contractor":"恒順建築","site":"紅磡機利士南路2-28號A區地盤"},{"col":"BH","contractor":"新輝","site":"西九文化區藝術廣場"},{"col":"BI","contractor":"華營","site":"元朗錦上路6號 - 房署公屋"},{"col":"BJ","contractor":"同心建築(俊和)","site":"佐敦道女童軍總部"},{"col":"BK","contractor":"華營","site":"九龍塘理工大學學生宿舍"},{"col":"BL","contractor":"恒達建築","site":"伊利近街33-47A"},{"col":"BM","contractor":"華營","site":"白田12期"},{"col":"BN","contractor":"利基建築","site":"大坑新村街"},{"col":"BO","contractor":"俊和","site":"曉明街公營房屋"},{"col":"BP","contractor":"偉工","site":"洪水橋洪元路二期"},{"col":"BQ","contractor":"偉工","site":"土瓜灣榮光街"},{"col":"BR","contractor":"華營","site":"土瓜灣鴻福街/啟明街"},{"col":"BS","contractor":"金門","site":"長沙灣發祥街"},{"col":"BT","contractor":"中國路橋","site":"深水埗荔枝角道公屋"},{"col":"BU","contractor":"煥利建築","site":"元朗橫洲公屋"},{"col":"BV","contractor":"華營","site":"葵涌凍倉"},{"col":"BW","contractor":"恒麗","site":"大角咀道173號"},{"col":"BX","contractor":"新輝","site":"安達臣商場-地腳"},{"col":"BY","contractor":"華營","site":"天水圍天華路公屋"},{"col":"BZ","contractor":"新輝","site":"沙田小瀝源"},{"col":"CA","contractor":"金門","site":"黃大仙竹園村"},{"col":"CB","contractor":"安保","site":"石硤尾社區健康中心"},{"col":"CC","contractor":"瑞安","site":"大埔頌雅路"}],"skills":[{"col":"CL","header":"銀咭-木模板工AS2","code":""},{"col":"CM","header":"銀咭-工地建材索具工A12","code":""},{"col":"CN","header":"銀咭-索具工及訊號員A12S","code":""},{"col":"CO","header":"銀咭-竹棚工、金屬棚架工AS7","code":""},{"col":"CP","header":"銀咭-鋼筋屈紮工AS5","code":""},{"col":"CQ","header":"半熟木模板工(全科)","code":"C407"},{"col":"CR","header":"熟練木模板工(全科)","code":"C307"},{"col":"CS","header":"半熟木模板工(樓宇工程)","code":"C407A"},{"col":"CT","header":"熟練木模板工(樓宇工程)","code":"C307A"},{"col":"CU","header":"半熟木模板工(土木工程)","code":"C407B"},{"col":"CV","header":"熟練木模板工(土木工程)","code":"C307B"},{"col":"CW","header":"熟練木模板工(樓宇工程)拆板","code":"C307C"},{"col":"CX","header":"熟練木模板工(土木工程)拆板","code":"C307D"},{"col":"CY","header":"半練平水工","code":"C423"},{"col":"CZ","header":"熟練平水工","code":"C323"},{"col":"DA","header":"半熟鋼筋屈紮工","code":"C404"},{"col":"DB","header":"熟練鋼筋屈紮工","code":"C304"},{"col":"DC","header":"半熟金屬鋼鐡工(全科)","code":"C4010"},{"col":"DD","header":"熟練金屬鋼鐡工(全科)","code":"C3010"},{"col":"DE","header":"半熟金屬工","code":"C428"},{"col":"DF","header":"熟練金屬工","code":"C328"},{"col":"DG","header":"半熟結構鋼架工","code":"C445"},{"col":"DH","header":"熟練結構鋼架工","code":"C345"},{"col":"DI","header":"半熟索具工(叻㗎)金屬模板裝嵌工","code":"C441"},{"col":"DJ","header":"熟練索具工(叻㗎)金屬模板裝嵌工","code":"C341"},{"col":"DK","header":"半熟金屬棚架工","code":"C427"},{"col":"DL","header":"熟練金屬棚架工","code":"C327"},{"col":"DM","header":"吊索/訊號員訓練","code":""},{"col":"DN","header":"密閉空間","code":""},{"col":"DO","header":"半熟普通焊接工","code":"C418"},{"col":"DP","header":"熟練普通焊接工","code":"C318"},{"col":"DQ","header":"熟練結構鋼材焊接工","code":"C346"},{"col":"DR","header":"熟練混凝土及灌漿工(全科）","code":"C3016"},{"col":"DS","header":"半熟混凝土工","code":"C409"},{"col":"DT","header":"熟練混凝土工","code":"C309"},{"col":"DU","header":"熟練混凝土修補工(混凝土剝落）","code":"C308"},{"col":"DV","header":"熟練灌漿工","code":"C321"},{"col":"DW","header":"熟練機械設備操作工(叉式起重車)","code":"C333F"},{"col":"DX","header":"熟練機械設備操作工(小型裝載機)","code":"C333D"},{"col":"DY","header":"磨輪安全訓練","code":""},{"col":"DZ","header":"半練機械打磨裝配工","code":""},{"col":"EA","header":"熟練機械打磨裝配工","code":""},{"col":"EB","header":"技能測試證明書","code":""}],"cards":["平安咭號碼","工人註冊証","智能咭              (SHK)","智能咭  (新世界)","禮頓","金門","俊和"],"employees":[{"no":"LPL-001","chiSurname":"陳","engSurname":"Chan","engFullName":"Tai Man","hkid":"Z485304(7)","marital":"Single","dob":"1944-01-01","bank":"015","mpf":"滿65歲","age":82,"gender":"Male","genderRaw":"M","phone":"","address":"","position":"木工","salary":"","hireDate":"2003-08-15","company":"Demo Company","lastModified":"Chan Tai Man","sites":[{"contractor":"安保","site":"石硤尾社區健康中心","mark":"PDF"},{"contractor":"部長","site":"大埔頌雅路","mark":"PDF"},{"contractor":"新輝","site":"啟德6568","mark":"PDF"}],"skills":[{"header":"半熟木模板工(全科)","code":"C407","mark":"PDF"},{"header":"熟練木模板工(全科)","code":"C307","mark":"PDF"},{"header":"熟練木模板工(樓宇工程)拆板","code":"C307","mark":"PDF"}],"movements":[{"date":"13/06/2006","branch":"安保","department":"石硤尾社區健康中心","position":"","grade":"","title":"木工","monthly":"0","reason":"Shop Change"},{"date":"20/07/2005","branch":"部長","department":"大埔頌雅路","position":"","grade":"","title":"木工","monthly":"0","reason":"Shop Change"},{"date":"01/07/2004","branch":"新輝","department":"啟德6568","position":"","grade":"","title":"木工","monthly":"0","reason":"Shop Change"}],"cards":{"平安咭號碼":"","工人註冊証":"","智能咭              (SHK)":"","智能咭  (新世界)":"","禮頓":"","金門":"","俊和":""},"remark":""},{"no":"LPL-002","chiSurname":"吳","engSurname":"Ng","hkid":"","dob":"1941-01-01","bank":"015","mpf":"滿65歲","age":85,"gender":"Male","genderRaw":"M","phone":"","address":"","position":"木工","salary":"","hireDate":"2004-07-28","sites":[],"skills":[],"cards":{"平安咭號碼":"","工人註冊証":"","智能咭              (SHK)":"","智能咭  (新世界)":"","禮頓":"","金門":"","俊和":""},"remark":""},{"no":"LPL-003","chiSurname":"區","engSurname":"Au","hkid":"","dob":"1941-01-01","bank":"015","mpf":"滿65歲","age":85,"gender":"Male","genderRaw":"M","phone":"","address":"","position":"","salary":"","hireDate":"2003-05-14","sites":[],"skills":[],"cards":{"平安咭號碼":"","工人註冊証":"","智能咭              (SHK)":"","智能咭  (新世界)":"","禮頓":"","金門":"","俊和":""},"remark":""},{"no":"LPL-004","chiSurname":"羅","engSurname":"Law","hkid":"","dob":"1949-09-16","bank":"015","mpf":"滿65歲","age":77,"gender":"Male","genderRaw":"M","phone":"","address":"","position":"釘板","salary":"","hireDate":"2015-05-06","sites":[],"skills":[],"cards":{"平安咭號碼":"","工人註冊証":"","智能咭              (SHK)":"","智能咭  (新世界)":"","禮頓":"","金門":"","俊和":""},"remark":""},{"no":"LPL-005","chiSurname":"殷","engSurname":"Yan","hkid":"","dob":"1950-03-15","bank":"015","mpf":"滿65歲","age":76,"gender":"Male","genderRaw":"M","phone":"","address":"","position":"釘板","salary":"","hireDate":"2011-03-21","sites":[],"skills":[{"col":"CL","header":"銀咭-木模板工AS2","code":"","mark":"X"}],"cards":{"平安咭號碼":"","工人註冊証":"","智能咭              (SHK)":"","智能咭  (新世界)":"","禮頓":"","金門":"","俊和":""},"remark":""},{"no":"LPL-006","chiSurname":"鄭","engSurname":"Cheung","hkid":"","dob":"1950-02-09","bank":"015","mpf":"滿65歲","age":76,"gender":"Male","genderRaw":"M","phone":"","address":"","position":"釘板","salary":"","hireDate":"2003-04-30","sites":[],"skills":[],"cards":{"平安咭號碼":"","工人註冊証":"","智能咭              (SHK)":"","智能咭  (新世界)":"","禮頓":"","金門":"","俊和":""},"remark":""},{"no":"LPL-007","chiSurname":"黃","engSurname":"WONG","hkid":"","dob":"1965-07-02","bank":"015","mpf":"0150xxxxxx","age":61,"gender":"Male","genderRaw":"M","phone":"","address":"","position":"上拆板","salary":"","hireDate":"2025-07-21","sites":[{"col":"AE","contractor":"華營","site":"荃灣柴灣角街嘉民工貿中心","mark":"X"},{"col":"AM","contractor":"利基建築","site":"安達臣領展商場","mark":"X"},{"col":"AT","contractor":"恒麗","site":"大角咀萬安街16-30號","mark":"X"},{"col":"BA","contractor":"利基建築","site":"春田街","mark":"X"},{"col":"BO","contractor":"俊和","site":"曉明街公營房屋","mark":"X"}],"skills":[{"col":"CR","header":"熟練木模板工(全科)","code":"C307","mark":"X"}],"cards":{"平安咭號碼":"","工人註冊証":"","智能咭              (SHK)":"","智能咭  (新世界)":"","禮頓":"","金門":"","俊和":""},"remark":""},{"no":"LPL-008","chiSurname":"張","engSurname":"Cheung","hkid":"","dob":"1973-02-27","bank":"015","mpf":"0150xxxxxx","age":53,"gender":"Male","genderRaw":"M","phone":"","address":"","position":"釘板","salary":"","hireDate":"2012-05-08","sites":[],"skills":[],"cards":{"平安咭號碼":"","工人註冊証":"","智能咭              (SHK)":"","智能咭  (新世界)":"","禮頓":"","金門":"","俊和":""},"remark":""}]};
+
+    const TABS = [
+      ["personal", "Personal Details", "個人資料"],
+      ["employment", "Employment", "受僱／當值"],
+      ["bank", "Bank / Fund", "銀行／強積金"],
+      ["address", "Address", "地址"],
+      ["training", "Training", "訓練"],
+      ["education", "Education", "資格證明"],
+      ["skills", "Skills", "技能"],
+      ["experience", "Work Experiences", "工作經驗"],
+      ["family", "Family", "家庭"],
+      ["security", "Security", "平安咭"],
+      ["approval", "Approval", "批核"],
+      ["salary", "Salary", "薪酬"]
+    ];
+
+    const state = {
+      view: "people",
+      selected: "LPL-001",
+      q: "",
+      kpi: "all",
+      position: "",
+      tab: "personal",
+      sitesMode: "hit",
+      skillsMode: "hit"
+    };
+
+    const $ = (id) => document.getElementById(id);
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+    function dmy(iso) {
+      if (!iso) return "";
+      const [y, m, d] = iso.split("-");
+      return `${d}/${m}/${y}`;
+    }
+    function senior(e) { return Number(e.age) >= 65 || e.mpf === "滿65歲"; }
+    function heldSkills(e) { return e.skills.filter((s) => !isTraining(s)); }
+    function heldTraining(e) { return e.skills.filter(isTraining); }
+    function isTraining(s) { return /訓練|密閉空間/.test(s.header || ""); }
+    function skillMeta(s) {
+      const header = s.header || "";
+      const fromHeader = (header.match(/[A-Z]{1,3}\d+[A-Z]?/) || [""])[0];
+      const code = (s.code || "").trim() || fromHeader;
+      let category = "工藝";
+      if (header.startsWith("銀咭")) category = "銀咭";
+      else if (/木模/.test(header)) category = "木模";
+      else if (/鋼筋/.test(header)) category = "鋼筋";
+      else if (/焊接/.test(header)) category = "焊接";
+      else if (/混凝土|灌漿/.test(header)) category = "混凝土";
+      else if (/棚/.test(header)) category = "棚架";
+      else if (/平水/.test(header)) category = "平水";
+      else if (/索具|叻㗎/.test(header)) category = "索具";
+      else if (/機械|打磨|磨輪|叉式|裝載/.test(header)) category = "機械";
+      else if (/金屬|鋼/.test(header)) category = "金屬";
+      else if (isTraining(s)) category = "訓練";
+      else if (/證明書/.test(header)) category = "證明書";
+      return { category, code, description: header };
+    }
+    function cardEntries(e) {
+      return Object.entries(e.cards || {}).map(([k, v]) => ({
+        key: k.replace(/\s+/g, " ").trim(),
+        value: String(v || "").trim()
+      }));
+    }
+    function cardLabel(key) {
+      const map = {
+        "平安咭號碼": "平安咭號碼 Security Card No.",
+        "工人註冊証": "工人註冊證",
+        "智能咭 (SHK)": "智能咭（新鴻基 SHK）",
+        "智能咭 (新世界)": "智能咭（新世界）",
+        "禮頓": "禮頓證件",
+        "金門": "金門證件",
+        "俊和": "俊和證件"
+      };
+      return map[key] || key;
+    }
+    function matchesQuery(e, q) {
+      if (!q) return true;
+      const blob = [
+        e.no, e.chiSurname, e.engSurname, e.engFullName, e.marital, e.position, e.phone, e.hkid, e.address, e.mpf,
+        ...e.sites.map((s) => `${s.contractor} ${s.site}`),
+        ...(e.movements || []).map((m) => `${m.branch} ${m.department} ${m.reason}`),
+        ...e.skills.map((s) => `${s.code} ${s.header}`)
+      ].join(" ").toLowerCase();
+      return blob.includes(q.toLowerCase());
+    }
+    function kpiMatch(e) {
+      if (state.kpi === "senior") return senior(e);
+      if (state.kpi === "sited") return e.sites.length > 0;
+      if (state.kpi === "skilled") return heldSkills(e).length > 0;
+      if (state.kpi === "phone") return !e.phone;
+      if (state.kpi === "card") return cardEntries(e).every((c) => !c.value);
+      if (state.kpi === "hkid") return !e.hkid;
+      return true;
+    }
+    function filtered() {
+      return DATA.employees.filter((e) => {
+        if (state.position && (e.position || "未填職位") !== state.position) return false;
+        if (!kpiMatch(e)) return false;
+        return matchesQuery(e, state.q.trim());
+      });
+    }
+    function current() {
+      return DATA.employees.find((e) => e.no === state.selected) || DATA.employees[0];
+    }
+    function field(label, value) {
+      const empty = value === undefined || value === null || String(value).trim() === "";
+      return `<label class="fld"><span>${esc(label)}</span><input readonly value="${esc(empty ? "" : value)}" placeholder="未提供" /></label>`;
+    }
+    function certTable(rows) {
+      if (!rows.length) {
+        return `<div class="empty"><strong>未有技能或工藝證明</strong><p>Excel 對應欄沒有打 X。</p></div>`;
+      }
+      const body = rows.map((s) => {
+        const m = skillMeta(s);
+        return `<tr><td>${esc(m.category)}</td><td>${esc(m.code || "—")}</td><td>${esc(m.description)}</td></tr>`;
+      }).join("");
+      return `<div class="table-wrap"><table class="data"><thead><tr><th>Category 類別</th><th>Certificate 編號</th><th>Description 說明</th></tr></thead><tbody>${body}</tbody></table></div>`;
+    }
+    function siteTable(e) {
+      if (e.movements && e.movements.length) {
+        const body = e.movements.map((m) => `<tr><td>${esc(m.date)}</td><td>${esc(m.branch)}</td><td>${esc(m.department)}</td><td>${esc(m.position || "—")}</td><td>${esc(m.grade || "—")}</td><td>${esc(m.title || "—")}</td><td>${esc(m.monthly)}</td><td>${esc(m.reason)}</td></tr>`).join("");
+        const m = e.movements[0];
+        return `
+          <div class="move-head">
+            ${field("Employee", e.no)}
+            ${field("Eng Name", [e.engSurname, e.engFullName].filter(Boolean).join(" "))}
+            ${field("Chi Name", e.chiSurname)}
+          </div>
+          <div class="table-wrap"><table class="data"><thead><tr><th>Effective Date</th><th>Branch</th><th>Department</th><th>Position</th><th>Grade</th><th>Title</th><th>Monthly Salary</th><th>Move Reason</th></tr></thead><tbody>${body}</tbody></table></div>
+          <div class="form-grid" style="margin-top:12px">
+            <div class="stack">
+              ${field("Company", e.company || "")}
+              ${field("Branch", m.branch)}
+              ${field("Department", m.department)}
+              ${field("Position", m.position)}
+              ${field("Grade", m.grade)}
+              ${field("Title", m.title)}
+              ${field("Movement Reason", m.reason)}
+            </div>
+            <div class="stack">
+              ${field("Effective Date", m.date)}
+              ${field("Pay Term", "")}
+              ${field("Monthly Salary", m.monthly)}
+              ${field("Daily Salary", "")}
+              ${field("Hourly Salary", "")}
+              ${field("Remark", "")}
+            </div>
+          </div>
+          <p class="foot">Last Modified : ${esc(e.lastModified || "")}</p>`;
+      }
+      const hire = `<tr><td>${esc(dmy(e.hireDate) || "—")}</td><td>—</td><td>—</td><td>${esc(e.position || "—")}</td><td>入職</td></tr>`;
+      const rest = e.sites.map((s) => `<tr><td>—</td><td>${esc(s.contractor || "—")}</td><td>${esc(s.site)}</td><td>${esc(e.position || "—")}</td><td>曾當值</td></tr>`).join("");
+      return `<div class="table-wrap"><table class="data"><thead><tr><th>Effective Date</th><th>Branch 判頭</th><th>Department 地盤</th><th>Title 職位</th><th>Move Reason</th></tr></thead><tbody>${hire}${rest}</tbody></table></div>`;
+    }
+
+    function renderKpis() {
+      const all = DATA.employees;
+      const items = [
+        ["all", all.length, "員工"],
+        ["senior", all.filter(senior).length, "滿 65 歲"],
+        ["sited", all.filter((e) => e.sites.length).length, "有當值地盤"],
+        ["skilled", all.filter((e) => heldSkills(e).length).length, "有技能證明"],
+        ["phone", all.filter((e) => !e.phone).length, "未有電話"],
+        ["card", all.filter((e) => cardEntries(e).every((c) => !c.value)).length, "未有平安咭"],
+        ["hkid", all.filter((e) => !e.hkid).length, "未有身份證"]
+      ];
+      $("kpis").innerHTML = items.map(([id, n, label]) =>
+        `<button type="button" class="kpi" data-kpi="${id}" aria-pressed="${state.kpi === id}"><b>${n}</b><span>${esc(label)}</span></button>`
+      ).join("");
+    }
+
+    function renderPeople() {
+      const rows = filtered();
+      if (!rows.length) {
+        $("workspace").innerHTML = `
+          <section class="panel"><div class="body">
+            <div class="empty"><strong>沒有符合的員工</strong><p>試下清走搜尋或篩選。</p>
+            <button type="button" class="textbtn" id="clearFilters">顯示全部員工</button></div>
+          </div></section>`;
+        return;
+      }
+      if (!rows.some((e) => e.no === state.selected)) state.selected = rows[0].no;
+      const e = current();
+      const list = rows.length ? rows.map((p) => `
+        <button type="button" class="emp" data-no="${esc(p.no)}" aria-selected="${p.no === e.no}">
+          <span class="av">${esc(p.chiSurname || p.engSurname.slice(0, 1) || "?")}</span>
+          <span>
+            <strong>${esc(p.no)} ${esc(p.chiSurname)} ${esc(p.engSurname)}${p.engFullName ? " " + esc(p.engFullName) : ""}</strong>
+            <small>${esc(p.position || "未填職位")} · ${esc(p.age)} 歲 · 入職 ${esc(dmy(p.hireDate) || "—")}</small>
+            <span class="pips">
+              ${p.sites.length ? `<i>${p.sites.length} 個地盤</i>` : ""}
+              ${heldSkills(p).length ? `<i>${heldSkills(p).length} 項技能</i>` : ""}
+              ${senior(p) ? `<i>65+</i>` : ""}
+            </span>
+          </span>
+        </button>`).join("") : `<div class="empty">沒有符合的員工。</div>`;
+
+      const tabs = TABS.map(([id, en, zh]) =>
+        `<button type="button" class="tab" data-tab="${id}" aria-selected="${state.tab === id}">${esc(en)}<small>${esc(zh)}</small></button>`
+      ).join("");
+
+      $("workspace").innerHTML = `
+        <div class="split">
+          <aside class="list">
+            <div class="list-head"><span>員工</span><span>${rows.length} / ${DATA.employees.length}</span></div>
+            <div class="emps">${list}</div>
+          </aside>
+          <article class="sheet">
+            <div class="sheet-head"><strong>Personal Setting</strong><span>${esc(e.no)}</span></div>
+            <div class="who">
+              <div>
+                <h2>${esc(e.chiSurname)} <span class="en">${esc(e.engSurname)}${e.engFullName ? " " + esc(e.engFullName) : ""}</span></h2>
+                <div class="meta" style="margin-top:6px">
+                  <span class="badge info">${esc(e.no)}</span>
+                  <span class="badge">${esc(e.gender === "Male" ? "男 Male" : e.gender || "性別未填")}</span>
+                  <span class="badge ${senior(e) ? "hot" : "ok"}">${esc(e.age)} 歲${senior(e) ? " · 滿65歲" : ""}</span>
+                  <span class="badge">${esc(e.position || "職位未填")}</span>
+                  <span class="badge">入職 ${esc(dmy(e.hireDate) || "—")}</span>
+                </div>
+              </div>
+            </div>
+            <div class="tabs" role="tablist">${tabs}</div>
+            <div class="body">${renderTab(e)}</div>
+          </article>
+        </div>`;
+    }
+
+    function renderTab(e) {
+      if (state.tab === "personal") {
+        return `
+          <div class="note">${e.engFullName ? "這一屏跟 PDF 的 Personal Details：英文全名、HKID、婚姻狀況、出生日期同歲數都係畫面上面的值。中文姓來自 PDF 員工表。" : "PDF 員工表只有姓氏、出生日期、歲數同性別。個人畫面的名字、身份證、電話是空的。"}</div>
+          <div class="photo">
+            <div>
+              <div class="ph">Photo<br>JPEG or PNG<br><b style="font-size:1.4rem;color:#64748b">${esc(e.chiSurname || e.engSurname.slice(0, 1))}</b></div>
+              <div class="photo-actions"><button type="button" class="ins">Insert</button><button type="button" class="rm">Remove</button></div>
+            </div>
+            <div class="stack">
+              ${field("Employee No.", e.no)}
+              ${field("Eng. Surname", e.engSurname)}
+              ${field("Eng. Full Name", e.engFullName || "")}
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="stack">
+              ${field("Chi. Surname", e.chiSurname)}
+              ${field("Chi. Full Name", "")}
+              ${field("Mobile No.", e.phone)}
+              ${field("Home Tel. No.", "")}
+              ${field("Personal Email", "")}
+              ${field("Office Mobile No.", "")}
+              ${field("Office Tel. No.", "")}
+              ${field("Office Email", "")}
+              ${field("HKID No.", e.hkid)}
+              ${field("Time Card No.", "")}
+              ${field("Gender", e.gender)}
+              ${field("Marital Status", e.marital || "")}
+              ${field("Remarks", e.remark)}
+            </div>
+            <div class="stack">
+              ${field("Eng. Given Name", "")}
+              ${field("Alias", "")}
+              ${field("Chi. Given Name", "")}
+              ${field("Ext.", "")}
+              <div class="dob">
+                ${field("Date of Birth", dmy(e.dob))}
+                ${field("歲數", e.age)}
+              </div>
+              ${field("Nationality", "")}
+              ${field("Place of Birth", "")}
+              ${field("Code", "")}
+            </div>
+          </div>`;
+      }
+      if (state.tab === "employment") {
+        if (e.movements && e.movements.length) {
+          return `<div class="note">跟 PDF 的 Employment：Company 是 Demo Company，三筆變動都是 Shop Change，Monthly Salary 是 0。員工表入職日期是 ${esc(dmy(e.hireDate))}。</div>${siteTable(e)}`;
+        }
+        const extra = e.sites.length ? "" : `<div class="empty"><strong>PDF 員工表這一行沒有地盤 X</strong><p>有日期的當值紀錄在 LPL-001。</p><button type="button" class="textbtn" data-no="LPL-001">打開 LPL-001 Chan Tai Man</button></div>`;
+        return `<div class="note">員工表只標了曾當值，沒有逐筆日期。</div>${siteTable(e)}${extra}`;
+      }
+      if (state.tab === "bank") {
+        const exempt = e.mpf === "滿65歲";
+        return `
+          <div class="note">${exempt ? "強積金欄寫著「滿65歲」，當作豁免，不是帳戶號碼。" : "強積金號碼在 Excel 被遮成 0150xxxxxx，這裡照樣顯示。"} 東亞戶口這欄八位都只得 015，即銀行代號，未有完整戶口號碼。</div>
+          <div class="form-grid">
+            <div class="stack">
+              ${field("Bank 銀行", "東亞銀行")}
+              ${field("Bank Code 銀行代號", e.bank)}
+              ${field("Account No. 戶口號碼", "")}
+            </div>
+            <div class="stack">
+              ${field("MPF 強積金號碼", exempt ? "豁免（滿65歲）" : e.mpf)}
+              ${field("滿 65 歲", senior(e) ? `是 · ${e.age} 歲` : `否 · ${e.age} 歲`)}
+            </div>
+          </div>`;
+      }
+      if (state.tab === "address") {
+        return `<div class="note">地址欄在這份 sample 是空的。</div><div class="stack">${field("地址 Address", e.address)}</div>`;
+      }
+      if (state.tab === "training") {
+        const rows = heldTraining(e);
+        const catalogue = DATA.skills.filter(isTraining);
+        return `
+          <div class="note">訓練對住 Excel 的吊索／訊號員、密閉空間、磨輪安全訓練。有 X 先算已完成。</div>
+          ${rows.length ? certTable(rows) : `<div class="empty"><strong>未有訓練紀錄</strong><p>可記錄的項目：${catalogue.map((s) => esc(s.header)).join("、")}。</p></div>`}`;
+      }
+      if (state.tab === "education") {
+        const fromPdf = (e.skills || []).some((s) => s.mark === "PDF");
+        return `<div class="note">${fromPdf ? "跟 PDF 的 Education / Qualification：Category、Certificate、Description。" : "員工表打了 X 的工藝證明。PDF 的三項木模證明在 LPL-001。"}</div>${certTable(heldSkills(e))}`;
+      }
+      if (state.tab === "skills") {
+        return `
+          <div class="note">職位是日常工種。下面是 Excel 打了 X 的銀咭同工藝測試。</div>
+          <div class="cards" style="margin-bottom:12px">
+            <div class="skill-row"><span>職位</span><b>${esc(e.position || "未填")}</b></div>
+            <div class="skill-row"><span>已持證明</span><b>${heldSkills(e).length} 項</b></div>
+          </div>
+          ${certTable(heldSkills(e))}`;
+      }
+      if (state.tab === "experience") {
+        if (e.movements && e.movements.length) {
+          return `<div class="note">PDF Employment 的三個當值地點，連生效日期。</div><div class="cards">${e.movements.map((m) => `
+            <button type="button" class="site-card" data-site="${esc(m.department)}" style="text-align:left">
+              <span>${esc(m.date)} · ${esc(m.branch)} · ${esc(m.reason)}</span>
+              <b>${esc(m.department)}</b>
+            </button>`).join("")}</div>`;
+        }
+        if (!e.sites.length) {
+          return `<div class="empty"><strong>未有當值地盤</strong><p>員工表這一行沒有地盤 X。LPL-001 的三筆在 PDF Employment 畫面。</p></div>`;
+        }
+        return `<div class="note">當值過的地點。判頭來自同一欄的第 1 行。</div><div class="cards">${e.sites.map((s) => `
+          <button type="button" class="site-card" data-site="${esc(s.site)}" style="text-align:left">
+            <span>${esc(s.contractor || "判頭未填")}</span>
+            <b>${esc(s.site)}</b>
+          </button>`).join("")}</div>`;
+      }
+      if (state.tab === "family") {
+        return `<div class="empty"><strong>未有家屬資料</strong><p>這份 Excel 沒有家屬欄。PDF 的 Family 頁保留做之後補資料。</p></div>`;
+      }
+      if (state.tab === "security") {
+        const rows = cardEntries(e).map((c) => field(cardLabel(c.key), c.value)).join("");
+        return `<div class="note">上面五格跟 PDF 的 Security 畫面，下面是員工表的平安咭、工人註冊證同智能咭。兩邊都未填號碼。</div>
+          <div class="form-grid">
+            <div class="stack">
+              ${field("Security Card No.", "")}
+              ${field("Issuing Country", "")}
+              ${field("Security Card Expiry Date", "")}
+              ${field("Require Working Visa", "")}
+              ${field("Visa Expiry Date", "")}
+            </div>
+            <div class="stack">${rows}</div>
+          </div>`;
+      }
+      if (state.tab === "approval") {
+        return `<div class="empty"><strong>未有批核紀錄</strong><p>PDF 有 Approval 頁。這份 Excel 沒有對應欄。</p></div>`;
+      }
+      const movePay = e.movements && e.movements[0] ? e.movements[0].monthly : "";
+      return `
+        <div class="note">${movePay !== "" ? "PDF 的 Employment 把 Monthly Salary 顯示為 0。員工表的薪金欄仍然是空的。" : "員工表有薪金欄，這一行未填。"}</div>
+        <div class="form-grid">
+          <div class="stack">
+            ${field("Position 職位", e.position)}
+            ${field("員工表薪金", e.salary)}
+            ${field("Employment Monthly Salary", movePay)}
+            ${field("入職日期", dmy(e.hireDate))}
+          </div>
+        </div>`;
+    }
+
+    function peopleOnSites(siteName) {
+      const key = String(siteName || "").replace(/\s+/g, "");
+      return DATA.employees.filter((e) => e.sites.some((s) => String(s.site || "").replace(/\s+/g, "") === key));
+    }
+    function renderSites() {
+      const q = state.q.trim().toLowerCase();
+      let rows = DATA.sites.filter((s) => {
+        const hit = peopleOnSites(s.site).length > 0;
+        if (state.sitesMode === "hit" && !hit) return false;
+        if (!q) return true;
+        return `${s.contractor} ${s.site}`.toLowerCase().includes(q);
+      });
+      const body = rows.map((s) => {
+        const people = peopleOnSites(s.site);
+        const names = people.map((p) => `<button type="button" class="linkish" data-no="${esc(p.no)}">${esc(p.no)} ${esc(p.chiSurname)}</button>`).join("、");
+        return `<tr><td>${esc(s.contractor || "—")}</td><td>${esc(s.site)}</td><td>${names || "—"}</td></tr>`;
+      }).join("");
+      $("workspace").innerHTML = `
+        <section class="panel">
+          <div class="panel-head">
+            <span>地盤 ${rows.length} 個${state.sitesMode === "hit" ? " · 只顯示有人當值" : ""}</span>
+            <span class="filters">
+              <button type="button" class="ghost" data-sites="${state.sitesMode === "hit" ? "all" : "hit"}">${state.sitesMode === "hit" ? "顯示全部地盤" : "只顯示有人當值"}</button>
+            </span>
+          </div>
+          <div class="body">
+            <div class="note">${DATA.sites.length} 個地盤欄來自 PDF 的員工表。LPL-001 的三個地盤跟 Employment 畫面；LPL-007 的五個地盤是表上的 X。</div>
+            <div class="table-wrap"><table class="data"><thead><tr><th>判頭</th><th>地盤</th><th>曾當值員工</th></tr></thead><tbody>${body || `<tr><td colspan="3">沒有符合的地盤。</td></tr>`}</tbody></table></div>
+          </div>
+        </section>`;
+    }
+
+    function holders(header) {
+      return DATA.employees.filter((e) => e.skills.some((s) => s.header === header));
+    }
+    function renderSkills() {
+      const q = state.q.trim().toLowerCase();
+      let rows = DATA.skills.filter((s) => !isTraining(s)).filter((s) => {
+        const hit = holders(s.header).length > 0;
+        if (state.skillsMode === "hit" && !hit) return false;
+        if (!q) return true;
+        return `${s.code} ${s.header}`.toLowerCase().includes(q);
+      });
+      const body = rows.map((s) => {
+        const m = skillMeta(s);
+        const people = holders(s.header).map((p) => `<button type="button" class="linkish" data-no="${esc(p.no)}">${esc(p.no)} ${esc(p.chiSurname)}</button>`).join("、");
+        return `<tr><td>${esc(m.category)}</td><td>${esc(m.code || "—")}</td><td>${esc(m.description)}</td><td>${people || "—"}</td></tr>`;
+      }).join("");
+      $("workspace").innerHTML = `
+        <section class="panel">
+          <div class="panel-head">
+            <span>技能／工藝證明 ${rows.length} 項</span>
+            <button type="button" class="ghost" data-skills="${state.skillsMode === "hit" ? "all" : "hit"}">${state.skillsMode === "hit" ? "顯示全部證明欄" : "只顯示有人持有"}</button>
+          </div>
+          <div class="body">
+            <div class="note">PDF 的 Education 畫面有三項木模證明，放在 LPL-001。員工表另外有殷 Yan 的銀咭 AS2，同黃 WONG 的 C307。</div>
+            <div class="table-wrap"><table class="data"><thead><tr><th>類別</th><th>編號</th><th>說明</th><th>持有人</th></tr></thead><tbody>${body || `<tr><td colspan="4">沒有符合的證明。</td></tr>`}</tbody></table></div>
+          </div>
+        </section>`;
+    }
+
+    function render() {
+      document.querySelectorAll("[data-view]").forEach((b) => {
+        b.setAttribute("aria-pressed", String(b.dataset.view === state.view));
+      });
+      renderKpis();
+      if (state.view === "sites") renderSites();
+      else if (state.view === "skills") renderSkills();
+      else renderPeople();
+      const hash = state.view === "people" ? state.selected : state.view;
+      history.replaceState(null, "", `#${hash}`);
+      const tab = document.querySelector('.tab[aria-selected="true"]');
+      if (tab) tab.parentElement.scrollLeft = Math.max(0, tab.offsetLeft - 16);
+      const emp = document.querySelector('.emp[aria-selected="true"]');
+      if (emp) {
+        const parent = emp.parentElement;
+        const top = emp.offsetTop - parent.offsetTop;
+        const bottom = top + emp.offsetHeight;
+        if (top < parent.scrollTop) parent.scrollTop = top;
+        else if (bottom > parent.scrollTop + parent.clientHeight) parent.scrollTop = bottom - parent.clientHeight;
+      }
+    }
+
+    function fillPositions() {
+      const set = new Set(DATA.employees.map((e) => e.position || "未填職位"));
+      $("position").innerHTML = `<option value="">全部職位</option>` + [...set].map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
+    }
+
+    document.body.addEventListener("click", (ev) => {
+      const view = ev.target.closest("[data-view]");
+      if (view) { state.view = view.dataset.view; render(); return; }
+      const kpi = ev.target.closest("[data-kpi]");
+      if (kpi) { state.kpi = state.kpi === kpi.dataset.kpi ? "all" : kpi.dataset.kpi; state.view = "people"; render(); return; }
+      const no = ev.target.closest("[data-no]");
+      if (no) {
+        state.selected = no.dataset.no;
+        state.view = "people";
+        if (!ev.target.closest(".emps")) {
+          state.kpi = "all";
+          state.position = "";
+          $("position").value = "";
+        }
+        render();
+        return;
+      }
+      if (ev.target.closest("#clearFilters")) {
+        state.kpi = "all"; state.position = ""; state.q = ""; state.view = "people";
+        $("q").value = ""; $("position").value = "";
+        render();
+        return;
+      }
+      const tab = ev.target.closest("[data-tab]");
+      if (tab) { state.tab = tab.dataset.tab; render(); return; }
+      const site = ev.target.closest("[data-site]");
+      if (site) { state.view = "sites"; state.q = site.dataset.site; $("q").value = site.dataset.site; state.sitesMode = "all"; render(); return; }
+      const sitesMode = ev.target.closest("[data-sites]");
+      if (sitesMode) { state.sitesMode = sitesMode.dataset.sites; render(); return; }
+      const skillsMode = ev.target.closest("[data-skills]");
+      if (skillsMode) { state.skillsMode = skillsMode.dataset.skills; render(); return; }
+    });
+    $("q").addEventListener("input", () => { state.q = $("q").value; render(); });
+    $("position").addEventListener("change", () => { state.position = $("position").value; state.view = "people"; render(); });
+    $("openMap").addEventListener("click", () => $("map").showModal());
+    $("closeMap").addEventListener("click", () => $("map").close());
+
+    const boot = decodeURIComponent(location.hash.replace(/^#/, ""));
+    if (boot === "sites" || boot === "skills") state.view = boot;
+    else if (DATA.employees.some((e) => e.no === boot)) state.selected = boot;
+    fillPositions();
+    render();
+  </script>
+</body>
+</html>
