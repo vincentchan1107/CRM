@@ -1253,6 +1253,75 @@
       70% { box-shadow: 0 0 0 18px rgba(107, 70, 254, 0); }
       100% { box-shadow: 0 0 0 0 rgba(107, 70, 254, 0); }
     }
+    @keyframes staleFlash {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, .0); border-color: #fecaca; }
+      50% { box-shadow: 0 0 0 4px rgba(220, 38, 38, .28); border-color: #f87171; }
+    }
+    @keyframes staleDotBlink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .35; transform: scale(1.25); }
+    }
+    .card-case.stale-flash,
+    #casesBody tr.stale-flash {
+      border: 1.5px solid #fca5a5;
+      background: linear-gradient(180deg, #fff5f5 0%, #fff 55%);
+      animation: staleFlash 1.6s ease-in-out infinite;
+    }
+    #casesBody tr.stale-flash td { background: transparent; }
+    .card-case.stale-flash .stale-flag {
+      display: inline-flex; align-items: center; gap: 5px;
+      margin-top: 6px;
+      font-size: .68rem; font-weight: 800; color: #b91c1c;
+    }
+    .card-case .stale-flag .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, .22);
+      animation: staleDotBlink 1.1s ease-in-out infinite;
+    }
+    .card-case.follow-overdue-flash,
+    #casesBody tr.follow-overdue-flash {
+      border: 1.5px solid #fdba74;
+      background: linear-gradient(180deg, #fff7ed 0%, #fff 60%);
+    }
+    #casesBody tr.follow-overdue-flash td { background: transparent; }
+    .sales-ops-tabs {
+      display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px;
+    }
+    .sales-ops-tabs button {
+      border: 1px solid var(--line); background: #fff; color: var(--ink-soft);
+      border-radius: 999px; padding: 7px 12px; font-size: .78rem; font-weight: 800; cursor: pointer;
+    }
+    .sales-ops-tabs button.active {
+      background: #111827; color: #fff; border-color: #111827;
+    }
+    .sales-ops-tabs button .n {
+      display: inline-block; min-width: 1.2em; margin-left: 4px;
+      padding: 0 5px; border-radius: 999px; background: rgba(15,23,42,.08);
+      font-size: .68rem;
+    }
+    .sales-ops-tabs button.active .n { background: rgba(255,255,255,.2); }
+    .sales-ops-panel {
+      border: 1px solid var(--line); border-radius: 16px; background: #fff;
+      padding: 12px 14px; margin-bottom: 14px;
+    }
+    .sales-ops-panel .ops-head {
+      display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+      align-items: end; margin-bottom: 10px;
+    }
+    .sales-ops-panel .ops-head h3 { margin: 0; font-size: 1rem; }
+    .sales-ops-panel .ops-head .sub { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+    .sales-ops-row {
+      display: grid; grid-template-columns: 1.4fr .8fr .7fr .7fr auto;
+      gap: 8px; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: .8rem;
+    }
+    .sales-ops-row:last-child { border-bottom: 0; }
+    .sales-ops-row .warn { color: #9f1239; font-weight: 800; }
+    .sales-ops-row .idle { color: #c2410c; font-weight: 800; }
+    @media (max-width: 700px) {
+      .sales-ops-row { grid-template-columns: 1fr 1fr; }
+    }
     .kanban {
       display: flex;
       flex-direction: row;
@@ -2807,7 +2876,9 @@
       padding: 16px;
     }
     .action-modal {
-      width: min(440px, 100%);
+      width: min(560px, 100%);
+      max-height: min(92vh, 820px);
+      overflow: auto;
       background: #fff;
       border-radius: 18px;
       box-shadow: 0 24px 60px rgba(26, 22, 48, .28);
@@ -2824,10 +2895,24 @@
     .action-modal .am-fields {
       display: flex; flex-direction: column; gap: 10px;
     }
+    .action-modal .am-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    @media (max-width: 560px) {
+      .action-modal .am-grid { grid-template-columns: 1fr; }
+    }
     .action-modal .am-fields .field span { font-size: .72rem; font-weight: 800; }
     .action-modal .am-fields select.potential-High { color: #15803d; background: #ecfdf5; }
     .action-modal .am-fields select.potential-Mid { color: #c2410c; background: #fff7ed; }
     .action-modal .am-fields select.potential-Low { color: #475569; background: #f8fafc; }
+    .action-modal .am-chips {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+    }
+    .action-modal .am-chips button {
+      border: 1px solid var(--line); background: #f8fafc; color: var(--ink-soft);
+      border-radius: 999px; padding: 5px 10px; font-size: .72rem; font-weight: 800; cursor: pointer;
+    }
+    .action-modal .am-chips button:hover { border-color: var(--accent); color: var(--accent); }
     .action-modal .am-actions {
       display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; flex-wrap: wrap;
     }
@@ -4356,6 +4441,7 @@
       <div class="mgmt-panel" id="mgmt-sales">
         <div class="mgmt-stats" id="salesStats"></div>
         <p class="muted" style="margin-bottom:10px;font-size:.78rem" id="salesMgmtIntro">本公司銷售員可新增 · 可設計每人 KPI，並預先規劃未來每年 12 個月 Closing 目標同表現對照 · Dashboard 會顯示目標 vs 實際</p>
+        <div class="sales-ops-tabs" id="salesOpsTabs" role="tablist" aria-label="Sales 管理檢視"></div>
         <div class="mkt-panel" id="addSalesLoginPanel" data-admin-only="1" style="margin-bottom:12px">
           <div class="mkt-panel-head">
             <strong>新增銷售員 ＋ Login</strong>
@@ -4369,18 +4455,22 @@
           </div>
           <p class="muted" style="margin:8px 0 0;font-size:.72rem">建立後角色為 SALES，可用呢組帳密登入；只會睇自己嘅案件資料。</p>
         </div>
-        <div class="sales-kpi-grid">
-          <div class="sales-kpi-nav" id="salesKpiNav"></div>
-          <div class="sales-kpi-panel" id="salesKpiPanel"></div>
+        <div id="salesOpsFollowPanel" class="sales-ops-panel hidden"></div>
+        <div id="salesOpsStalePanel" class="sales-ops-panel hidden"></div>
+        <div id="salesOpsKpiWrap">
+          <div class="sales-kpi-grid">
+            <div class="sales-kpi-nav" id="salesKpiNav"></div>
+            <div class="sales-kpi-panel" id="salesKpiPanel"></div>
+          </div>
+          <div class="eyebrow" style="margin:16px 0 8px">團隊總覽</div>
+          <div class="table-wrap"><table>
+            <thead><tr>
+              <th>本公司銷售員</th><th>本月目標</th><th>本月已 Closing</th><th>本月達成</th><th id="salesYearTargetHead">全年目標</th><th id="salesYearActualHead">全年已 Closing</th><th>Pipeline</th><th>加權預測</th><th>轉換率</th><th>近 1 月會面</th><th>成功簽單</th><th>簽單金額</th>
+            </tr></thead>
+            <tbody id="salesBody"></tbody>
+          </table></div>
+          <div id="salesUnassigned" style="margin-top:12px"></div>
         </div>
-        <div class="eyebrow" style="margin:16px 0 8px">團隊總覽</div>
-        <div class="table-wrap"><table>
-          <thead><tr>
-            <th>本公司銷售員</th><th>本月目標</th><th>本月已 Closing</th><th>本月達成</th><th id="salesYearTargetHead">全年目標</th><th id="salesYearActualHead">全年已 Closing</th><th>Pipeline</th><th>加權預測</th><th>轉換率</th><th>近 1 月會面</th><th>成功簽單</th><th>簽單金額</th>
-          </tr></thead>
-          <tbody id="salesBody"></tbody>
-        </table></div>
-        <div id="salesUnassigned" style="margin-top:12px"></div>
       </div>
 
       <div class="mgmt-panel" id="mgmt-teams">
@@ -5259,7 +5349,9 @@
       lead: ["activity", "stale", "stage", "funnel", "targetClosing"],
     };
     const DEFAULT_DASH_MODULE_ORDER = ["activity", "stale", "partner", "salesTarget", "teamSales", "targetClosing", "stage", "funnel"];
-    const DASH_STALE_DAYS = 60; // ~兩個月內無動態
+    const DASH_STALE_DAYS = 60; // ~兩個月內無動態（Dashboard）
+    const CARD_STALE_DAYS = 14; // 看板閃燈：超過 N 日無動態
+    let salesOpsTab = localStorage.getItem("crm_sales_ops_tab") || "kpi";
     let dashActivityPeriod = localStorage.getItem("crm_dash_activity_period") || "week"; // today | week
     let dashModuleOrder = (() => {
       const raw = loadDashArr("crm_dash_module_order", DEFAULT_DASH_MODULE_ORDER);
@@ -9164,6 +9256,63 @@
       return best ? new Date(best) : null;
     }
 
+    function isCaseStale(c, { days = CARD_STALE_DAYS } = {}) {
+      if (!c || c.stage === "closed" || isDq(c)) return false;
+      const last = caseLastActivityAt(c);
+      if (!last) return true;
+      return last < daysAgo(days);
+    }
+    function caseIdleDays(c) {
+      const last = caseLastActivityAt(c);
+      if (!last) return null;
+      const now = todayStart().getTime();
+      return Math.max(0, Math.floor((now - todayStartFromDate(last).getTime()) / 86400000));
+    }
+    function buildStaleCaseRowsForSales(salesName, { days = CARD_STALE_DAYS } = {}) {
+      const pool = scopedCases(cases).filter((c) => {
+        if (salesName && salesName !== "all") {
+          return normalizeCompanySales(c.companySales) === salesName;
+        }
+        return true;
+      });
+      return pool
+        .filter((c) => isCaseStale(c, { days }))
+        .map((c) => ({
+          case: c,
+          idleDays: caseIdleDays(c),
+          lastAt: caseLastActivityAt(c),
+          overdue: isFollowUpOverdue(c),
+        }))
+        .sort((a, b) => (b.idleDays || 0) - (a.idleDays || 0));
+    }
+    function buildFollowUpRowsForSales(salesName) {
+      const pool = scopedCases(cases).filter((c) => {
+        if (c.stage === "closed" || isDq(c)) return false;
+        if (salesName && salesName !== "all") {
+          return normalizeCompanySales(c.companySales) === salesName;
+        }
+        return true;
+      });
+      const today = formatLocalDate(new Date());
+      const soon = formatLocalDate(new Date(Date.now() + 3 * 86400000));
+      return pool
+        .filter((c) => c.nextFollowUpAt || isFollowUpOverdue(c))
+        .map((c) => {
+          const d = c.nextFollowUpAt || "";
+          let bucket = "set";
+          if (isFollowUpOverdue(c)) bucket = "overdue";
+          else if (d && d <= today) bucket = "today";
+          else if (d && d <= soon) bucket = "soon";
+          else if (!d) bucket = "none";
+          return { case: c, date: d, bucket, overdue: bucket === "overdue" };
+        })
+        .filter((r) => r.bucket === "overdue" || r.bucket === "today" || r.bucket === "soon")
+        .sort((a, b) => {
+          const order = { overdue: 0, today: 1, soon: 2 };
+          if (order[a.bucket] !== order[b.bucket]) return order[a.bucket] - order[b.bucket];
+          return String(a.date).localeCompare(String(b.date));
+        });
+    }
     function buildStaleClientRows(pool, { days = DASH_STALE_DAYS } = {}) {
       const cutoff = daysAgo(days);
       const map = new Map();
@@ -10710,9 +10859,14 @@
     function renderBoard() {
       syncBoardFilterUi();
       const overdueN = getOverdueFollowUpItems().length;
+      const staleN = scopedCases(cases).filter((c) => isCaseStale(c)).length;
       const boardAlert = document.getElementById("boardOverdueAlert");
       if (boardAlert) {
-        boardAlert.innerHTML = overdueAlertHtml(overdueN, { source: "board" });
+        const parts = [overdueAlertHtml(overdueN, { source: "board" })];
+        if (staleN) {
+          parts.push(`<div class="mgmt-alert" style="margin-top:8px">💡 有 <strong>${staleN}</strong> 宗個案超過 ${CARD_STALE_DAYS} 日無進度 — 看板卡片會<strong style="color:#b91c1c">紅燈閃爍</strong>提示</div>`);
+        }
+        boardAlert.innerHTML = parts.join("");
         bindOverdueAlert(boardAlert);
       }
       renderBoardDash();
@@ -10730,11 +10884,22 @@
       const apptText = appt && !Number.isNaN(appt.getTime())
         ? appt.toLocaleString("zh-HK", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
         : "";
+      const followOverdue = isFollowUpOverdue(c);
       const followText = c.nextFollowUpAt
-        ? (isFollowUpOverdue(c) ? `跟進 ${formatLocalDate(parseLocalDate(c.nextFollowUpAt))} · 逾期` : `跟進 ${formatLocalDate(parseLocalDate(c.nextFollowUpAt))}`)
+        ? (followOverdue ? `跟進 ${formatLocalDate(parseLocalDate(c.nextFollowUpAt))} · 逾期` : `跟進 ${formatLocalDate(parseLocalDate(c.nextFollowUpAt))}`)
         : "未設跟進";
       const sales = normalizeCompanySales(c.companySales) || "未指派";
-      return `<article class="card-case" data-id="${c.id}" title="拖曳可改 Stage">
+      const stale = isCaseStale(c);
+      const idle = caseIdleDays(c);
+      const cardClass = [
+        "card-case",
+        stale ? "stale-flash" : "",
+        !stale && followOverdue ? "follow-overdue-flash" : "",
+      ].filter(Boolean).join(" ");
+      const staleTitle = stale
+        ? `超過 ${CARD_STALE_DAYS} 日無動態${idle != null ? `（已閒置 ${idle} 日）` : ""}`
+        : "拖曳可改 Stage";
+      return `<article class="${cardClass}" data-id="${c.id}" title="${escapeAttr(staleTitle)}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
           <strong style="white-space:pre-line;font-size:.9rem;min-width:0;flex:1">${escapeHtml(companyLine)}</strong>
           ${leadStatusBadgeHtml(c.leadStatus, { selectId: `card_lead_${c.id}`, caseId: c.id })}
@@ -10743,7 +10908,7 @@
         <div class="card-meta-row">
           <span>💰 ${money(c.amount)}</span>
           <span>${c.appointmentFlag || apptText ? `📅 ${apptText || "已約"}` : "📅 未約"}</span>
-          <span style="${isFollowUpOverdue(c) ? "color:#9f1239;font-weight:800" : ""}">🗓 ${escapeHtml(followText)}</span>
+          <span style="${followOverdue ? "color:#9f1239;font-weight:800" : ""}">🗓 ${escapeHtml(followText)}</span>
         </div>
         <div class="tags" style="margin-top:6px">${(c.systems || []).slice(0, 3).map((x) => `<span class="tag on" style="cursor:default;padding:2px 8px">${escapeHtml(x)}</span>`).join("")}</div>
         <div style="margin-top:6px;font-size:.7rem;color:var(--ink-soft)">
@@ -10753,6 +10918,7 @@
             ? ` · DQ${dqReasonLabel(c.dqReason) ? `：${escapeHtml(dqReasonLabel(c.dqReason).split(" / ")[0])}` : ""}`
             : ""}
         </div>
+        ${stale ? `<div class="stale-flag"><span class="dot" aria-hidden="true"></span>無進度 ${idle != null ? idle + " 日" : CARD_STALE_DAYS + "+ 日"}</div>` : ""}
         <div style="margin-top:6px"><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></div>
       </article>`;
     }
@@ -10904,9 +11070,12 @@
         const s = stageMeta(c.stage);
         const n = (contactsByCase[c.id] || []).length;
         const companyLine = (c.customerName || "").split("\n")[0];
+        const stale = isCaseStale(c);
+        const idle = caseIdleDays(c);
+        const followOverdue = isFollowUpOverdue(c);
         const cells = {
           select: `<td><input type="checkbox" class="case-select" data-id="${escapeAttr(c.id)}" ${casesSelected.has(c.id) ? "checked" : ""} /></td>`,
-          customer: `<td><strong>${escapeHtml(companyLine)}</strong><div class="muted" style="font-size:.72rem">${n} contacts · ${escapeHtml(c.ricohSales || "—")}</div></td>`,
+          customer: `<td><strong>${escapeHtml(companyLine)}</strong><div class="muted" style="font-size:.72rem">${n} contacts · ${escapeHtml(c.ricohSales || "—")}</div>${stale ? `<div class="stale-flag" style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;font-size:.68rem;font-weight:800;color:#b91c1c"><span class="dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;animation:staleDotBlink 1.1s ease-in-out infinite"></span>無進度 ${idle != null ? idle + " 日" : CARD_STALE_DAYS + "+ 日"}</div>` : ""}</td>`,
           partner: `<td>${escapeHtml(c.partner)}<div class="muted" style="font-size:.68rem">${escapeHtml(c.ricohHouse || "")}</div></td>`,
           sales: `<td>${escapeHtml(normalizeCompanySales(c.companySales) || "未指派")}</td>`,
           systems: `<td>${(c.systems || []).map((x) => `<span class="badge" style="background:var(--accent-soft);color:var(--accent);margin:1px">${escapeHtml(x)}</span>`).join(" ") || "—"}</td>`,
@@ -10917,10 +11086,10 @@
           appt: `<td>${c.appointmentAt ? new Date(c.appointmentAt).toLocaleString("zh-HK") : "—"}<div class="muted" style="font-size:.68rem">${c.appointmentConfirmed ? "已確認" : (c.appointmentFlag ? "待確認" : "")}</div></td>`,
           meeting: `<td>${c.meetingDone ? "已會面" : "未會面"}</td>`,
           follow: `<td>${c.followUpOpportunity ? "有" : "—"}</td>`,
-          nextFollow: `<td style="${isFollowUpOverdue(c) ? "color:#9f1239;font-weight:800" : ""}">${c.nextFollowUpAt || "—"}</td>`,
+          nextFollow: `<td style="${followOverdue ? "color:#9f1239;font-weight:800" : ""}">${c.nextFollowUpAt || "—"}</td>`,
           actions: `<td><button class="btn btn-ghost btn-sm" data-open="${c.id}">詳情</button></td>`,
         };
-        return `<tr>${cols.map((col) => cells[col.id] || "<td>—</td>").join("")}</tr>`;
+        return `<tr class="${stale ? "stale-flash" : (followOverdue ? "follow-overdue-flash" : "")}">${cols.map((col) => cells[col.id] || "<td>—</td>").join("")}</tr>`;
       }).join("");
       body.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => openDrawer(b.dataset.open));
       body.querySelectorAll(".case-select").forEach((cb) => {
@@ -11834,28 +12003,56 @@
       if (!root) return;
       const potNow = normalizePotential(c.potential);
       const followNow = c.nextFollowUpAt || "";
+      const suggestedStage = nextStageAfterMeeting(c.stage);
+      const leadNow = normalizeLeadStatus(c.leadStatus);
+      const addDays = (n) => formatLocalDate(new Date(Date.now() + n * 86400000));
       root.innerHTML = `<div class="action-modal-bg" role="presentation">
         <div class="action-modal" role="dialog" aria-modal="true" aria-label="完成會面">
           <div class="am-head">
             <div>
-              <div class="eyebrow">會議完成</div>
+              <div class="eyebrow">會議完成 · 快速入料</div>
               <h2>${escapeHtml(c.customerName || companyKey(c))}</h2>
-              <p class="muted" style="margin:4px 0 0;font-size:.75rem">設定 Potential、會議記錄 Comment、下次跟進日</p>
+              <p class="muted" style="margin:4px 0 0;font-size:.75rem">見客後一次過更新 Lead Status、金額、Potential、跟進日同會議記錄</p>
             </div>
             <button type="button" class="btn btn-ghost btn-sm" id="cmCancel">取消</button>
           </div>
           <div class="am-fields">
-            <label class="field"><span>Potential</span>
-              <select id="cmPotential" class="${potNow ? `potential-${potNow}` : ""}" aria-label="Potential">
-                <option value="" ${!potNow ? "selected" : ""}>未設</option>
-                ${POTENTIAL_LEVELS.map((p) => `<option value="${p}" ${potNow === p ? "selected" : ""}>${p}</option>`).join("")}
-              </select>
+            <div class="am-grid">
+              <label class="field"><span>Lead Status</span>
+                <select id="cmLeadStatus" aria-label="Lead Status">${leadStatusOptionsHtml(leadNow)}</select>
+              </label>
+              <label class="field"><span>Potential</span>
+                <select id="cmPotential" class="${potNow ? `potential-${potNow}` : ""}" aria-label="Potential">
+                  <option value="" ${!potNow ? "selected" : ""}>未設</option>
+                  ${POTENTIAL_LEVELS.map((p) => `<option value="${p}" ${potNow === p ? "selected" : ""}>${p}</option>`).join("")}
+                </select>
+              </label>
+              <label class="field"><span>Budget (HKD)</span>
+                <input id="cmBudget" type="number" min="0" step="1000" value="${c.budget ? escapeAttr(String(c.budget)) : ""}" placeholder="0" />
+              </label>
+              <label class="field"><span>Contract Amount (HKD)</span>
+                <input id="cmAmount" type="number" min="0" step="1000" value="${c.amount ? escapeAttr(String(c.amount)) : ""}" placeholder="0" />
+              </label>
+              <label class="field"><span>Stage（建議 ${escapeHtml(stageMeta(suggestedStage).label)}）</span>
+                <select id="cmStage" aria-label="Stage">
+                  ${STAGES.filter((s) => s.id !== "closed").map((s) => `<option value="${s.id}" ${s.id === suggestedStage ? "selected" : ""}>${escapeHtml(s.label)}</option>`).join("")}
+                </select>
+              </label>
+              <label class="field"><span>下次跟進日</span>
+                <input id="cmFollow" type="date" value="${escapeAttr(followNow || addDays(7))}" />
+                <div class="am-chips" id="cmFollowChips">
+                  <button type="button" data-follow-days="3">+3 日</button>
+                  <button type="button" data-follow-days="7">+7 日</button>
+                  <button type="button" data-follow-days="14">+14 日</button>
+                  <button type="button" data-follow-days="30">+30 日</button>
+                </div>
+              </label>
+            </div>
+            <label class="field hidden" id="cmDqWrap"><span>DQ REASON</span>
+              <select id="cmDqReason">${dqReasonOptionsHtml(c.dqReason)}</select>
             </label>
             <label class="field"><span>會議記錄 Comment</span>
-              <textarea id="cmComment" rows="4" placeholder="例如：客人對方案有興趣，下週跟進報價…"></textarea>
-            </label>
-            <label class="field"><span>下次跟進日</span>
-              <input id="cmFollow" type="date" value="${escapeAttr(followNow)}" />
+              <textarea id="cmComment" rows="4" placeholder="例如：客人對方案有興趣，下週跟進報價／預算約…">${escapeHtml(c.meetingNotes || "")}</textarea>
             </label>
           </div>
           <div class="am-actions">
@@ -11872,6 +12069,19 @@
         const v = normalizePotential(potSel.value);
         if (v) potSel.classList.add(`potential-${v}`);
       };
+      const syncDq = () => {
+        const wrap = document.getElementById("cmDqWrap");
+        const isDqLead = normalizeLeadStatus(document.getElementById("cmLeadStatus")?.value) === "DQ";
+        wrap?.classList.toggle("hidden", !isDqLead);
+      };
+      document.getElementById("cmLeadStatus").onchange = syncDq;
+      syncDq();
+      document.querySelectorAll("#cmFollowChips [data-follow-days]").forEach((btn) => {
+        btn.onclick = () => {
+          const n = Number(btn.dataset.followDays) || 7;
+          document.getElementById("cmFollow").value = addDays(n);
+        };
+      });
       root.querySelector(".action-modal-bg").onclick = (e) => {
         if (e.target.classList.contains("action-modal-bg")) close();
       };
@@ -11881,10 +12091,25 @@
         const btn = document.getElementById("cmSave");
         if (btn) btn.disabled = true;
         try {
+          const leadStatus = normalizeLeadStatus(document.getElementById("cmLeadStatus").value);
+          let dqReason = "";
+          if (leadStatus === "DQ") {
+            dqReason = normalizeDqReason(document.getElementById("cmDqReason").value);
+            if (!dqReason) {
+              toast("DQ 請選擇 REASON");
+              if (btn) btn.disabled = false;
+              return;
+            }
+          }
           await completeMeetingQuick(c.id, {
             potential: document.getElementById("cmPotential").value,
             comment: document.getElementById("cmComment").value,
             nextFollowUpAt: document.getElementById("cmFollow").value || "",
+            leadStatus,
+            dqReason,
+            budget: document.getElementById("cmBudget").value,
+            amount: document.getElementById("cmAmount").value,
+            stage: document.getElementById("cmStage").value,
           });
           close();
         } catch (err) {
@@ -11898,30 +12123,48 @@
     async function completeMeetingQuick(caseId, opts = {}) {
       const c = cases.find((x) => x.id === caseId);
       if (!c) return;
-      const nextStage = nextStageAfterMeeting(c.stage);
+      const suggested = nextStageAfterMeeting(c.stage);
+      const stage = opts.stage && STAGES.some((s) => s.id === opts.stage) ? opts.stage : suggested;
       const note = String(opts.comment ?? "").trim();
       const potential = normalizePotential(opts.potential ?? c.potential);
       const nextFollowUpAt = opts.nextFollowUpAt != null ? String(opts.nextFollowUpAt || "") : (c.nextFollowUpAt || "");
+      const leadStatus = opts.leadStatus != null ? normalizeLeadStatus(opts.leadStatus) : normalizeLeadStatus(c.leadStatus);
+      const dqReason = leadStatus === "DQ"
+        ? (normalizeDqReason(opts.dqReason) || normalizeDqReason(c.dqReason) || "")
+        : "";
+      const budget = opts.budget != null && opts.budget !== "" ? Number(opts.budget) || 0 : c.budget;
+      const amount = opts.amount != null && opts.amount !== "" ? Number(opts.amount) || 0 : c.amount;
       const logContent = note || "會面已完成";
       localPotentialSet(c.id, potential);
       localFollowUpSet(c.id, nextFollowUpAt);
+      if (dqReason) localDqReasonSet(c.id, dqReason);
       await db.from("crm_activity_logs").insert({
         case_id: c.id,
         log_type: "meeting_done",
         content: logContent,
         created_at: new Date().toISOString(),
       });
-      await updateCase(c.id, {
+      const patch = {
         meetingDone: true,
         meetingNotes: note || c.meetingNotes || logContent,
         appointmentConfirmed: true,
-        stage: nextStage === c.stage ? c.stage : nextStage,
-        followUpOpportunity: true,
+        stage: leadStatus === "DQ" ? "closed" : stage,
+        followUpOpportunity: leadStatus !== "DQ",
         potential,
         nextFollowUpAt,
-      }, { source: "完成會面" });
-      toast(`已完成會面${potential ? ` · Potential ${potential}` : ""}${nextFollowUpAt ? ` · 跟進 ${nextFollowUpAt}` : ""}${nextStage !== c.stage ? " · 階段 → " + stageMeta(nextStage).label : ""}`);
+        leadStatus,
+        budget,
+        amount,
+        dqReason,
+      };
+      if (leadStatus === "DQ") {
+        patch.closeReason = "disqualified";
+      }
+      await updateCase(c.id, patch, { source: "完成會面" });
+      toast(`已完成會面${potential ? ` · Potential ${potential}` : ""}${nextFollowUpAt ? ` · 跟進 ${nextFollowUpAt}` : ""}${leadStatus === "DQ" ? " · DQ" : (stage !== c.stage ? " · 階段 → " + stageMeta(stage).label : "")}`);
       renderAgenda();
+      if (!document.getElementById("view-board")?.classList.contains("hidden")) renderBoard();
+      if (mgmtTab === "sales" && !document.getElementById("view-mgmt")?.classList.contains("hidden")) renderSalesMgmt();
     }
 
     function renderAgendaCalendar(items, range) {
@@ -12739,13 +12982,76 @@
       });
     }
 
+    function salesOpsBucketLabel(bucket) {
+      return ({ overdue: "已逾期", today: "今日", soon: "三日內" })[bucket] || bucket;
+    }
+
+    function renderSalesOpsFollowPanel(salesName) {
+      const rows = buildFollowUpRowsForSales(salesName);
+      const overdueN = rows.filter((r) => r.bucket === "overdue").length;
+      const todayN = rows.filter((r) => r.bucket === "today").length;
+      const soonN = rows.filter((r) => r.bucket === "soon").length;
+      return `
+        <div class="ops-head">
+          <div>
+            <h3>${escapeHtml(salesName)} · 跟進提示</h3>
+            <div class="sub">逾期 ${overdueN} · 今日 ${todayN} · 三日內 ${soonN} · 共 ${rows.length} 宗需關注</div>
+          </div>
+        </div>
+        ${rows.length ? rows.slice(0, 80).map((r) => {
+          const c = r.case;
+          const s = stageMeta(c.stage);
+          return `<div class="sales-ops-row">
+            <div>
+              <strong>${escapeHtml(companyKey(c))}</strong>
+              <div class="muted" style="font-size:.68rem">${escapeHtml(c.partner || "—")} · ${escapeHtml(normalizeCompanySales(c.companySales) || "未指派")}</div>
+            </div>
+            <div><span class="badge" style="color:${s.color};background:${s.bg}">${escapeHtml(s.short)}</span></div>
+            <div class="${r.overdue ? "warn" : ""}">${escapeHtml(r.date || "—")}</div>
+            <div class="${r.overdue ? "warn" : ""}">${escapeHtml(salesOpsBucketLabel(r.bucket))}</div>
+            <div><button type="button" class="btn btn-ghost btn-sm" data-case-id="${escapeAttr(c.id)}">詳情</button></div>
+          </div>`;
+        }).join("") + (rows.length > 80 ? `<p class="muted" style="margin-top:8px;font-size:.72rem">只顯示前 80 宗</p>` : "")
+        : `<div class="mgmt-alert ok">✓ 三日內沒有需跟進提示</div>`}
+      `;
+    }
+
+    function renderSalesOpsStalePanel(salesName) {
+      const rows = buildStaleCaseRowsForSales(salesName);
+      return `
+        <div class="ops-head">
+          <div>
+            <h3>${escapeHtml(salesName)} · 停滯個案</h3>
+            <div class="sub">超過 ${CARD_STALE_DAYS} 日無 Log／會面／案件更新 · 共 ${rows.length} 宗 · 看板會紅燈閃爍</div>
+          </div>
+        </div>
+        ${rows.length ? rows.slice(0, 80).map((r) => {
+          const c = r.case;
+          const s = stageMeta(c.stage);
+          const lastText = r.lastAt ? formatLocalDate(r.lastAt) : "從未有動態";
+          return `<div class="sales-ops-row">
+            <div>
+              <strong>${escapeHtml(companyKey(c))}</strong>
+              <div class="muted" style="font-size:.68rem">${escapeHtml(c.partner || "—")} · ${money(c.amount)}</div>
+            </div>
+            <div><span class="badge" style="color:${s.color};background:${s.bg}">${escapeHtml(s.short)}</span></div>
+            <div class="idle">${r.idleDays != null ? r.idleDays + " 日" : "—"}</div>
+            <div>${escapeHtml(lastText)}${r.overdue ? '<div class="warn" style="font-size:.68rem">跟進逾期</div>' : ""}</div>
+            <div><button type="button" class="btn btn-ghost btn-sm" data-case-id="${escapeAttr(c.id)}">詳情</button></div>
+          </div>`;
+        }).join("") + (rows.length > 80 ? `<p class="muted" style="margin-top:8px;font-size:.72rem">只顯示前 80 宗</p>` : "")
+        : `<div class="mgmt-alert ok">✓ 沒有超過 ${CARD_STALE_DAYS} 日停滯嘅個案</div>`}
+      `;
+    }
+
     function renderSalesMgmt() {
       const salesNames = scopedSalesNames();
       if (!salesNames.includes(salesKpiSelected)) salesKpiSelected = salesNames[0] || COMPANY_SALES[0];
+      if (!["kpi", "follow", "stale"].includes(salesOpsTab)) salesOpsTab = "kpi";
       const rows = buildSalesRows();
-      const scopePool = scopedCases(cases);
-      const assigned = scopePool.filter((c) => !!normalizeCompanySales(c.companySales)).length;
-      const unassigned = isAdmin() ? cases.filter((c) => !normalizeCompanySales(c.companySales)).length : 0;
+      const followRowsAll = buildFollowUpRowsForSales(isSales() ? salesKpiSelected : "all");
+      const staleRowsAll = buildStaleCaseRowsForSales(isSales() ? salesKpiSelected : "all");
+      const overdueN = followRowsAll.filter((r) => r.bucket === "overdue").length;
       const cur = currentMonthKey();
       const curStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
       const curEnd = endOfDay(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
@@ -12760,17 +13066,17 @@
       const intro = document.getElementById("salesMgmtIntro");
       if (intro) {
         intro.textContent = isAdmin()
-          ? `本公司銷售員：${COMPANY_SALES.join("／")} · 可新增銷售員並設定 Login／密碼 · 可設計每人 KPI 同 Closing 目標`
-          : `我的銷售員資料 · 可設計 KPI，並預先規劃未來每年 12 個月 Closing 目標`;
+          ? `本公司銷售員：${COMPANY_SALES.join("／")} · KPI／跟進提示／停滯閃燈 · 可新增銷售員 Login`
+          : `我的銷售表現 · KPI · 跟進提示 · 停滯個案警報`;
       }
       const addPanel = document.getElementById("addSalesLoginPanel");
-      if (addPanel) addPanel.classList.toggle("hidden", !isAdmin());
+      if (addPanel) addPanel.classList.toggle("hidden", !isAdmin() || salesOpsTab !== "kpi");
 
       document.getElementById("salesStats").innerHTML = [
         renderStatCard({ label: isSales() ? "銷售員" : "本公司銷售員", value: salesNames.length, sub: salesNames.join(" · ") || "—", tone: "purple", icon: "people" }),
-        renderStatCard({ label: `本月${scopeLabel} Closing 目標`, value: money(teamTarget), sub: `已完成 ${money(teamClosed)} · 達成 ${teamTarget ? teamPct + "%" : "—"}`, tone: "sky", icon: "money", valueStyle: "font-size:1.05rem" }),
-        renderStatCard({ label: `${planYear} 年${scopeLabel}目標`, value: money(teamYearTarget), sub: `全年已完成 ${money(teamYearClosed)} · ${teamYearTarget ? teamYearPct + "%" : "未設"}`, tone: teamYearPct >= 100 ? "mint" : "orange", icon: "chart", valueStyle: "font-size:1.05rem" }),
-        renderStatCard({ label: "已指派 Case", value: `${assigned} / ${scopePool.length}`, sub: isAdmin() && unassigned ? `${unassigned} 宗未指派` : (isSales() ? "只顯示自己案件" : "全部已指派"), tone: "mint", icon: "cases", valueStyle: "font-size:1.2rem" }),
+        renderStatCard({ label: `本月${scopeLabel} Closing`, value: money(teamClosed), sub: `目標 ${money(teamTarget)} · ${teamTarget ? teamPct + "%" : "未設"}`, tone: "sky", icon: "money", valueStyle: "font-size:1.05rem" }),
+        renderStatCard({ label: "跟進提示", value: followRowsAll.length, sub: overdueN ? `${overdueN} 宗已逾期` : "逾期 0 · 三日內需跟進", tone: overdueN ? "orange" : "mint", icon: "cases", valueStyle: "font-size:1.2rem" }),
+        renderStatCard({ label: "停滯個案", value: staleRowsAll.length, sub: `>${CARD_STALE_DAYS} 日無進度 · 看板閃燈`, tone: staleRowsAll.length ? "orange" : "mint", icon: "chart", valueStyle: "font-size:1.2rem" }),
       ].join("");
       // top cards: count from 0 → target within 3s
       requestAnimationFrame(() => {
@@ -12781,6 +13087,74 @@
           selector: ".stat .value",
         });
       });
+
+      const tabs = document.getElementById("salesOpsTabs");
+      if (tabs) {
+        tabs.innerHTML = [
+          { id: "kpi", label: "表現／KPI", n: null },
+          { id: "follow", label: "跟進提示", n: followRowsAll.length },
+          { id: "stale", label: "停滯個案", n: staleRowsAll.length },
+        ].map((t) => `<button type="button" role="tab" data-sales-ops-tab="${t.id}" class="${salesOpsTab === t.id ? "active" : ""}" aria-selected="${salesOpsTab === t.id}">
+          ${escapeHtml(t.label)}${t.n != null ? `<span class="n">${t.n}</span>` : ""}
+        </button>`).join("");
+        tabs.querySelectorAll("[data-sales-ops-tab]").forEach((btn) => {
+          btn.onclick = () => {
+            salesOpsTab = btn.dataset.salesOpsTab || "kpi";
+            localStorage.setItem("crm_sales_ops_tab", salesOpsTab);
+            renderSalesMgmt();
+          };
+        });
+      }
+
+      const kpiWrap = document.getElementById("salesOpsKpiWrap");
+      const followPanel = document.getElementById("salesOpsFollowPanel");
+      const stalePanel = document.getElementById("salesOpsStalePanel");
+      if (kpiWrap) kpiWrap.classList.toggle("hidden", salesOpsTab !== "kpi");
+      if (followPanel) {
+        followPanel.classList.toggle("hidden", salesOpsTab !== "follow");
+        if (salesOpsTab === "follow") {
+          followPanel.innerHTML = `
+            <div class="sales-kpi-nav" style="margin-bottom:12px" id="salesOpsPersonNavFollow"></div>
+            ${renderSalesOpsFollowPanel(salesKpiSelected)}
+          `;
+        }
+      }
+      if (stalePanel) {
+        stalePanel.classList.toggle("hidden", salesOpsTab !== "stale");
+        if (salesOpsTab === "stale") {
+          stalePanel.innerHTML = `
+            <div class="sales-kpi-nav" style="margin-bottom:12px" id="salesOpsPersonNavStale"></div>
+            ${renderSalesOpsStalePanel(salesKpiSelected)}
+          `;
+        }
+      }
+
+      const bindPersonNav = (rootId) => {
+        const root = document.getElementById(rootId);
+        if (!root) return;
+        root.innerHTML = salesNames.map((n) => {
+          const fN = buildFollowUpRowsForSales(n).length;
+          const sN = buildStaleCaseRowsForSales(n).length;
+          const tip = salesOpsTab === "stale" ? `停滯 ${sN}` : `跟進 ${fN}`;
+          return `<button type="button" data-sales-kpi="${escapeAttr(n)}" class="${n === salesKpiSelected ? "active" : ""}">
+            ${escapeHtml(n)}<span class="sub">${escapeHtml(tip)}</span>
+          </button>`;
+        }).join("");
+        root.querySelectorAll("[data-sales-kpi]").forEach((btn) => {
+          btn.onclick = () => {
+            salesKpiSelected = btn.dataset.salesKpi;
+            localStorage.setItem("crm_sales_kpi_selected", salesKpiSelected);
+            renderSalesMgmt();
+          };
+        });
+      };
+      bindPersonNav("salesOpsPersonNavFollow");
+      bindPersonNav("salesOpsPersonNavStale");
+      document.querySelectorAll("#salesOpsFollowPanel [data-case-id], #salesOpsStalePanel [data-case-id]").forEach((btn) => {
+        btn.onclick = () => openDrawer(btn.dataset.caseId);
+      });
+
+      if (salesOpsTab !== "kpi") return;
 
       document.getElementById("salesKpiNav").innerHTML = salesNames.map((n) => {
         const t = Number(getSalesPlan(n).months[cur]?.closingTarget) || 0;
