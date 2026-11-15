@@ -9713,30 +9713,41 @@
       const followN = filtered.filter((c) => c.followUpOpportunity).length;
       const rangeAmt = inRange.reduce((s, c) => s + (c.amount || 0), 0);
       const rangeWeighted = inRange.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
-      const monthRanges = thisAndLastMonthRanges();
-      const createdThisMonth = filtered.filter((c) => caseInDateRange(caseCreatedDate(c), monthRanges.thisMonth.from, monthRanges.thisMonth.to));
-      const createdLastMonth = filtered.filter((c) => caseInDateRange(caseCreatedDate(c), monthRanges.lastMonth.from, monthRanges.lastMonth.to));
-      const signedThisMonth = filtered.filter((c) => {
-        if (!isWon(c)) return false;
-        const d = caseClosingDate(c) || caseCreatedDate(c);
-        return caseInDateRange(d, monthRanges.thisMonth.from, monthRanges.thisMonth.to);
-      });
-      const signedAmt = signedThisMonth.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+      const winHint = open.length ? `${Math.min(99, Math.round((meetN / Math.max(open.length, 1)) * 100))}%` : "";
       renderDashActionZone(filtered);
       renderDashActivityFeed(filtered);
       renderDashStaleClients(filtered);
-      document.getElementById("dashStats").innerHTML = [
-        renderQualifyUndefStatCard({ label: "總 Qualified／Undefined", list: filtered, tone: "purple", icon: "cases" }),
-        renderQualifyUndefStatCard({ label: `上月 Qualified／Undefined（${monthRanges.lastMonth.label}）`, list: createdLastMonth, tone: "orange", icon: "chart" }),
-        renderQualifyUndefStatCard({ label: `本月 Qualified／Undefined（${monthRanges.thisMonth.label}）`, list: createdThisMonth, tone: "mint", icon: "check" }),
-        renderStatCard({
-          label: `本月簽單 Case（${monthRanges.thisMonth.label}）`,
-          value: signedThisMonth.length,
-          subHtml: `${money(signedAmt)} · ${partnerSourceSummary(signedThisMonth)}`,
-          tone: "sky",
-          icon: "money",
-        }),
-      ].join("");
+      // Qualified／Undefined／本月簽單 KPI 只喺 SALES 類別 Dashboard 顯示
+      if (dashCategory === "sales") {
+        const monthRanges = thisAndLastMonthRanges();
+        const createdThisMonth = filtered.filter((c) => caseInDateRange(caseCreatedDate(c), monthRanges.thisMonth.from, monthRanges.thisMonth.to));
+        const createdLastMonth = filtered.filter((c) => caseInDateRange(caseCreatedDate(c), monthRanges.lastMonth.from, monthRanges.lastMonth.to));
+        const signedThisMonth = filtered.filter((c) => {
+          if (!isWon(c)) return false;
+          const d = caseClosingDate(c) || caseCreatedDate(c);
+          return caseInDateRange(d, monthRanges.thisMonth.from, monthRanges.thisMonth.to);
+        });
+        const signedAmt = signedThisMonth.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+        document.getElementById("dashStats").innerHTML = [
+          renderQualifyUndefStatCard({ label: "總 Qualified／Undefined", list: filtered, tone: "purple", icon: "cases" }),
+          renderQualifyUndefStatCard({ label: `上月 Qualified／Undefined（${monthRanges.lastMonth.label}）`, list: createdLastMonth, tone: "orange", icon: "chart" }),
+          renderQualifyUndefStatCard({ label: `本月 Qualified／Undefined（${monthRanges.thisMonth.label}）`, list: createdThisMonth, tone: "mint", icon: "check" }),
+          renderStatCard({
+            label: `本月簽單 Case（${monthRanges.thisMonth.label}）`,
+            value: signedThisMonth.length,
+            subHtml: `${money(signedAmt)} · ${partnerSourceSummary(signedThisMonth)}`,
+            tone: "sky",
+            icon: "money",
+          }),
+        ].join("");
+      } else {
+        document.getElementById("dashStats").innerHTML = [
+          renderStatCard({ label: "公司 Cases", value: open.length, sub: `${closed.length} 宗 DQ／關閉`, tone: "purple", icon: "cases", trend: winHint }),
+          renderStatCard({ label: "已約會面", value: apptN, sub: "含待確認／已確認", tone: "orange", icon: "meet" }),
+          renderStatCard({ label: "已完成會面", value: meetN, sub: "會後可寫 comment", tone: "mint", icon: "check" }),
+          renderStatCard({ label: "所選期間案件", value: inRange.length, sub: `${money(rangeAmt)} · 加權 ${money(rangeWeighted)} · 指標 ${metricLabel()}`, tone: "sky", icon: "chart" }),
+        ].join("");
+      }
       renderDashCompareStats(filtered);
 
       let maxAmt = 1;
