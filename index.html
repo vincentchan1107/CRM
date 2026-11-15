@@ -3108,16 +3108,12 @@
       width: 100%;
       max-width: none;
       overflow: visible;
-      display: flex;
-      gap: 14px;
-      align-items: stretch;
+      display: block;
       position: relative;
       box-sizing: border-box;
     }
     .sales-line-chart-plot {
       position: relative;
-      flex: 1 1 auto;
-      min-width: 0;
       width: 100%;
       background: linear-gradient(180deg, rgba(247,244,252,.55), rgba(255,255,255,.2));
       border: 1px solid #efeaf8;
@@ -3126,7 +3122,7 @@
     }
     .sales-line-chart svg {
       width: 100%;
-      height: 220px;
+      height: 240px;
       max-height: none;
       display: block;
     }
@@ -3147,38 +3143,21 @@
     .sales-line-chart .point-hit {
       cursor: pointer;
     }
-    .sales-line-legend {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 10px;
-      flex: 0 0 auto;
-      min-width: 88px;
-      padding: 4px 0;
-    }
-    .sales-line-legend span {
-      display: inline-flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 2px;
-      font-size: .88rem;
+    .sales-line-chart .line-name-label {
+      font-size: 12px;
       font-weight: 800;
-      color: var(--ink);
-      white-space: nowrap;
-      letter-spacing: .01em;
+      paint-order: stroke;
+      stroke: #fff;
+      stroke-width: 3px;
+      stroke-linejoin: round;
+      pointer-events: none;
     }
-    .sales-line-legend .lg-name {
-      display: inline-flex; align-items: center; gap: 8px;
-    }
-    .sales-line-legend .lg-meta {
-      font-size: .68rem; font-weight: 700; color: var(--muted); padding-left: 19px;
-    }
-    .sales-line-legend i {
-      width: 11px;
-      height: 11px;
-      border-radius: 50%;
-      display: inline-block;
-      flex-shrink: 0;
+    .sales-line-chart .line-name-halo {
+      font-size: 12px;
+      font-weight: 800;
+      fill: #fff;
+      opacity: .92;
+      pointer-events: none;
     }
     .sales-line-tip-html {
       position: absolute;
@@ -3207,20 +3186,10 @@
     }
     .sales-line-tip-html.hidden { display: none; }
     @media (max-width: 640px) {
-      .sales-line-chart {
-        flex-direction: column;
-        max-width: none;
-      }
-      .sales-line-legend {
-        flex-direction: row;
-        flex-wrap: wrap;
-        min-width: 0;
-        justify-content: flex-start;
-        gap: 10px 16px;
-      }
-      .sales-line-legend span { font-size: .82rem; }
-      .sales-line-legend .lg-meta { padding-left: 0; }
-      .sales-line-chart svg { height: 200px; }
+      .sales-line-chart { max-width: none; }
+      .sales-line-chart svg { height: 220px; }
+      .sales-line-chart .line-name-label,
+      .sales-line-chart .line-name-halo { font-size: 11px; }
     }
     .year-plan-toolbar {
       display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
@@ -10125,7 +10094,7 @@
       }));
     }
 
-    /** Multi-series: left = sales legend, bottom = dates, right = $ */
+    /** Multi-series: names on lines, bottom = dates, right = $ */
     function renderSalesLineChart(series, dateBuckets, { metaByName = {} } = {}) {
       const dates = dateBuckets && dateBuckets.length ? dateBuckets : [{ key: "—", label: "—", from: null, to: null }];
       const lines = (series || []).map((s, idx) => ({
@@ -10135,11 +10104,11 @@
         drillType: s.drillType || "sales",
         drillKey: s.drillKey || s.name,
       }));
-      const W = 720;
-      const H = 210;
-      const padL = 8;
-      const padR = 48;
-      const padT = 16;
+      const W = 760;
+      const H = 230;
+      const padL = 10;
+      const padR = 92; // room for on-line Sales names
+      const padT = 18;
       const padB = 30;
       const plotW = W - padL - padR;
       const plotH = H - padT - padB;
@@ -10161,31 +10130,50 @@
           v,
           dateLabel: dates[i]?.label || "",
         }));
-        return { ...ln, pts, path: smoothLinePath(pts) };
+        // Prefer last non-zero point for the name label; else last point
+        let labelIdx = pts.length - 1;
+        for (let i = pts.length - 1; i >= 0; i--) {
+          if ((Number(pts[i].v) || 0) > 0) { labelIdx = i; break; }
+        }
+        const meta = metaByName[ln.name] || {};
+        const total = meta.closedAmt != null ? meta.closedAmt : ln.values.reduce((s, v) => s + (Number(v) || 0), 0);
+        return {
+          ...ln,
+          pts,
+          path: smoothLinePath(pts),
+          labelIdx,
+          total,
+          pct: meta.pct,
+        };
       });
 
+      // De-overlap end labels (especially many $0 lines at bottom)
+      const labelSlots = lineLayers
+        .map((ln, li) => {
+          const p = ln.pts[ln.labelIdx] || ln.pts[ln.pts.length - 1];
+          return { li, y: p ? p.y : padT + plotH, x: p ? p.x : padL + plotW };
+        })
+        .sort((a, b) => a.y - b.y);
+      const minGap = 14;
+      for (let i = 1; i < labelSlots.length; i++) {
+        if (labelSlots[i].y - labelSlots[i - 1].y < minGap) {
+          labelSlots[i].y = labelSlots[i - 1].y + minGap;
+        }
+      }
+      // Keep inside plot
+      for (const s of labelSlots) {
+        s.y = Math.min(padT + plotH - 2, Math.max(padT + 8, s.y));
+      }
+      const labelYByLine = Object.fromEntries(labelSlots.map((s) => [s.li, s]));
+
       return `<div class="sales-line-chart">
-        <div class="sales-line-legend" aria-label="Sales">
-          ${lines.map((ln) => {
-            const meta = metaByName[ln.name] || {};
-            const total = meta.closedAmt != null ? meta.closedAmt : ln.values.reduce((s, v) => s + (Number(v) || 0), 0);
-            const pct = meta.pct;
-            const tip = meta.targetAmt
-              ? `${money(total)} · ${pct != null ? pct + "%" : "—"}`
-              : money(total);
-            return `<span>
-              <span class="lg-name"><i style="background:${ln.color}"></i>${escapeHtml(ln.name)}</span>
-              <span class="lg-meta">${escapeHtml(tip)}</span>
-            </span>`;
-          }).join("")}
-        </div>
         <div class="sales-line-chart-plot">
-          <svg viewBox="0 0 ${W} ${H}" width="100%" height="220" preserveAspectRatio="none" role="img" aria-label="團隊 Sales Closing 圖表">
+          <svg viewBox="0 0 ${W} ${H}" width="100%" height="240" preserveAspectRatio="none" role="img" aria-label="團隊 Sales Closing 圖表">
             ${ticks.map((t, ti) => {
               const y = yAt(t);
               const showLbl = ti % labelEvery === 0;
               return `<line class="grid-line" x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" />
-                ${showLbl ? `<text class="axis-label" x="${W - padR + 6}" y="${y + 3}" text-anchor="start">${escapeHtml(moneyAxisLabel(t))}</text>` : ""}`;
+                ${showLbl ? `<text class="axis-label" x="${W - 6}" y="${y + 3}" text-anchor="end">${escapeHtml(moneyAxisLabel(t))}</text>` : ""}`;
             }).join("")}
             ${lineLayers.map((ln, li) => `
               ${ln.path ? `<path class="sales-line-path" pathLength="1" style="--line-i:${li}" d="${ln.path}" fill="none" stroke="${ln.color}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />` : ""}
@@ -10197,6 +10185,19 @@
                 <circle cx="${p.x}" cy="${p.y}" r="12" fill="transparent" class="point-hit" data-point-tip="1" data-tip-name="${escapeAttr(ln.name)}" data-tip-amount="${escapeAttr(money(p.v))}" data-tip-date="${escapeAttr(p.dateLabel)}" data-tip-color="${escapeAttr(ln.color)}" data-tip-x="${p.x}" data-tip-y="${p.y}" data-tip-vb-w="${W}" data-tip-vb-h="${H}"></circle>`;
               }).join("")}
             `).join("")}
+            ${lineLayers.map((ln, li) => {
+              const slot = labelYByLine[li] || { x: padL + plotW, y: padT + plotH };
+              const lx = Math.min(W - padR + 8, Number(slot.x) + 10);
+              const ly = Number(slot.y) + 4;
+              const title = ln.pct != null && Number.isFinite(ln.pct)
+                ? `${ln.name} · ${money(ln.total)} · ${ln.pct}%`
+                : `${ln.name} · ${money(ln.total)}`;
+              return `<g>
+                  <title>${escapeHtml(title)}</title>
+                  <text class="line-name-halo" x="${lx}" y="${ly}" text-anchor="start">${escapeHtml(ln.name)}</text>
+                  <text class="line-name-label" x="${lx}" y="${ly}" fill="${ln.color}" text-anchor="start">${escapeHtml(ln.name)}</text>
+                </g>`;
+            }).join("")}
             ${dates.map((d, i) => `<text class="x-label" x="${xAt(i)}" y="${H - 8}" text-anchor="middle">${escapeHtml(String(d.label || ""))}</text>`).join("")}
           </svg>
           <div class="sales-line-tip-html hidden" id="salesLineTipHtml" role="status" aria-live="polite"></div>
@@ -10221,7 +10222,7 @@
         const hostRect = host.getBoundingClientRect();
         const scaleX = rect.width / vbW;
         const left = (rect.left - hostRect.left) + x * scaleX;
-        const top = (rect.top - hostRect.top) + y * (rect.height / (Number(el.dataset.tipVbH) || 210));
+        const top = (rect.top - hostRect.top) + y * (rect.height / (Number(el.dataset.tipVbH) || 230));
         tipEl.style.background = color;
         tipEl.style.left = `${left}px`;
         tipEl.style.top = `${top}px`;
@@ -10617,8 +10618,8 @@
       }]));
       const teamGap = teamC - teamT;
       const axisHint = timeBuckets.length <= 1 || (salesRange.months || []).length <= 1
-        ? "左 Sales · 下週日期 · 右 $"
-        : "左 Sales · 下月份 · 右 $";
+        ? "線上標 Sales 名 · 下週日期 · 右 $"
+        : "線上標 Sales 名 · 下月份 · 右 $";
       let body = `
         <div class="dash-period" style="margin:8px 0 0;padding:10px 12px">
           <div class="seg" id="teamSalesSeg">
