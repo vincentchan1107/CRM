@@ -3006,10 +3006,31 @@
       100% { filter: brightness(1); box-shadow: 0 6px 14px rgba(107,70,254,.24); transform: scale(1); }
     }
     .sales-kpi-nav button .sub {
-      display: none;
+      display: block;
+      margin-top: 2px;
+      font-size: .62rem;
+      font-weight: 700;
+      opacity: .78;
+      letter-spacing: .01em;
     }
+    .sales-kpi-nav button.active .sub { opacity: .92; }
     .sales-kpi-panel {
       background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px;
+    }
+    .kpi-section {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid #efeaf8;
+    }
+    .kpi-section > .kpi-section-head {
+      display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: end;
+      margin-bottom: 8px;
+    }
+    .kpi-section > .kpi-section-head h3 {
+      margin: 0; font-size: .98rem; font-weight: 800;
+    }
+    .kpi-section > .kpi-section-head .hint {
+      font-size: .72rem; color: var(--muted); max-width: 42ch; line-height: 1.35;
     }
     .sales-activity-block {
       margin-top: 18px;
@@ -3044,6 +3065,18 @@
       width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
       font-size: .85rem; font-weight: 700; background: #fff;
     }
+    .month-target-table { border-collapse: separate; border-spacing: 0; }
+    .month-target-table th:first-child,
+    .month-target-table td:first-child {
+      position: sticky; left: 0; z-index: 1;
+      background: #fff;
+      box-shadow: 4px 0 8px rgba(15, 23, 42, .04);
+    }
+    .month-target-table thead th:first-child { z-index: 2; background: #f8f6fc; }
+    .month-target-table tfoot td:first-child { background: #f7f4fc; }
+    .month-target-table tr.is-current td { background: #f5f2ff; }
+    .month-target-table tr.is-current td:first-child { background: #efeefe; }
+    .month-target-table tr.is-future td { opacity: .92; }
     .month-target-table input[type="number"] {
       width: 100%; min-width: 110px; border: 1px solid var(--line); border-radius: 10px;
       padding: 7px 8px; font-size: .8rem; font-weight: 700;
@@ -3059,10 +3092,16 @@
       margin-left: 6px;
       font-size: .62rem;
       font-weight: 700;
-      color: #64748b;
-      background: #eef1f6;
+      color: #0369a1;
+      background: #e0f2fe;
       border-radius: 999px;
       padding: 2px 7px;
+    }
+    .month-actual-sys {
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .month-actual-sys .sys-lbl {
+      font-size: .62rem; font-weight: 700; color: var(--muted);
     }
     .sales-line-chart {
       margin-top: 6px;
@@ -3080,20 +3119,24 @@
       flex: 1 1 auto;
       min-width: 0;
       width: 100%;
+      background: linear-gradient(180deg, rgba(247,244,252,.55), rgba(255,255,255,.2));
+      border: 1px solid #efeaf8;
+      border-radius: 16px;
+      padding: 8px 6px 4px;
     }
     .sales-line-chart svg {
       width: 100%;
-      height: 180px;
+      height: 220px;
       max-height: none;
       display: block;
     }
     .sales-line-chart .axis-label {
-      font-size: 9px;
+      font-size: 11px;
       font-weight: 700;
       fill: #94a3b8;
     }
     .sales-line-chart .x-label {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       fill: #64748b;
     }
@@ -3115,13 +3158,20 @@
     }
     .sales-line-legend span {
       display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: .95rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      font-size: .88rem;
       font-weight: 800;
       color: var(--ink);
       white-space: nowrap;
       letter-spacing: .01em;
+    }
+    .sales-line-legend .lg-name {
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .sales-line-legend .lg-meta {
+      font-size: .68rem; font-weight: 700; color: var(--muted); padding-left: 19px;
     }
     .sales-line-legend i {
       width: 11px;
@@ -3168,8 +3218,9 @@
         justify-content: flex-start;
         gap: 10px 16px;
       }
-      .sales-line-legend span { font-size: .88rem; }
-      .sales-line-chart svg { height: 168px; }
+      .sales-line-legend span { font-size: .82rem; }
+      .sales-line-legend .lg-meta { padding-left: 0; }
+      .sales-line-chart svg { height: 200px; }
     }
     .year-plan-toolbar {
       display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
@@ -3249,25 +3300,48 @@
       position: relative;
       z-index: 1;
       display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px;
-      width: 100%; min-height: 120px; margin-top: 8px; align-items: end;
+      width: 100%; min-height: 148px; margin-top: 8px; align-items: end;
     }
     @media (max-width: 700px) {
       .year-month-bars { grid-template-columns: repeat(6, minmax(0, 1fr)); }
     }
     .year-month-bars .ymb {
       min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px;
-      padding: 6px 2px; border-radius: 12px; background: rgba(247,244,252,.7);
+      padding: 8px 2px 6px; border-radius: 12px; background: rgba(247,244,252,.7);
       transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+      cursor: default;
     }
-    .year-month-bars .ymb:hover {
+    .year-month-bars .ymb:hover,
+    .year-month-bars .ymb:focus-within {
       transform: translateY(-2px);
       background: #fff;
       box-shadow: 0 8px 18px rgba(80, 55, 160, 0.1);
     }
     .year-month-bars .ymb.current { outline: 2px solid #c4b5fd; background: #efeefe; }
     .year-month-bars .ymb .pair {
-      display: flex; align-items: flex-end; justify-content: center; gap: 3px; height: 72px; width: 100%;
+      display: flex; align-items: flex-end; justify-content: center; gap: 3px; height: 88px; width: 100%;
     }
+    .ymb-tip {
+      position: absolute;
+      z-index: 4;
+      transform: translate(-50%, calc(-100% - 10px));
+      background: #1e1b4b;
+      color: #fff;
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-size: .72rem;
+      font-weight: 700;
+      line-height: 1.35;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, .22);
+      text-align: left;
+    }
+    .ymb-tip.hidden { display: none; }
+    .ymb-tip .t-name { font-size: .68rem; opacity: .85; margin-bottom: 2px; }
+    .ymb-tip .t-row { display: flex; justify-content: space-between; gap: 14px; }
+    .ymb-tip .t-row.ok { color: #86efac; }
+    .ymb-tip .t-row.warn { color: #fda4af; }
     .year-month-bars .ymb .pair > span {
       flex: 1 1 0; max-width: 14px; min-width: 6px; height: 100%; background: #efe8f8;
       border-radius: 999px; display: flex; align-items: flex-end; overflow: hidden;
@@ -3303,8 +3377,14 @@
       35% { transform: scaleY(0.86); filter: brightness(1.08); }
       70% { transform: scaleY(1.06); filter: brightness(1.14); }
     }
-    .year-month-bars .ymb .m { font-size: .62rem; font-weight: 800; color: var(--ink-soft); }
-    .year-month-bars .ymb .p { font-size: .58rem; font-weight: 700; color: var(--muted); }
+    .year-month-bars .ymb .m { font-size: .72rem; font-weight: 800; color: var(--ink-soft); }
+    .year-month-bars .ymb .p { font-size: .68rem; font-weight: 800; color: var(--muted); }
+    .year-month-bars .ymb .p.ok { color: #15803d; }
+    .year-month-bars .ymb .p.warn { color: #9f1239; }
+    .year-month-bars .ymb .amt {
+      font-size: .58rem; font-weight: 700; color: #64748b; line-height: 1.2; text-align: center;
+      min-height: 1.6em;
+    }
     body.motion-paused .sales-live-spark,
     body.motion-paused .year-month-bars .ymb .pair > span > i {
       animation: none !important;
@@ -3403,8 +3483,26 @@
       font-size: .78rem; font-weight: 800; color: var(--ink-soft); text-align: center; width: 100%;
     }
     .dual-money-col .mnums {
-      font-size: .66rem; font-weight: 700; color: var(--muted); text-align: center; line-height: 1.35; width: 100%;
+      font-size: .66rem; font-weight: 700; color: var(--muted); text-align: center; line-height: 1.4; width: 100%;
     }
+    .dual-money-col .mnums .pct {
+      font-size: .78rem; font-weight: 800; color: var(--ink); margin-bottom: 2px;
+    }
+    .dual-money-col .mnums .pct.ok { color: #15803d; }
+    .dual-money-col .mnums .pct.warn { color: #9f1239; }
+    .dual-money-col .mnums .row {
+      display: flex; justify-content: space-between; gap: 6px; font-size: .62rem;
+    }
+    .dual-money-col .mnums .row b { color: var(--ink-soft); font-weight: 800; }
+    .money-compare .mc.gap-pos .val { color: #15803d; }
+    .money-compare .mc.gap-neg .val { color: #9f1239; }
+    .dash-target-story {
+      display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
+      margin: 8px 0 2px; font-size: .78rem; font-weight: 750; color: var(--ink-soft);
+    }
+    .dash-target-story strong { color: var(--ink); font-weight: 800; }
+    .dash-target-story .ok { color: #15803d; }
+    .dash-target-story .warn { color: #9f1239; }
     #dashChartSalesTarget { width: 100%; box-sizing: border-box; }
     #dashChartSalesTarget .chart-legend {
       width: 100%;
@@ -9908,7 +10006,7 @@
     }
 
     /** Multi-series: left = sales legend, bottom = dates, right = $ */
-    function renderSalesLineChart(series, dateBuckets) {
+    function renderSalesLineChart(series, dateBuckets, { metaByName = {} } = {}) {
       const dates = dateBuckets && dateBuckets.length ? dateBuckets : [{ key: "—", label: "—", from: null, to: null }];
       const lines = (series || []).map((s, idx) => ({
         name: s.name,
@@ -9918,11 +10016,11 @@
         drillKey: s.drillKey || s.name,
       }));
       const W = 720;
-      const H = 168;
+      const H = 210;
       const padL = 8;
-      const padR = 44;
-      const padT = 14;
-      const padB = 28;
+      const padR = 48;
+      const padT = 16;
+      const padB = 30;
       const plotW = W - padL - padR;
       const plotH = H - padT - padB;
       const n = Math.max(1, dates.length);
@@ -9948,10 +10046,21 @@
 
       return `<div class="sales-line-chart">
         <div class="sales-line-legend" aria-label="Sales">
-          ${lines.map((ln) => `<span><i style="background:${ln.color}"></i>${escapeHtml(ln.name)}</span>`).join("")}
+          ${lines.map((ln) => {
+            const meta = metaByName[ln.name] || {};
+            const total = meta.closedAmt != null ? meta.closedAmt : ln.values.reduce((s, v) => s + (Number(v) || 0), 0);
+            const pct = meta.pct;
+            const tip = meta.targetAmt
+              ? `${money(total)} · ${pct != null ? pct + "%" : "—"}`
+              : money(total);
+            return `<span>
+              <span class="lg-name"><i style="background:${ln.color}"></i>${escapeHtml(ln.name)}</span>
+              <span class="lg-meta">${escapeHtml(tip)}</span>
+            </span>`;
+          }).join("")}
         </div>
         <div class="sales-line-chart-plot">
-          <svg viewBox="0 0 ${W} ${H}" width="100%" height="180" preserveAspectRatio="none" role="img" aria-label="團隊 Sales Closing 圖表">
+          <svg viewBox="0 0 ${W} ${H}" width="100%" height="220" preserveAspectRatio="none" role="img" aria-label="團隊 Sales Closing 圖表">
             ${ticks.map((t, ti) => {
               const y = yAt(t);
               const showLbl = ti % labelEvery === 0;
@@ -9959,13 +10068,13 @@
                 ${showLbl ? `<text class="axis-label" x="${W - padR + 6}" y="${y + 3}" text-anchor="start">${escapeHtml(moneyAxisLabel(t))}</text>` : ""}`;
             }).join("")}
             ${lineLayers.map((ln, li) => `
-              ${ln.path ? `<path class="sales-line-path" pathLength="1" style="--line-i:${li}" d="${ln.path}" fill="none" stroke="${ln.color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />` : ""}
+              ${ln.path ? `<path class="sales-line-path" pathLength="1" style="--line-i:${li}" d="${ln.path}" fill="none" stroke="${ln.color}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />` : ""}
               ${ln.pts.map((p, pi) => {
                 const tipAttrs = ` class="point-hit sales-line-point" style="--line-i:${li};--pt-i:${pi}" data-point-tip="1" data-tip-name="${escapeAttr(ln.name)}" data-tip-amount="${escapeAttr(money(p.v))}" data-tip-date="${escapeAttr(p.dateLabel)}" data-tip-color="${escapeAttr(ln.color)}" data-tip-x="${p.x}" data-tip-y="${p.y}" data-tip-vb-w="${W}" data-tip-vb-h="${H}"`;
-                return `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="#fff" stroke="${ln.color}" stroke-width="2"${tipAttrs}>
+                return `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#fff" stroke="${ln.color}" stroke-width="2.2"${tipAttrs}>
                   <title>${escapeHtml(ln.name)} · ${escapeHtml(p.dateLabel)}: ${money(p.v)}</title>
                 </circle>
-                <circle cx="${p.x}" cy="${p.y}" r="11" fill="transparent" class="point-hit" data-point-tip="1" data-tip-name="${escapeAttr(ln.name)}" data-tip-amount="${escapeAttr(money(p.v))}" data-tip-date="${escapeAttr(p.dateLabel)}" data-tip-color="${escapeAttr(ln.color)}" data-tip-x="${p.x}" data-tip-y="${p.y}" data-tip-vb-w="${W}" data-tip-vb-h="${H}"></circle>`;
+                <circle cx="${p.x}" cy="${p.y}" r="12" fill="transparent" class="point-hit" data-point-tip="1" data-tip-name="${escapeAttr(ln.name)}" data-tip-amount="${escapeAttr(money(p.v))}" data-tip-date="${escapeAttr(p.dateLabel)}" data-tip-color="${escapeAttr(ln.color)}" data-tip-x="${p.x}" data-tip-y="${p.y}" data-tip-vb-w="${W}" data-tip-vb-h="${H}"></circle>`;
               }).join("")}
             `).join("")}
             ${dates.map((d, i) => `<text class="x-label" x="${xAt(i)}" y="${H - 8}" text-anchor="middle">${escapeHtml(String(d.label || ""))}</text>`).join("")}
@@ -9977,7 +10086,7 @@
 
     function bindSalesLinePointTips(root) {
       const host = (root || document).querySelector(".sales-line-chart-plot");
-      const tipEl = (root || document).querySelector("#salesLineTipHtml");
+        const tipEl = (root || document).querySelector("#salesLineTipHtml");
       if (!host || !tipEl) return;
       const svg = host.querySelector("svg");
       const showTip = (el) => {
@@ -9992,7 +10101,7 @@
         const hostRect = host.getBoundingClientRect();
         const scaleX = rect.width / vbW;
         const left = (rect.left - hostRect.left) + x * scaleX;
-        const top = (rect.top - hostRect.top) + y * (rect.height / (Number(el.dataset.tipVbH) || 168));
+        const top = (rect.top - hostRect.top) + y * (rect.height / (Number(el.dataset.tipVbH) || 210));
         tipEl.style.background = color;
         tipEl.style.left = `${left}px`;
         tipEl.style.top = `${top}px`;
@@ -10381,6 +10490,12 @@
         drillType: "sales",
         drillKey: r.name,
       }));
+      const metaByName = Object.fromEntries(salesRows.map((r) => [r.name, {
+        closedAmt: r.closedAmt,
+        targetAmt: r.targetAmt,
+        pct: r.pct,
+      }]));
+      const teamGap = teamC - teamT;
       const axisHint = timeBuckets.length <= 1 || (salesRange.months || []).length <= 1
         ? "左 Sales · 下週日期 · 右 $"
         : "左 Sales · 下月份 · 右 $";
@@ -10393,13 +10508,13 @@
             <button type="button" data-team-sales-period="6">過去 6 個月</button>
           </div>
         </div>
-        <p class="muted" style="margin:8px 0 0;font-size:.75rem">${escapeHtml(salesRange.title)} · ${escapeHtml(axisHint)}</p>
+        <p class="muted" style="margin:8px 0 0;font-size:.75rem">${escapeHtml(salesRange.title)} · ${escapeHtml(axisHint)} · 點擊節點睇金額</p>
         <div class="money-compare" style="margin-top:10px">
           <div class="mc"><div class="lbl">Closing 目標 $</div><div class="val">${money(teamT)}</div><div class="muted" style="font-size:.68rem">${escapeHtml(salesRange.title)}</div></div>
           <div class="mc"><div class="lbl">已 Closing $</div><div class="val">${money(teamC)}</div><div class="muted" style="font-size:.68rem">${teamT ? teamP + "% 達成" : "未設目標"}</div></div>
-          <div class="mc"><div class="lbl">加權 Forecast $</div><div class="val">${money(teamF)}</div><div class="muted" style="font-size:.68rem">Pipeline × 機率</div></div>
+          <div class="mc ${teamT ? (teamGap >= 0 ? "gap-pos" : "gap-neg") : ""}"><div class="lbl">差距／Forecast</div><div class="val">${teamT ? ((teamGap >= 0 ? "+" : "") + money(teamGap)) : money(teamF)}</div><div class="muted" style="font-size:.68rem">Forecast ${money(teamF)}</div></div>
         </div>
-        ${renderSalesLineChart(series, timeBuckets)}
+        ${renderSalesLineChart(series, timeBuckets, { metaByName })}
       `;
       if (dashDrill && dashDrill.type === "sales") {
         const hit = salesRows.find((r) => r.name === dashDrill.key);
@@ -10473,7 +10588,14 @@
         const teamC = salesTargetRows.reduce((s, r) => s + r.closedAmt, 0);
         const teamF = salesTargetRows.reduce((s, r) => s + r.forecastAmt, 0);
         const teamP = attainPct(teamC, teamT);
+        const teamGap = teamC - teamT;
+        const underN = salesTargetRows.filter((r) => r.targetAmt && r.pct < 100).length;
         let targetBody = `
+          <div class="dash-target-story">
+            <span>期間達成 <strong class="${!teamT ? "" : (teamP >= 100 ? "ok" : "warn")}">${teamT ? teamP + "%" : "未設目標"}</strong></span>
+            <span>差距 <strong class="${!teamT ? "" : (teamGap >= 0 ? "ok" : "warn")}">${teamT ? ((teamGap >= 0 ? "+" : "") + money(teamGap)) : "—"}</strong></span>
+            <span>${underN ? `${underN} 位未達標` : (teamT ? "全員達標或未設" : "請先設定每月目標")}</span>
+          </div>
           <div class="chart-legend">
             <span><i style="background:#6b46fe"></i>Closing 目標 $</span>
             <span><i style="background:#27c281"></i>已 Closing $</span>
@@ -10489,35 +10611,45 @@
               const tH = Math.max(r.targetAmt ? 4 : 0, (r.targetAmt / maxMoney) * 100);
               const cH = Math.max(r.closedAmt ? 4 : 0, (r.closedAmt / maxMoney) * 100);
               const fH = Math.max(r.forecastAmt ? 4 : 0, (r.forecastAmt / maxMoney) * 100);
-              return `<div class="dual-money-col" title="${escapeAttr(r.name)} · 目標 ${money(r.targetAmt)} · 已完成 ${money(r.closedAmt)}">
-                <div class="mnums">${r.targetAmt ? r.pct + "%" : "—"}</div>
+              const gap = r.closedAmt - r.targetAmt;
+              const pctCls = !r.targetAmt ? "" : (r.pct >= 100 ? "ok" : (r.pct < 60 ? "warn" : ""));
+              return `<div class="dual-money-col" title="${escapeAttr(r.name)} · 目標 ${money(r.targetAmt)} · 已完成 ${money(r.closedAmt)} · Forecast ${money(r.forecastAmt)}">
                 <div class="dual-money-pair">
                   <div class="mbar target"><i style="height:${tH}%"></i></div>
                   <div class="mbar closed"><i style="height:${cH}%"></i></div>
                   <div class="mbar forecast"><i style="height:${fH}%"></i></div>
                 </div>
                 <div class="mlbl">${escapeHtml(r.name)}</div>
-                <div class="mnums">${money(r.targetAmt)}<br/>${money(r.closedAmt)}</div>
+                <div class="mnums">
+                  <div class="pct ${pctCls}">${r.targetAmt ? r.pct + "%" : "未設目標"}</div>
+                  <div class="row"><span>目標</span><b>${money(r.targetAmt)}</b></div>
+                  <div class="row"><span>已完成</span><b>${money(r.closedAmt)}</b></div>
+                  <div class="row"><span>Forecast</span><b>${money(r.forecastAmt)}</b></div>
+                  <div class="row"><span>差距</span><b style="color:${!r.targetAmt ? "var(--muted)" : (gap >= 0 ? "#15803d" : "#9f1239")}">${r.targetAmt ? ((gap >= 0 ? "+" : "") + money(gap)) : "—"}</b></div>
+                </div>
               </div>`;
             }).join("")}
           </div>
-          <div class="table-wrap" style="margin-top:12px"><table>
-            <thead><tr><th>銷售員</th><th>Closing 目標 $</th><th>已 Closing $</th><th>達成率</th><th>加權 Forecast $</th><th>差距</th></tr></thead>
-            <tbody>
-              ${salesTargetRows.map((r) => {
-                const gap = r.closedAmt - r.targetAmt;
-                return `<tr>
-                  <td><strong>${escapeHtml(r.name)}</strong></td>
-                  <td>${r.targetAmt ? money(r.targetAmt) : '<span class="muted">未設定</span>'}</td>
-                  <td><strong>${money(r.closedAmt)}</strong></td>
-                  <td style="font-weight:800;color:${!r.targetAmt ? "var(--muted)" : (r.pct >= 100 ? "#15803d" : (r.pct < 60 ? "#9f1239" : "var(--ink)"))}">${r.targetAmt ? r.pct + "%" : "—"}</td>
-                  <td>${money(r.forecastAmt)}</td>
-                  <td style="font-weight:700;color:${gap >= 0 ? "#15803d" : "#9f1239"}">${r.targetAmt ? ((gap >= 0 ? "+" : "") + money(gap)) : "—"}</td>
-                </tr>`;
-              }).join("")}
-            </tbody>
-          </table></div>
-          <p class="muted" style="margin-top:8px;font-size:.72rem">目標喺「資料庫管理 → 銷售員管理」設定每位同事每月 Closing 銀碼</p>
+          <details style="margin-top:12px">
+            <summary style="cursor:pointer;font-size:.78rem;font-weight:800;color:var(--ink-soft)">明細表（目標／已完成／Forecast）</summary>
+            <div class="table-wrap" style="margin-top:8px"><table>
+              <thead><tr><th>銷售員</th><th>Closing 目標 $</th><th>已 Closing $</th><th>達成率</th><th>加權 Forecast $</th><th>差距</th></tr></thead>
+              <tbody>
+                ${salesTargetRows.map((r) => {
+                  const gap = r.closedAmt - r.targetAmt;
+                  return `<tr>
+                    <td><strong>${escapeHtml(r.name)}</strong></td>
+                    <td>${r.targetAmt ? money(r.targetAmt) : '<span class="muted">未設定</span>'}</td>
+                    <td><strong>${money(r.closedAmt)}</strong></td>
+                    <td style="font-weight:800;color:${!r.targetAmt ? "var(--muted)" : (r.pct >= 100 ? "#15803d" : (r.pct < 60 ? "#9f1239" : "var(--ink)"))}">${r.targetAmt ? r.pct + "%" : "—"}</td>
+                    <td>${money(r.forecastAmt)}</td>
+                    <td style="font-weight:700;color:${gap >= 0 ? "#15803d" : "#9f1239"}">${r.targetAmt ? ((gap >= 0 ? "+" : "") + money(gap)) : "—"}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table></div>
+          </details>
+          <p class="muted" style="margin-top:8px;font-size:.72rem">目標喺「資料庫 → 銷售員管理」設定每位同事每月 Closing 銀碼</p>
         `;
         if (!salesTargetRows.some((r) => r.targetAmt || r.closedAmt || r.forecastAmt)) {
           targetBody += `<div class="breakdown-empty" style="margin-top:8px">尚未有目標或 Closing 數據 — 去銷售員管理設定每月目標</div>`;
@@ -12600,16 +12732,17 @@
         `<option value="${y}" ${y === year ? "selected" : ""}>${y}年${y === nowY ? "（今年）" : (y > nowY ? "（未來）" : "")}</option>`
       ).join("");
 
+      const yearGap = yearActual - yearTarget;
       return `
         <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
           <div>
             <div class="eyebrow">銷售員 KPI · 全年目標設計</div>
             <div class="page-head" style="margin-top:2px">
               <h2 style="font-size:1.35rem">${escapeHtml(name)}</h2>
-              <p class="muted page-head-sub">此 Sales 的 KPI、過去會面記錄同跟進 Case · Closing 目標可隨時設定</p>
+              <p class="muted page-head-sub">上半：活動 KPI（會面／Qualified／簽單）· 下半：每月 Closing $ 目標同圖表</p>
             </div>
           </div>
-          <button type="button" class="btn btn-teal btn-sm" id="btnSaveSalesKpi">儲存 KPI</button>
+          <button type="button" class="btn btn-teal btn-sm" id="btnSaveSalesKpi">儲存活動 KPI</button>
         </div>
         <div class="kpi-attain">
           ${attainCard("本月 Closing 銀碼", closedAmt, monthTarget, money)}
@@ -12618,116 +12751,147 @@
           ${attainCard("本月 Qualified", qualN, kpi.qualifyTarget || 0)}
           ${attainCard("轉換率", conv, kpi.conversionTarget || 0, (v) => v + "%")}
         </div>
-        <div class="eyebrow" style="margin-top:16px">KPI 設計（每月目標）</div>
-        <div class="kpi-form-grid" id="salesKpiForm">
-          <label><span>會面目標（宗／月）</span><input type="number" min="0" data-kpi="meetTarget" value="${kpi.meetTarget || 0}" /></label>
-          <label><span>Qualified 目標（宗／月）</span><input type="number" min="0" data-kpi="qualifyTarget" value="${kpi.qualifyTarget || 0}" /></label>
-          <label><span>簽單宗數目標（宗／月）</span><input type="number" min="0" data-kpi="closeCountTarget" value="${kpi.closeCountTarget || 0}" /></label>
-          <label><span>轉換率目標（%）</span><input type="number" min="0" max="100" data-kpi="conversionTarget" value="${kpi.conversionTarget || 0}" /></label>
-        </div>
 
-        <div class="year-plan-toolbar">
-          <div class="left">
-            <div class="eyebrow" style="margin:0">全年 12 個月 Closing 目標</div>
-            <select id="salesKpiYearSelect" aria-label="選擇年份">${yearOptions}</select>
-          </div>
-          <div class="right">
-            <button type="button" class="btn btn-ghost btn-sm" id="btnSalesYearPrev">← 上一年</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="btnSalesYearNext">下一年 →</button>
-          </div>
-        </div>
-
-        <div class="year-summary">
-          <div class="ys"><div class="lbl">${year} 年 Closing 目標</div><div class="val">${money(yearTarget)}</div><div class="muted" style="font-size:.68rem">${filledMonths}/12 個月已設</div></div>
-          <div class="ys"><div class="lbl">${year} 年實際 Closing</div><div class="val">${money(yearActual)}</div><div class="muted" style="font-size:.68rem">簽單 ${yearClosedN} 宗</div></div>
-          <div class="ys"><div class="lbl">全年達成率</div><div class="val" style="color:${!yearTarget ? "var(--muted)" : (yearPct >= 100 ? "#15803d" : (yearPct < 60 ? "#9f1239" : "var(--ink)"))}">${yearTarget ? yearPct + "%" : "—"}</div><div class="muted" style="font-size:.68rem">差距 ${yearTarget ? ((yearActual - yearTarget >= 0 ? "+" : "") + money(yearActual - yearTarget)) : "—"}</div></div>
-          <div class="ys"><div class="lbl">全年會面</div><div class="val">${yearMeetN}</div><div class="muted" style="font-size:.68rem">目標 ${ (kpi.meetTarget || 0) * 12 } 宗／年</div></div>
-        </div>
-
-        <div class="sales-live-chart" data-sales-chart="${escapeAttr(name)}">
-          <div class="sales-live-head">
+        <div class="kpi-section">
+          <div class="kpi-section-head">
             <div>
-              <div class="eyebrow">LIVE BAR CHART</div>
-              <strong>${escapeHtml(name)} · ${year} 年 Closing</strong>
+              <h3>① 活動 KPI（每月共用）</h3>
+              <div class="hint">會面／Qualified／簽單宗數／轉換率 — 全年每月同一個目標，按「儲存活動 KPI」生效</div>
             </div>
-            <span class="sales-live-spark" title="動態圖表" aria-hidden="true"></span>
           </div>
-          <div class="chart-legend">
-            <span><i style="background:#6b46fe"></i>Closing 目標 $</span>
-            <span><i style="background:#27c281"></i>實際 Closing $</span>
-          </div>
-          <div class="year-month-bars" id="salesYearMonthBars">
-            ${monthRows.map((r, idx) => {
-              const tH = Math.max(r.t ? 4 : 0, (r.t / maxBar) * 100);
-              const aH = Math.max(r.a ? 4 : 0, (r.a / maxBar) * 100);
-              return `<div class="ymb${r.key === cur ? " current" : ""}${r.a > 0 ? " has-actual" : ""}" style="--bar-i:${idx}" title="${escapeAttr(r.label)} · 目標 ${money(r.t)} · 實際 ${money(r.a)}">
-                <div class="p">${r.t ? r.p + "%" : "—"}</div>
-                <div class="pair">
-                  <span class="t"><i style="--h:${tH}%;--bar-i:${idx}"></i></span>
-                  <span class="a"><i style="--h:${aH}%;--bar-i:${idx}"></i></span>
-                </div>
-                <div class="m">${r.month}月</div>
-              </div>`;
-            }).join("")}
+          <div class="kpi-form-grid" id="salesKpiForm">
+            <label><span>會面目標（宗／月）</span><input type="number" min="0" data-kpi="meetTarget" value="${kpi.meetTarget || 0}" /></label>
+            <label><span>Qualified 目標（宗／月）</span><input type="number" min="0" data-kpi="qualifyTarget" value="${kpi.qualifyTarget || 0}" /></label>
+            <label><span>簽單宗數目標（宗／月）</span><input type="number" min="0" data-kpi="closeCountTarget" value="${kpi.closeCountTarget || 0}" /></label>
+            <label><span>轉換率目標（%）</span><input type="number" min="0" max="100" data-kpi="conversionTarget" value="${kpi.conversionTarget || 0}" /></label>
           </div>
         </div>
 
-        <div class="year-fill-box">
-          <label><span>快速填入全年／每月目標（HKD）</span><input type="number" min="0" step="1000" id="salesYearFillAmount" placeholder="例如 1200000" /></label>
-          <button type="button" class="btn btn-ghost btn-sm" id="btnFillYearEqual">平均分配到 12 個月</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="btnFillYearSame">每月同一金額</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="btnCopyPrevYear">複製上一年目標</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="btnClearYearTargets">清空本年目標</button>
-        </div>
+        <div class="kpi-section">
+          <div class="kpi-section-head">
+            <div>
+              <h3>② 全年 Closing $ 目標</h3>
+              <div class="hint">每個月份可分開設定目標銀碼；改完即時儲存。實際 $：過去月可人手補；本月／未來跟系統簽單</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              <select id="salesKpiYearSelect" aria-label="選擇年份">${yearOptions}</select>
+              <button type="button" class="btn btn-ghost btn-sm" id="btnSalesYearPrev">←</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="btnSalesYearNext">→</button>
+            </div>
+          </div>
 
-        <div class="table-wrap" style="margin-top:12px">
-          <table class="month-target-table">
-            <thead>
-              <tr>
-                <th>月份</th>
-                <th>Closing 目標 $</th>
-                <th>實際 Closing $</th>
-                <th>達成率</th>
-                <th>簽單宗數</th>
-                <th>會面數</th>
-                <th>差距</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${monthRows.map((r) => {
-                const gap = r.a - r.t;
-                const closingEditable = isSalesMonthClosingEditable(r.key);
-                const manual = getSalesMonthClosingActual(name, r.key);
-                const actualInputVal = manual != null ? manual : (r.a || "");
-                const lockHint = closingEditable ? "" : ' <span class="month-target-locked">Closing $ 已鎖定</span>';
-                const futureBadge = r.key > cur ? ' <span class="badge" style="color:#0369a1;background:#e0f2fe">未來</span>' : "";
-                return `<tr>
-                  <td><strong>${escapeHtml(r.label)}</strong>${r.key === cur ? ' <span class="badge" style="color:#5b21b6;background:#efeefe">本月</span>' : ""}${futureBadge}${lockHint}</td>
-                  <td><input type="number" min="0" step="1000" data-ym="${escapeAttr(r.key)}" class="sales-month-target" value="${r.t || ""}" placeholder="0" title="Closing 目標（可隨時修改）" /></td>
-                  <td>${closingEditable
-                    ? `<input type="number" min="0" step="1000" data-ym="${escapeAttr(r.key)}" class="sales-month-actual" value="${actualInputVal}" placeholder="人手輸入" title="過去月份可人手補入實際 Closing $" />`
-                    : `<strong title="由本月起跟系統簽單計算">${money(r.a)}</strong>`}</td>
-                  <td style="font-weight:800;color:${!r.t ? "var(--muted)" : (r.p >= 100 ? "#15803d" : (r.p < 60 ? "#9f1239" : "var(--ink)"))}">${r.t ? r.p + "%" : "—"}</td>
-                  <td>${r.n}</td>
-                  <td>${r.meet}</td>
-                  <td style="font-weight:700;color:${!r.t ? "var(--muted)" : (gap >= 0 ? "#15803d" : "#9f1239")}">${r.t ? ((gap >= 0 ? "+" : "") + money(gap)) : "—"}</td>
-                </tr>`;
+          <div class="year-summary">
+            <div class="ys"><div class="lbl">${year} 年 Closing 目標</div><div class="val">${money(yearTarget)}</div><div class="muted" style="font-size:.68rem">${filledMonths}/12 個月已設</div></div>
+            <div class="ys"><div class="lbl">${year} 年實際 Closing</div><div class="val">${money(yearActual)}</div><div class="muted" style="font-size:.68rem">簽單 ${yearClosedN} 宗</div></div>
+            <div class="ys"><div class="lbl">全年達成率</div><div class="val" style="color:${!yearTarget ? "var(--muted)" : (yearPct >= 100 ? "#15803d" : (yearPct < 60 ? "#9f1239" : "var(--ink)"))}">${yearTarget ? yearPct + "%" : "—"}</div><div class="muted" style="font-size:.68rem">差距 ${yearTarget ? ((yearGap >= 0 ? "+" : "") + money(yearGap)) : "—"}</div></div>
+            <div class="ys"><div class="lbl">全年會面</div><div class="val">${yearMeetN}</div><div class="muted" style="font-size:.68rem">目標 ${ (kpi.meetTarget || 0) * 12 } 宗／年</div></div>
+          </div>
+
+          <div class="sales-live-chart" data-sales-chart="${escapeAttr(name)}">
+            <div class="sales-live-head">
+              <div>
+                <div class="eyebrow">目標 vs 實際</div>
+                <strong>${escapeHtml(name)} · ${year} 年 Closing</strong>
+              </div>
+              <span class="sales-live-spark" title="動態圖表" aria-hidden="true"></span>
+            </div>
+            <div class="chart-legend">
+              <span><i style="background:#6b46fe"></i>Closing 目標 $</span>
+              <span><i style="background:#27c281"></i>實際 Closing $</span>
+            </div>
+            <div class="year-month-bars" id="salesYearMonthBars">
+              ${monthRows.map((r, idx) => {
+                const tH = Math.max(r.t ? 4 : 0, (r.t / maxBar) * 100);
+                const aH = Math.max(r.a ? 4 : 0, (r.a / maxBar) * 100);
+                const pctCls = !r.t ? "" : (r.p >= 100 ? "ok" : (r.p < 60 ? "warn" : ""));
+                const shortAmt = (v) => {
+                  const n = Number(v) || 0;
+                  if (!n) return "—";
+                  if (n >= 1000000) return (n / 1000000).toFixed(n % 1000000 ? 1 : 0) + "M";
+                  if (n >= 1000) return Math.round(n / 1000) + "k";
+                  return String(n);
+                };
+                return `<div class="ymb${r.key === cur ? " current" : ""}${r.a > 0 ? " has-actual" : ""}" style="--bar-i:${idx}" tabindex="0"
+                  data-ymb-tip="1"
+                  data-tip-label="${escapeAttr(r.label)}"
+                  data-tip-target="${escapeAttr(money(r.t))}"
+                  data-tip-actual="${escapeAttr(money(r.a))}"
+                  data-tip-pct="${r.t ? r.p + "%" : "—"}"
+                  data-tip-gap="${r.t ? ((r.a - r.t >= 0 ? "+" : "") + money(r.a - r.t)) : "—"}"
+                  title="${escapeAttr(r.label)} · 目標 ${money(r.t)} · 實際 ${money(r.a)}">
+                  <div class="p ${pctCls}">${r.t ? r.p + "%" : "—"}</div>
+                  <div class="pair">
+                    <span class="t"><i style="--h:${tH}%;--bar-i:${idx}"></i></span>
+                    <span class="a"><i style="--h:${aH}%;--bar-i:${idx}"></i></span>
+                  </div>
+                  <div class="amt">${escapeHtml(shortAmt(r.a))}</div>
+                  <div class="m">${r.month}月</div>
+                </div>`;
               }).join("")}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td><strong>${year} 年合計</strong></td>
-                <td><strong>${money(yearTarget)}</strong></td>
-                <td><strong>${money(yearActual)}</strong></td>
-                <td style="font-weight:800;color:${!yearTarget ? "var(--muted)" : (yearPct >= 100 ? "#15803d" : (yearPct < 60 ? "#9f1239" : "var(--ink)"))}">${yearTarget ? yearPct + "%" : "—"}</td>
-                <td><strong>${yearClosedN}</strong></td>
-                <td><strong>${yearMeetN}</strong></td>
-                <td style="font-weight:700;color:${!yearTarget ? "var(--muted)" : (yearActual - yearTarget >= 0 ? "#15803d" : "#9f1239")}">${yearTarget ? (((yearActual - yearTarget) >= 0 ? "+" : "") + money(yearActual - yearTarget)) : "—"}</td>
-              </tr>
-            </tfoot>
-          </table>
+            </div>
+            <div class="ymb-tip hidden" id="salesYmbTip" role="status"></div>
+          </div>
+
+          <div class="year-fill-box">
+            <label><span>快速填入全年／每月目標（HKD）</span><input type="number" min="0" step="1000" id="salesYearFillAmount" placeholder="例如 1200000" /></label>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnFillYearEqual">平均分配到 12 個月</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnFillYearSame">每月同一金額</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnCopyPrevYear">複製上一年目標</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnClearYearTargets">清空本年目標</button>
+          </div>
+
+          <div class="table-wrap" style="margin-top:12px">
+            <table class="month-target-table">
+              <thead>
+                <tr>
+                  <th>月份</th>
+                  <th>Closing 目標 $</th>
+                  <th>實際 Closing $</th>
+                  <th>達成率</th>
+                  <th>簽單宗數</th>
+                  <th>會面數</th>
+                  <th>差距</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${monthRows.map((r) => {
+                  const gap = r.a - r.t;
+                  const closingEditable = isSalesMonthClosingEditable(r.key);
+                  const manual = getSalesMonthClosingActual(name, r.key);
+                  const actualInputVal = manual != null ? manual : (r.a || "");
+                  const lockHint = closingEditable
+                    ? (manual != null ? ' <span class="month-target-locked" style="color:#9a3412;background:#ffedd5">人手補入</span>' : "")
+                    : ' <span class="month-target-locked">實際跟系統</span>';
+                  const futureBadge = r.key > cur ? ' <span class="badge" style="color:#0369a1;background:#e0f2fe">未來</span>' : "";
+                  const rowCls = r.key === cur ? "is-current" : (r.key > cur ? "is-future" : "");
+                  return `<tr class="${rowCls}">
+                    <td><strong>${escapeHtml(r.label)}</strong>${r.key === cur ? ' <span class="badge" style="color:#5b21b6;background:#efeefe">本月</span>' : ""}${futureBadge}${lockHint}</td>
+                    <td><input type="number" min="0" step="1000" data-ym="${escapeAttr(r.key)}" class="sales-month-target" value="${r.t || ""}" placeholder="0" title="Closing 目標（改完即儲存）" /></td>
+                    <td>${closingEditable
+                      ? `<input type="number" min="0" step="1000" data-ym="${escapeAttr(r.key)}" class="sales-month-actual" value="${actualInputVal}" placeholder="人手補入" title="過去月份可人手補入實際 Closing $" />`
+                      : `<div class="month-actual-sys" title="由本月起跟系統簽單計算"><strong>${money(r.a)}</strong><span class="sys-lbl">系統簽單</span></div>`}</td>
+                    <td style="font-weight:800;color:${!r.t ? "var(--muted)" : (r.p >= 100 ? "#15803d" : (r.p < 60 ? "#9f1239" : "var(--ink)"))}">${r.t ? r.p + "%" : "—"}</td>
+                    <td>${r.n}</td>
+                    <td>${r.meet}</td>
+                    <td style="font-weight:700;color:${!r.t ? "var(--muted)" : (gap >= 0 ? "#15803d" : "#9f1239")}">${r.t ? ((gap >= 0 ? "+" : "") + money(gap)) : "—"}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td><strong>${year} 年合計</strong></td>
+                  <td><strong>${money(yearTarget)}</strong></td>
+                  <td><strong>${money(yearActual)}</strong></td>
+                  <td style="font-weight:800;color:${!yearTarget ? "var(--muted)" : (yearPct >= 100 ? "#15803d" : (yearPct < 60 ? "#9f1239" : "var(--ink)"))}">${yearTarget ? yearPct + "%" : "—"}</td>
+                  <td><strong>${yearClosedN}</strong></td>
+                  <td><strong>${yearMeetN}</strong></td>
+                  <td style="font-weight:700;color:${!yearTarget ? "var(--muted)" : (yearGap >= 0 ? "#15803d" : "#9f1239")}">${yearTarget ? ((yearGap >= 0 ? "+" : "") + money(yearGap)) : "—"}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <p class="muted" style="margin-top:8px;font-size:.72rem">目標欄位改完即儲存 · 過去月實際 $ 可人手補 · 本月／未來（由 ${escapeHtml(currentMonthKey())} 起）實際 $ 跟系統簽單 · Dashboard 按期間合計</p>
         </div>
-        <p class="muted" style="margin-top:8px;font-size:.72rem">Closing 目標可隨時改 · 過去月份可人手輸入實際 Closing $ · 由本月（${escapeHtml(currentMonthKey())}）起 Closing $ 跟系統簽單 · Dashboard 按期間合計</p>
         ${renderSalesActivitySections(name)}
       `;
     }
@@ -12865,27 +13029,97 @@
       play();
     }
 
+    function softRefreshSalesKpiEditor(name) {
+      const panel = document.getElementById("salesKpiPanel");
+      const y = window.scrollY;
+      const act = panel?.querySelector("#salesActivityTabs button.active")?.dataset.salesAct
+        || localStorage.getItem("crm_sales_act_tab")
+        || "meetings";
+      localStorage.setItem("crm_sales_act_tab", act);
+      if (!panel) {
+        renderSalesMgmt();
+        return;
+      }
+      panel.innerHTML = renderSalesKpiEditor(name);
+      bindSalesKpiEditor(name);
+      panel.querySelectorAll("#salesActivityTabs [data-sales-act]").forEach((b) => {
+        b.classList.toggle("active", b.dataset.salesAct === act);
+      });
+      panel.querySelectorAll("[data-sales-act-panel]").forEach((p) => {
+        p.classList.toggle("hidden", p.dataset.salesActPanel !== act);
+      });
+      // refresh person nav tip chips without full page rebuild
+      const cur = currentMonthKey();
+      const curStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      const curEnd = endOfDay(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
+      const planYear = salesKpiYear || new Date().getFullYear();
+      document.querySelectorAll("#salesKpiNav [data-sales-kpi]").forEach((btn) => {
+        const n = btn.dataset.salesKpi;
+        const t = Number(getSalesPlan(n).months[cur]?.closingTarget) || 0;
+        const a = salesClosedAmountInRange(n, curStart, curEnd);
+        const p = attainPct(a, t);
+        const yt = salesYearClosingTargetSum(n, planYear);
+        const tip = yt
+          ? `${planYear} ${money(yt)}`
+          : (t ? `本月 ${p}%` : "未設目標");
+        const sub = btn.querySelector(".sub");
+        if (sub) sub.textContent = tip;
+        btn.title = `${n} · ${tip}`;
+        btn.classList.toggle("active", n === name);
+      });
+      window.scrollTo(0, y);
+    }
+
+    function bindSalesYearMonthTips(panel) {
+      const host = panel?.querySelector(".sales-live-chart");
+      const tip = panel?.querySelector("#salesYmbTip");
+      if (!host || !tip) return;
+      const show = (el) => {
+        const rect = el.getBoundingClientRect();
+        const hostRect = host.getBoundingClientRect();
+        tip.style.left = `${rect.left - hostRect.left + rect.width / 2}px`;
+        tip.style.top = `${rect.top - hostRect.top}px`;
+        const pct = el.dataset.tipPct || "—";
+        const gap = el.dataset.tipGap || "—";
+        const gapCls = String(gap).startsWith("+") ? "ok" : (String(gap).startsWith("-") ? "warn" : "");
+        tip.innerHTML = `<div class="t-name">${escapeHtml(el.dataset.tipLabel || "")}</div>
+          <div class="t-row"><span>目標</span><b>${escapeHtml(el.dataset.tipTarget || "—")}</b></div>
+          <div class="t-row"><span>實際</span><b>${escapeHtml(el.dataset.tipActual || "—")}</b></div>
+          <div class="t-row"><span>達成</span><b>${escapeHtml(pct)}</b></div>
+          <div class="t-row ${gapCls}"><span>差距</span><b>${escapeHtml(gap)}</b></div>`;
+        tip.classList.remove("hidden");
+      };
+      const hide = () => tip.classList.add("hidden");
+      host.querySelectorAll("[data-ymb-tip]").forEach((el) => {
+        el.onmouseenter = () => show(el);
+        el.onmouseleave = hide;
+        el.onfocus = () => show(el);
+        el.onblur = hide;
+      });
+    }
+
     function bindSalesKpiEditor(name) {
       const panel = document.getElementById("salesKpiPanel");
       const refreshDash = () => {
         if (!document.getElementById("view-dashboard").classList.contains("hidden")) renderDashboard();
       };
       activateSalesLiveChart(panel);
+      bindSalesYearMonthTips(panel);
       document.getElementById("btnSaveSalesKpi").onclick = () => {
         const kpi = {};
         panel.querySelectorAll("#salesKpiForm [data-kpi]").forEach((input) => {
           kpi[input.dataset.kpi] = Number(input.value) || 0;
         });
         setSalesKpi(name, kpi);
-        toast(`已儲存 ${name} 的 KPI`);
-        renderSalesMgmt();
+        toast(`已儲存 ${name} 的活動 KPI`);
+        softRefreshSalesKpiEditor(name);
         refreshDash();
       };
       panel.querySelectorAll(".sales-month-target").forEach((input) => {
         input.onchange = () => {
           setSalesMonthClosingTarget(name, input.dataset.ym, input.value);
           toast(`已更新 ${name} · ${input.dataset.ym} Closing 目標`);
-          renderSalesMgmt();
+          softRefreshSalesKpiEditor(name);
           refreshDash();
         };
       });
@@ -12893,14 +13127,14 @@
         input.onchange = () => {
           if (!isSalesMonthClosingEditable(input.dataset.ym)) {
             toast("由本月起 Closing $ 跟系統簽單，唔可以人手修改");
-            renderSalesMgmt();
+            softRefreshSalesKpiEditor(name);
             return;
           }
           const ok = setSalesMonthClosingActual(name, input.dataset.ym, input.value);
           toast(ok
             ? (input.value === "" ? `已清除 ${name} · ${input.dataset.ym} 人手 Closing $` : `已更新 ${name} · ${input.dataset.ym} Closing $`)
             : "無法更新 Closing $");
-          renderSalesMgmt();
+          softRefreshSalesKpiEditor(name);
           refreshDash();
         };
       });
@@ -12908,17 +13142,17 @@
       yearSelect.onchange = () => {
         salesKpiYear = Number(yearSelect.value) || new Date().getFullYear();
         localStorage.setItem("crm_sales_kpi_year", String(salesKpiYear));
-        renderSalesMgmt();
+        softRefreshSalesKpiEditor(name);
       };
       document.getElementById("btnSalesYearPrev").onclick = () => {
         salesKpiYear -= 1;
         localStorage.setItem("crm_sales_kpi_year", String(salesKpiYear));
-        renderSalesMgmt();
+        softRefreshSalesKpiEditor(name);
       };
       document.getElementById("btnSalesYearNext").onclick = () => {
         salesKpiYear += 1;
         localStorage.setItem("crm_sales_kpi_year", String(salesKpiYear));
-        renderSalesMgmt();
+        softRefreshSalesKpiEditor(name);
       };
       const readFillAmount = () => {
         const raw = document.getElementById("salesYearFillAmount").value;
@@ -12935,7 +13169,7 @@
         const amounts = Array.from({ length: 12 }, (_, i) => (i === 11 ? total - base * 11 : base));
         setSalesYearMonthsBulk(name, salesKpiYear, amounts);
         toast(`已將 ${money(total)} 平均分配到 12 個月目標`);
-        renderSalesMgmt();
+        softRefreshSalesKpiEditor(name);
         refreshDash();
       };
       document.getElementById("btnFillYearSame").onclick = () => {
@@ -12944,7 +13178,7 @@
         const amounts = Array.from({ length: 12 }, () => each);
         setSalesYearMonthsBulk(name, salesKpiYear, amounts);
         toast(`已設定全年每月 Closing 目標 ${money(each)}`);
-        renderSalesMgmt();
+        softRefreshSalesKpiEditor(name);
         refreshDash();
       };
       document.getElementById("btnCopyPrevYear").onclick = () => {
@@ -12956,19 +13190,22 @@
         }
         copySalesYearTargets(name, fromY, salesKpiYear);
         toast(`已複製 ${fromY} → ${salesKpiYear} 年 Closing 目標`);
-        renderSalesMgmt();
+        softRefreshSalesKpiEditor(name);
         refreshDash();
       };
       document.getElementById("btnClearYearTargets").onclick = () => {
         setSalesYearMonthsBulk(name, salesKpiYear, Array.from({ length: 12 }, () => ""));
         toast(`已清空 ${salesKpiYear} 年 Closing 目標`);
-        renderSalesMgmt();
+        softRefreshSalesKpiEditor(name);
         refreshDash();
       };
 
+      const savedAct = localStorage.getItem("crm_sales_act_tab") || "meetings";
       panel.querySelectorAll("#salesActivityTabs [data-sales-act]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.salesAct === savedAct);
         btn.onclick = () => {
           const key = btn.dataset.salesAct;
+          localStorage.setItem("crm_sales_act_tab", key);
           panel.querySelectorAll("#salesActivityTabs [data-sales-act]").forEach((b) => {
             b.classList.toggle("active", b.dataset.salesAct === key);
           });
@@ -12976,6 +13213,9 @@
             p.classList.toggle("hidden", p.dataset.salesActPanel !== key);
           });
         };
+      });
+      panel.querySelectorAll("[data-sales-act-panel]").forEach((p) => {
+        p.classList.toggle("hidden", p.dataset.salesActPanel !== savedAct);
       });
       panel.querySelectorAll("[data-case-id]").forEach((btn) => {
         btn.onclick = () => openDrawer(btn.dataset.caseId);
@@ -13161,8 +13401,15 @@
         const a = salesClosedAmountInRange(n, curStart, curEnd);
         const p = attainPct(a, t);
         const yt = salesYearClosingTargetSum(n, planYear);
-        const tip = yt ? `${planYear}年 ${money(yt)}` : (t ? `本月 ${p}% · ${money(t)}` : "未設全年目標");
-        return `<button type="button" data-sales-kpi="${escapeAttr(n)}" class="${n === salesKpiSelected ? "active" : ""}" title="${escapeAttr(tip)}" aria-label="${escapeAttr(`${n} · ${tip}`)}">
+        const ya = salesYearClosedAmount(n, planYear);
+        const yp = attainPct(ya, yt);
+        const tip = t
+          ? `本月 ${p}%`
+          : (yt ? `${planYear} ${yp}%` : "未設目標");
+        const fullTip = t
+          ? `本月 ${money(a)} / ${money(t)}（${p}%）${yt ? ` · ${planYear}年 ${money(yt)}` : ""}`
+          : (yt ? `${planYear}年目標 ${money(yt)} · 已完成 ${money(ya)}（${yp}%）` : "未設 Closing 目標");
+        return `<button type="button" data-sales-kpi="${escapeAttr(n)}" class="${n === salesKpiSelected ? "active" : ""}" title="${escapeAttr(fullTip)}" aria-label="${escapeAttr(`${n} · ${fullTip}`)}">
           ${escapeHtml(n)}
           <span class="sub">${escapeHtml(tip)}</span>
         </button>`;
