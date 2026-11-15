@@ -4676,16 +4676,26 @@
           <div>
             <div class="eyebrow">組織編制</div>
             <h2 style="margin:0;font-size:1.1rem">Team Leader 設定</h2>
-            <p class="muted page-head-sub">設定邊個係 Team Leader，以及其下嘅 Sales 成員（本公司銷售員）。</p>
+            <p class="muted page-head-sub">設定 Team Leader／成員，以及 Team KPI（Closing 目標）— Dashboard「團隊」視圖會用呢組目標。</p>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="salesTeamsRosterActions">
             <button type="button" class="btn btn-ghost btn-sm" id="btnAddSalesTeam">＋ 新增 Team Leader</button>
             <button type="button" class="btn btn-teal btn-sm" id="btnSaveSalesTeams">儲存編制</button>
           </div>
         </div>
+        <div class="sales-ops-tabs" id="teamMgmtTabs" role="tablist" aria-label="Team 管理">
+          <button type="button" role="tab" data-team-mgmt-tab="roster" class="active">編制</button>
+          <button type="button" role="tab" data-team-mgmt-tab="kpi">Team KPI</button>
+        </div>
         <div id="salesTeamsAlert"></div>
-        <div id="salesTeamsEditor" class="sales-teams-editor"></div>
-        <div id="salesTeamsUnassigned" style="margin-top:12px"></div>
+        <div id="salesTeamsRosterWrap">
+          <div id="salesTeamsEditor" class="sales-teams-editor"></div>
+          <div id="salesTeamsUnassigned" style="margin-top:12px"></div>
+        </div>
+        <div id="salesTeamsKpiWrap" class="hidden">
+          <div class="sales-kpi-nav" id="teamKpiNav" style="margin-bottom:12px"></div>
+          <div class="sales-kpi-panel" id="teamKpiPanel"></div>
+        </div>
       </div>
 
       <div class="mgmt-panel" id="mgmt-users">
@@ -5208,6 +5218,233 @@
       }
       return taken;
     }
+    function teamRosterNames(leaderOrTeam) {
+      const teams = getSalesTeams();
+      const leader = typeof leaderOrTeam === "string"
+        ? normalizeCompanySales(leaderOrTeam)
+        : normalizeCompanySales(leaderOrTeam?.leader || "");
+      const t = teams.find((x) => x.leader === leader);
+      if (!t) return leader ? [leader] : [];
+      return [t.leader, ...(t.members || [])].filter(Boolean);
+    }
+    function findTeamBySalesName(name) {
+      const n = normalizeCompanySales(name);
+      if (!n) return null;
+      return getSalesTeams().find((t) => t.leader === n || (t.members || []).includes(n)) || null;
+    }
+
+    const DEFAULT_TEAM_KPI = {
+      meetTarget: 20,
+      qualifyTarget: 12,
+      closeCountTarget: 5,
+      conversionTarget: 25,
+    };
+    let teamMgmtTab = localStorage.getItem("crm_team_mgmt_tab") || "roster";
+    let teamKpiSelected = localStorage.getItem("crm_team_kpi_selected") || "";
+    let teamKpiYear = Number(localStorage.getItem("crm_team_kpi_year")) || new Date().getFullYear();
+
+    function loadTeamPlans() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("crm_team_plans") || "{}");
+        const out = {};
+        const leaders = [...new Set([
+          ...getSalesTeams().map((t) => t.leader),
+          ...Object.keys(raw || {}),
+        ])].filter(Boolean);
+        for (const name of leaders) {
+          const src = raw[name] || {};
+          out[name] = {
+            kpi: { ...DEFAULT_TEAM_KPI, ...(src.kpi || {}) },
+            months: { ...(src.months || {}) },
+          };
+        }
+        return out;
+      } catch {
+        const out = {};
+        getSalesTeams().forEach((t) => {
+          out[t.leader] = { kpi: { ...DEFAULT_TEAM_KPI }, months: {} };
+        });
+        return out;
+      }
+    }
+    function saveTeamPlans(plans) {
+      localStorage.setItem("crm_team_plans", JSON.stringify(plans));
+    }
+    function getTeamPlan(leader) {
+      const key = normalizeCompanySales(leader);
+      return loadTeamPlans()[key] || { kpi: { ...DEFAULT_TEAM_KPI }, months: {} };
+    }
+    function setTeamKpi(leader, kpi) {
+      const key = normalizeCompanySales(leader);
+      if (!key) return;
+      const plans = loadTeamPlans();
+      plans[key] = plans[key] || { kpi: { ...DEFAULT_TEAM_KPI }, months: {} };
+      plans[key].kpi = { ...DEFAULT_TEAM_KPI, ...kpi };
+      saveTeamPlans(plans);
+    }
+    function setTeamMonthClosingTarget(leader, ym, amount) {
+      const key = normalizeCompanySales(leader);
+      if (!key) return false;
+      const plans = loadTeamPlans();
+      plans[key] = plans[key] || { kpi: { ...DEFAULT_TEAM_KPI }, months: {} };
+      if (amount === "" || amount == null) {
+        const cur = { ...(plans[key].months[ym] || {}) };
+        delete cur.closingTarget;
+        if (Object.keys(cur).length) plans[key].months[ym] = cur;
+        else delete plans[key].months[ym];
+      } else {
+        plans[key].months[ym] = {
+          ...(plans[key].months[ym] || {}),
+          closingTarget: Number(amount) || 0,
+        };
+      }
+      saveTeamPlans(plans);
+      return true;
+    }
+    function setTeamYearMonthsBulk(leader, year, amountByMonth) {
+      const key = normalizeCompanySales(leader);
+      if (!key) return 0;
+      const plans = loadTeamPlans();
+      plans[key] = plans[key] || { kpi: { ...DEFAULT_TEAM_KPI }, months: {} };
+      listYearMonths(year).forEach((m, idx) => {
+        const amount = amountByMonth[idx];
+        if (amount === "" || amount == null) {
+          const cur = { ...(plans[key].months[m.key] || {}) };
+          delete cur.closingTarget;
+          if (Object.keys(cur).length) plans[key].months[m.key] = cur;
+          else delete plans[key].months[m.key];
+        } else {
+          plans[key].months[m.key] = {
+            ...(plans[key].months[m.key] || {}),
+            closingTarget: Number(amount) || 0,
+          };
+        }
+      });
+      saveTeamPlans(plans);
+      return 12;
+    }
+    function teamClosingTargetSum(leader, monthKeys) {
+      const plan = getTeamPlan(leader);
+      return (monthKeys || []).reduce((s, k) => s + (Number(plan.months[k]?.closingTarget) || 0), 0);
+    }
+    function teamYearClosingTargetSum(leader, year) {
+      return listYearMonths(year).reduce((s, m) => s + (Number(getTeamPlan(leader).months[m.key]?.closingTarget) || 0), 0);
+    }
+    function teamClosedAmountInRange(leader, from, to) {
+      return teamRosterNames(leader).reduce((s, n) => s + salesClosedAmountInRange(n, from, to), 0);
+    }
+    function teamMeetCountInRange(leader, from, to) {
+      return teamRosterNames(leader).reduce((s, n) => s + salesMeetCountInRange(n, from, to), 0);
+    }
+    function teamClosedCountInRange(leader, from, to) {
+      return teamRosterNames(leader).reduce((s, n) => s + salesClosedCountInRange(n, from, to), 0);
+    }
+    function teamQualifyCountInRange(leader, from, to) {
+      return teamRosterNames(leader).reduce((s, n) => s + salesQualifyCountInRange(n, from, to), 0);
+    }
+    function teamPersonalTargetFallback(leader, monthKeys) {
+      return teamRosterNames(leader).reduce((s, n) => s + salesClosingTargetSum(n, monthKeys), 0);
+    }
+    function resolveTeamClosingTarget(leader, monthKeys) {
+      const own = teamClosingTargetSum(leader, monthKeys);
+      if (own > 0) return { amount: own, source: "team" };
+      const fallback = teamPersonalTargetFallback(leader, monthKeys);
+      return { amount: fallback, source: fallback > 0 ? "members" : "none" };
+    }
+    /** Dashboard「團隊」視圖：用 Team KPI Closing 目標（未設則回退成員個人合計） */
+    function dashTeamClosingTargetForSelection(monthKeys, names) {
+      const selected = (names && names.length)
+        ? names.map(normalizeCompanySales).filter(Boolean)
+        : scopedSalesNames().filter((n) => dashSalesSelected(n));
+      const selectedSet = new Set(selected);
+      const seenLeaders = new Set();
+      let amount = 0;
+      let anyTeam = false;
+      let anyMembers = false;
+      let anyPersonal = false;
+
+      for (const name of selected) {
+        const team = findTeamBySalesName(name);
+        if (!team) {
+          const personal = salesClosingTargetSum(name, monthKeys);
+          amount += personal;
+          if (personal > 0) anyPersonal = true;
+          continue;
+        }
+        if (seenLeaders.has(team.leader)) continue;
+        seenLeaders.add(team.leader);
+        const roster = teamRosterNames(team.leader);
+        const selectedInTeam = roster.filter((n) => selectedSet.has(n));
+        if (!selectedInTeam.length) continue;
+        const resolved = resolveTeamClosingTarget(team.leader, monthKeys);
+        if (resolved.source === "team") {
+          const share = selectedInTeam.length === roster.length
+            ? resolved.amount
+            : Math.round(resolved.amount * (selectedInTeam.length / Math.max(1, roster.length)));
+          amount += share;
+          anyTeam = true;
+        } else {
+          for (const n of selectedInTeam) {
+            const personal = salesClosingTargetSum(n, monthKeys);
+            amount += personal;
+            if (personal > 0) anyMembers = true;
+          }
+        }
+      }
+      const source = anyTeam ? "team" : (anyMembers ? "members" : (anyPersonal ? "personal" : "none"));
+      return { amount, source };
+    }
+    function dashTeamKpiActivityForSelection(monthKeys, from, to, names) {
+      const selected = (names && names.length)
+        ? names.map(normalizeCompanySales).filter(Boolean)
+        : scopedSalesNames().filter((n) => dashSalesSelected(n));
+      const selectedSet = new Set(selected);
+      const monthsN = Math.max(1, (monthKeys || []).length);
+      const seenLeaders = new Set();
+      let meetTarget = 0;
+      let qualifyTarget = 0;
+      let closeCountTarget = 0;
+      let meetActual = 0;
+      let qualifyActual = 0;
+      let closeActual = 0;
+      let usedTeamKpi = false;
+
+      for (const name of selected) {
+        const team = findTeamBySalesName(name);
+        if (!team) continue;
+        if (seenLeaders.has(team.leader)) continue;
+        seenLeaders.add(team.leader);
+        const roster = teamRosterNames(team.leader);
+        const selectedInTeam = roster.filter((n) => selectedSet.has(n));
+        if (!selectedInTeam.length) continue;
+        const kpi = getTeamPlan(team.leader).kpi || DEFAULT_TEAM_KPI;
+        const ratio = selectedInTeam.length / Math.max(1, roster.length);
+        meetTarget += Math.round((Number(kpi.meetTarget) || 0) * monthsN * ratio);
+        qualifyTarget += Math.round((Number(kpi.qualifyTarget) || 0) * monthsN * ratio);
+        closeCountTarget += Math.round((Number(kpi.closeCountTarget) || 0) * monthsN * ratio);
+        for (const n of selectedInTeam) {
+          meetActual += salesMeetCountInRange(n, from, to);
+          qualifyActual += salesQualifyCountInRange(n, from, to);
+          closeActual += salesClosedCountInRange(n, from, to);
+        }
+        usedTeamKpi = true;
+      }
+      return {
+        usedTeamKpi,
+        meetTarget,
+        qualifyTarget,
+        closeCountTarget,
+        meetActual,
+        qualifyActual,
+        closeActual,
+      };
+    }
+    function teamTargetSourceLabel(source) {
+      if (source === "team") return "Team KPI";
+      if (source === "members") return "成員個人合計";
+      if (source === "personal") return "個人目標";
+      return "未設目標";
+    }
 
     /* -------- Auth / Users / Roles (ADMIN | SALES) -------- */
     function hashPassword(pw) {
@@ -5503,8 +5740,8 @@
     let portalCardOcrLines = [];
     let portalCardOcrPickLine = "";
     let mgmtTab = localStorage.getItem("crm_mgmt_tab") || "customers";
-    if (!["customers", "partners", "sales", "users"].includes(mgmtTab)) mgmtTab = "customers";
-    if (mgmtTab === "users" && currentSessionUser && !isAdmin()) mgmtTab = "customers";
+    if (!["customers", "partners", "sales", "teams", "users"].includes(mgmtTab)) mgmtTab = "customers";
+    if ((mgmtTab === "users" || mgmtTab === "teams") && currentSessionUser && !isAdmin()) mgmtTab = "customers";
     let agendaPeriod = localStorage.getItem("crm_agenda_period") || "today";
     let agendaFrom = localStorage.getItem("crm_agenda_from") || "";
     let agendaTo = localStorage.getItem("crm_agenda_to") || "";
@@ -10710,10 +10947,20 @@
           values,
         };
       });
-      const teamT = salesRows.reduce((s, r) => s + r.targetAmt, 0);
+      const selectedNames = salesRows.map((r) => r.name);
+      const teamTargetResolved = dashRole === "team"
+        ? dashTeamClosingTargetForSelection(monthKeys, selectedNames)
+        : { amount: salesRows.reduce((s, r) => s + r.targetAmt, 0), source: "personal" };
+      const teamT = teamTargetResolved.amount;
+      const teamTargetHint = dashRole === "team"
+        ? teamTargetSourceLabel(teamTargetResolved.source)
+        : "個人目標合計";
       const teamC = salesRows.reduce((s, r) => s + r.closedAmt, 0);
       const teamF = salesRows.reduce((s, r) => s + r.forecastAmt, 0);
       const teamP = attainPct(teamC, teamT);
+      const teamActivity = dashRole === "team"
+        ? dashTeamKpiActivityForSelection(monthKeys, salesRange.from, salesRange.to, selectedNames)
+        : null;
       const series = salesRows.map((r) => ({
         name: r.name,
         color: r.color,
@@ -10741,10 +10988,24 @@
         </div>
         <p class="muted" style="margin:8px 0 0;font-size:.75rem">${escapeHtml(salesRange.title)} · ${escapeHtml(axisHint)} · 點擊節點睇金額</p>
         <div class="money-compare" style="margin-top:10px">
-          <div class="mc"><div class="lbl">Closing 目標 $</div><div class="val">${money(teamT)}</div><div class="muted" style="font-size:.68rem">${escapeHtml(salesRange.title)}</div></div>
+          <div class="mc"><div class="lbl">Closing 目標 $</div><div class="val">${money(teamT)}</div><div class="muted" style="font-size:.68rem">${escapeHtml(teamTargetHint)} · ${escapeHtml(salesRange.title)}</div></div>
           <div class="mc"><div class="lbl">已 Closing $</div><div class="val">${money(teamC)}</div><div class="muted" style="font-size:.68rem">${teamT ? teamP + "% 達成" : "未設目標"}</div></div>
           <div class="mc ${teamT ? (teamGap >= 0 ? "gap-pos" : "gap-neg") : ""}"><div class="lbl">差距／Forecast</div><div class="val">${teamT ? ((teamGap >= 0 ? "+" : "") + money(teamGap)) : money(teamF)}</div><div class="muted" style="font-size:.68rem">Forecast ${money(teamF)}</div></div>
         </div>
+        ${teamActivity && teamActivity.usedTeamKpi ? `<div class="kpi-attain" style="margin-top:10px">
+          ${(() => {
+            const card = (label, actual, target) => {
+              const p = attainPct(actual, target);
+              const cls = !target ? "" : (p >= 100 ? " ok" : (p < 60 ? " warn" : ""));
+              return `<div class="ka${cls}"><div class="lbl">${escapeHtml(label)}</div><div class="val">${actual} / ${target || 0}</div><div class="muted" style="font-size:.68rem;font-weight:700">${target ? p + "% 達成" : "未設 Team KPI"}</div><div class="bar"><i style="width:${Math.min(100, p)}%"></i></div></div>`;
+            };
+            return [
+              card("Team 會面", teamActivity.meetActual, teamActivity.meetTarget),
+              card("Team Qualified", teamActivity.qualifyActual, teamActivity.qualifyTarget),
+              card("Team 簽單宗數", teamActivity.closeActual, teamActivity.closeCountTarget),
+            ].join("");
+          })()}
+        </div>` : ""}
         ${renderSalesLineChart(series, timeBuckets, { metaByName })}
       `;
       if (dashDrill && dashDrill.type === "sales") {
@@ -10753,7 +11014,9 @@
       }
       root.innerHTML = chartHeadHtml(
         "團隊 Sales",
-        `表現回顧 · 各銷售員分色 Closing $ 走勢`
+        dashRole === "team"
+          ? `Team KPI 目標 · 各銷售員分色 Closing $ 走勢`
+          : `表現回顧 · 各銷售員分色 Closing $ 走勢`
       ) + body;
       bindTeamSalesPeriodUi();
       bindSalesLinePointTips(root);
@@ -10927,7 +11190,13 @@
             .reduce((s, c) => s + (Number(c.amount) || 0) * ((Number(c.successRate) || 0) / 100), 0);
           return { name, targetAmt, closedAmt, forecastAmt, pct: attainPct(closedAmt, targetAmt) };
         });
-        const teamT = salesTargetRows.reduce((s, r) => s + r.targetAmt, 0);
+        const teamTargetResolved = dashRole === "team"
+          ? dashTeamClosingTargetForSelection(monthKeys, salesTargetRows.map((r) => r.name))
+          : { amount: salesTargetRows.reduce((s, r) => s + r.targetAmt, 0), source: "personal" };
+        const teamT = teamTargetResolved.amount;
+        const teamTargetHint = dashRole === "team"
+          ? teamTargetSourceLabel(teamTargetResolved.source)
+          : "個人目標合計";
         const teamC = salesTargetRows.reduce((s, r) => s + r.closedAmt, 0);
         const teamF = salesTargetRows.reduce((s, r) => s + r.forecastAmt, 0);
         const teamP = attainPct(teamC, teamT);
@@ -10957,7 +11226,7 @@
             <span><i style="background:#ff8a4c"></i>加權 Forecast $</span>
           </div>
           <div class="money-compare">
-            <div class="mc"><div class="lbl">團隊 Closing 目標</div><div class="val">${money(teamT)}</div><div class="muted" style="font-size:.68rem">${escapeHtml(range.title)}</div></div>
+            <div class="mc"><div class="lbl">團隊 Closing 目標</div><div class="val">${money(teamT)}</div><div class="muted" style="font-size:.68rem">${escapeHtml(teamTargetHint)} · ${escapeHtml(range.title)}</div></div>
             <div class="mc"><div class="lbl">已 Closing</div><div class="val">${money(teamC)}</div><div class="muted" style="font-size:.68rem">${teamT ? teamP + "% 達成" : "未設目標"}</div></div>
             <div class="mc"><div class="lbl">加權 Forecast</div><div class="val">${money(teamF)}</div><div class="muted" style="font-size:.68rem">Pipeline × 機率</div></div>
           </div>
@@ -11641,7 +11910,7 @@
       customers: { title: "客戶管理", sub: "客戶統計與跟進提示", top: "客戶管理" },
       partners: { title: "Partner 管理", sub: "Achiever（本公司）／外部 Partner → Team Leader → Sales", top: "Partner 管理" },
       sales: { title: "銷售員管理", sub: "KPI 同 Closing 目標設計", top: "銷售員管理" },
-      teams: { title: "Team Leader 設定", sub: "設定 Team Leader 同其下 Sales 成員", top: "Team Leader" },
+      teams: { title: "Team Leader 設定", sub: "設定 Team Leader／成員同 Team KPI（Dashboard 團隊視圖）", top: "Team Leader" },
       users: { title: "使用者權限", sub: "ADMIN／SALES 帳號與屬性", top: "使用者權限" },
     };
 
@@ -11703,18 +11972,247 @@
       return normalizeSalesTeamRows(rows);
     }
 
+    function renderTeamKpiEditor(leader) {
+      const team = getSalesTeams().find((t) => t.leader === leader);
+      if (!team) return `<div class="breakdown-empty">請先喺「編制」設定 Team Leader</div>`;
+      const plan = getTeamPlan(leader);
+      const kpi = plan.kpi;
+      const year = Number(teamKpiYear) || new Date().getFullYear();
+      teamKpiYear = year;
+      const months = listYearMonths(year);
+      const cur = currentMonthKey();
+      const nowY = new Date().getFullYear();
+      const curMeta = listYearMonths(nowY).find((m) => m.key === cur) || months[new Date().getMonth()];
+      const roster = teamRosterNames(leader);
+      const closedAmt = teamClosedAmountInRange(leader, curMeta.start, curMeta.end);
+      const closedN = teamClosedCountInRange(leader, curMeta.start, curMeta.end);
+      const meetN = teamMeetCountInRange(leader, curMeta.start, curMeta.end);
+      const qualN = teamQualifyCountInRange(leader, curMeta.start, curMeta.end);
+      const monthTarget = Number(plan.months[cur]?.closingTarget) || 0;
+      const monthRows = months.map((m) => {
+        const t = Number(plan.months[m.key]?.closingTarget) || 0;
+        const a = teamClosedAmountInRange(leader, m.start, m.end);
+        const p = attainPct(a, t);
+        return { ...m, t, a, p };
+      });
+      const yearTarget = monthRows.reduce((s, r) => s + r.t, 0);
+      const yearActual = monthRows.reduce((s, r) => s + r.a, 0);
+      const yearPct = attainPct(yearActual, yearTarget);
+      const yearOptions = availableSalesYears().map((y) =>
+        `<option value="${y}" ${y === year ? "selected" : ""}>${y}年${y === nowY ? "（今年）" : ""}</option>`
+      ).join("");
+      const attainCard = (label, actual, target, format = (v) => v) => {
+        const p = attainPct(actual, target);
+        const cls = !target ? "" : (p >= 100 ? " ok" : (p < 60 ? " warn" : ""));
+        return `<div class="ka${cls}">
+          <div class="lbl">${escapeHtml(label)}</div>
+          <div class="val">${format(actual)} / ${format(target || 0)}</div>
+          <div class="muted" style="font-size:.68rem;font-weight:700">${target ? p + "% 達成" : "未設目標"}</div>
+          <div class="bar"><i style="width:${Math.min(100, p)}%"></i></div>
+        </div>`;
+      };
+      return `
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
+          <div>
+            <div class="eyebrow">Team KPI · ${escapeHtml(leader)} Team</div>
+            <h3 style="margin:4px 0 0;font-size:1.2rem">${escapeHtml(leader)}</h3>
+            <p class="muted" style="margin:4px 0 0;font-size:.75rem">成員：${escapeHtml(roster.join(" · "))} · Dashboard「團隊」視圖會用呢組 Closing 目標</p>
+          </div>
+          <button type="button" class="btn btn-teal btn-sm" id="btnSaveTeamKpi">儲存活動 KPI</button>
+        </div>
+        <div class="kpi-attain">
+          ${attainCard("本月 Closing $", closedAmt, monthTarget, money)}
+          ${attainCard("本月簽單宗數", closedN, kpi.closeCountTarget || 0)}
+          ${attainCard("本月會面", meetN, kpi.meetTarget || 0)}
+          ${attainCard("本月 Qualified", qualN, kpi.qualifyTarget || 0)}
+        </div>
+        <div class="kpi-section">
+          <div class="kpi-section-head">
+            <div>
+              <h3>① 團隊活動 KPI（每月共用）</h3>
+              <div class="hint">會面／Qualified／簽單宗數目標 — 按成員合計實際對照</div>
+            </div>
+          </div>
+          <div class="kpi-form-grid" id="teamKpiForm">
+            <label><span>會面目標（宗／月）</span><input type="number" min="0" data-team-kpi="meetTarget" value="${kpi.meetTarget || 0}" /></label>
+            <label><span>Qualified 目標（宗／月）</span><input type="number" min="0" data-team-kpi="qualifyTarget" value="${kpi.qualifyTarget || 0}" /></label>
+            <label><span>簽單宗數目標（宗／月）</span><input type="number" min="0" data-team-kpi="closeCountTarget" value="${kpi.closeCountTarget || 0}" /></label>
+            <label><span>轉換率目標（%）</span><input type="number" min="0" max="100" data-team-kpi="conversionTarget" value="${kpi.conversionTarget || 0}" /></label>
+          </div>
+        </div>
+        <div class="kpi-section">
+          <div class="kpi-section-head">
+            <div>
+              <h3>② 團隊全年 Closing $ 目標</h3>
+              <div class="hint">獨立於個人 Sales KPI · 未設時 Dashboard 會回退用成員個人目標合計</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              <select id="teamKpiYearSelect">${yearOptions}</select>
+              <button type="button" class="btn btn-ghost btn-sm" id="btnTeamYearPrev">←</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="btnTeamYearNext">→</button>
+            </div>
+          </div>
+          <div class="year-summary">
+            <div class="ys"><div class="lbl">${year} 年目標</div><div class="val">${money(yearTarget)}</div></div>
+            <div class="ys"><div class="lbl">${year} 年實際</div><div class="val">${money(yearActual)}</div></div>
+            <div class="ys"><div class="lbl">達成率</div><div class="val" style="color:${!yearTarget ? "var(--muted)" : (yearPct >= 100 ? "#15803d" : (yearPct < 60 ? "#9f1239" : "var(--ink)"))}">${yearTarget ? yearPct + "%" : "—"}</div></div>
+            <div class="ys"><div class="lbl">成員</div><div class="val" style="font-size:1rem">${roster.length}</div></div>
+          </div>
+          <div class="year-fill-box">
+            <label><span>快速填入（HKD）</span><input type="number" min="0" step="1000" id="teamYearFillAmount" placeholder="例如 3000000" /></label>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnTeamFillEqual">平均 12 個月</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnTeamFillSame">每月同一金額</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btnTeamClearYear">清空本年</button>
+          </div>
+          <div class="table-wrap" style="margin-top:12px">
+            <table class="month-target-table">
+              <thead><tr><th>月份</th><th>Team Closing 目標 $</th><th>實際 Closing $</th><th>達成率</th><th>差距</th></tr></thead>
+              <tbody>
+                ${monthRows.map((r) => {
+                  const gap = r.a - r.t;
+                  return `<tr class="${r.key === cur ? "is-current" : (r.key > cur ? "is-future" : "")}">
+                    <td><strong>${escapeHtml(r.label)}</strong>${r.key === cur ? ' <span class="badge" style="color:#5b21b6;background:#efeefe">本月</span>' : ""}</td>
+                    <td><input type="number" min="0" step="1000" data-team-ym="${escapeAttr(r.key)}" class="team-month-target" value="${r.t || ""}" placeholder="0" /></td>
+                    <td><strong>${money(r.a)}</strong></td>
+                    <td style="font-weight:800;color:${!r.t ? "var(--muted)" : (r.p >= 100 ? "#15803d" : (r.p < 60 ? "#9f1239" : "var(--ink)"))}">${r.t ? r.p + "%" : "—"}</td>
+                    <td style="font-weight:700;color:${!r.t ? "var(--muted)" : (gap >= 0 ? "#15803d" : "#9f1239")}">${r.t ? ((gap >= 0 ? "+" : "") + money(gap)) : "—"}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function bindTeamKpiEditor(leader) {
+      const panel = document.getElementById("teamKpiPanel");
+      if (!panel) return;
+      document.getElementById("btnSaveTeamKpi")?.addEventListener("click", () => {
+        const kpi = {};
+        panel.querySelectorAll("#teamKpiForm [data-team-kpi]").forEach((input) => {
+          kpi[input.dataset.teamKpi] = Number(input.value) || 0;
+        });
+        setTeamKpi(leader, kpi);
+        toast(`已儲存 ${leader} Team 活動 KPI`);
+        renderSalesTeamsMgmt();
+      });
+      panel.querySelectorAll(".team-month-target").forEach((input) => {
+        input.onchange = () => {
+          setTeamMonthClosingTarget(leader, input.dataset.teamYm, input.value);
+          toast(`已更新 ${leader} Team · ${input.dataset.teamYm} 目標`);
+          renderSalesTeamsMgmt();
+        };
+      });
+      const yearSel = document.getElementById("teamKpiYearSelect");
+      if (yearSel) {
+        yearSel.onchange = () => {
+          teamKpiYear = Number(yearSel.value) || new Date().getFullYear();
+          localStorage.setItem("crm_team_kpi_year", String(teamKpiYear));
+          renderSalesTeamsMgmt();
+        };
+      }
+      document.getElementById("btnTeamYearPrev")?.addEventListener("click", () => {
+        teamKpiYear -= 1;
+        localStorage.setItem("crm_team_kpi_year", String(teamKpiYear));
+        renderSalesTeamsMgmt();
+      });
+      document.getElementById("btnTeamYearNext")?.addEventListener("click", () => {
+        teamKpiYear += 1;
+        localStorage.setItem("crm_team_kpi_year", String(teamKpiYear));
+        renderSalesTeamsMgmt();
+      });
+      const readFill = () => {
+        const raw = document.getElementById("teamYearFillAmount")?.value;
+        if (raw === "" || raw == null) { toast("請先輸入金額"); return null; }
+        return Math.max(0, Number(raw) || 0);
+      };
+      document.getElementById("btnTeamFillEqual")?.addEventListener("click", () => {
+        const total = readFill();
+        if (total == null) return;
+        const base = Math.floor(total / 12);
+        const amounts = Array.from({ length: 12 }, (_, i) => (i === 11 ? total - base * 11 : base));
+        setTeamYearMonthsBulk(leader, teamKpiYear, amounts);
+        toast(`已平均分配 ${money(total)} 到 12 個月`);
+        renderSalesTeamsMgmt();
+      });
+      document.getElementById("btnTeamFillSame")?.addEventListener("click", () => {
+        const each = readFill();
+        if (each == null) return;
+        setTeamYearMonthsBulk(leader, teamKpiYear, Array.from({ length: 12 }, () => each));
+        toast(`已設定每月 Team 目標 ${money(each)}`);
+        renderSalesTeamsMgmt();
+      });
+      document.getElementById("btnTeamClearYear")?.addEventListener("click", () => {
+        setTeamYearMonthsBulk(leader, teamKpiYear, Array.from({ length: 12 }, () => ""));
+        toast(`已清空 ${teamKpiYear} 年 Team 目標`);
+        renderSalesTeamsMgmt();
+      });
+    }
+
     function renderSalesTeamsMgmt() {
       const editor = document.getElementById("salesTeamsEditor");
       const alert = document.getElementById("salesTeamsAlert");
       const unEl = document.getElementById("salesTeamsUnassigned");
+      const rosterWrap = document.getElementById("salesTeamsRosterWrap");
+      const kpiWrap = document.getElementById("salesTeamsKpiWrap");
+      const rosterActions = document.getElementById("salesTeamsRosterActions");
       if (!editor || !alert) return;
+
+      if (!["roster", "kpi"].includes(teamMgmtTab)) teamMgmtTab = "roster";
+      document.querySelectorAll("#teamMgmtTabs [data-team-mgmt-tab]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.teamMgmtTab === teamMgmtTab);
+        btn.onclick = () => {
+          teamMgmtTab = btn.dataset.teamMgmtTab || "roster";
+          localStorage.setItem("crm_team_mgmt_tab", teamMgmtTab);
+          renderSalesTeamsMgmt();
+        };
+      });
+      rosterWrap?.classList.toggle("hidden", teamMgmtTab !== "roster");
+      kpiWrap?.classList.toggle("hidden", teamMgmtTab !== "kpi");
+      rosterActions?.classList.toggle("hidden", teamMgmtTab !== "roster" || !isAdmin());
+
       if (!isAdmin()) {
-        editor.innerHTML = `<div class="breakdown-empty">只有 ADMIN 可設定 Team Leader 編制</div>`;
+        editor.innerHTML = `<div class="breakdown-empty">只有 ADMIN 可設定 Team Leader 編制／KPI</div>`;
         alert.innerHTML = "";
         if (unEl) unEl.innerHTML = "";
+        if (kpiWrap) kpiWrap.classList.add("hidden");
         return;
       }
+
       const teams = getSalesTeams();
+      if (teamMgmtTab === "kpi") {
+        alert.innerHTML = `<div class="mgmt-alert ok">Team KPI 存於本機 · Dashboard 視圖角色揀「團隊」時會用 Team Closing 目標</div>`;
+        if (!teams.length) {
+          document.getElementById("teamKpiNav").innerHTML = "";
+          document.getElementById("teamKpiPanel").innerHTML = `<div class="breakdown-empty">請先喺「編制」新增 Team Leader</div>`;
+          return;
+        }
+        if (!teams.some((t) => t.leader === teamKpiSelected)) {
+          teamKpiSelected = teams[0].leader;
+          localStorage.setItem("crm_team_kpi_selected", teamKpiSelected);
+        }
+        const cur = currentMonthKey();
+        document.getElementById("teamKpiNav").innerHTML = teams.map((t) => {
+          const own = Number(getTeamPlan(t.leader).months[cur]?.closingTarget) || 0;
+          const tip = own ? `本月 ${money(own)}` : "未設本月目標";
+          return `<button type="button" data-team-kpi-sel="${escapeAttr(t.leader)}" class="${t.leader === teamKpiSelected ? "active" : ""}">
+            ${escapeHtml(t.leader)} Team
+            <span class="sub">${escapeHtml(tip)}</span>
+          </button>`;
+        }).join("");
+        document.querySelectorAll("#teamKpiNav [data-team-kpi-sel]").forEach((btn) => {
+          btn.onclick = () => {
+            teamKpiSelected = btn.dataset.teamKpiSel;
+            localStorage.setItem("crm_team_kpi_selected", teamKpiSelected);
+            renderSalesTeamsMgmt();
+          };
+        });
+        document.getElementById("teamKpiPanel").innerHTML = renderTeamKpiEditor(teamKpiSelected);
+        bindTeamKpiEditor(teamKpiSelected);
+        return;
+      }
+
       alert.innerHTML = salesTeamsTableReady
         ? `<div class="mgmt-alert ok">已連接資料庫 <code>crm_sales_teams</code> · 儲存後可多人同步</div>`
         : `<div class="mgmt-alert">編制暫存於本機；請 Run <code>supabase/mgmt_alter.sql</code> 建立 <code>crm_sales_teams</code> 後可多人同步</div>`;
@@ -11736,12 +12234,16 @@
               ${escapeHtml(n)}
             </label>`;
           }).join("");
+          const monthT = Number(getTeamPlan(t.leader).months[currentMonthKey()]?.closingTarget) || 0;
           return `<div class="sales-team-card" data-team-idx="${idx}">
             <div class="st-head">
               <label class="field" style="margin:0;min-width:180px"><span>Team Leader</span>
                 <select class="st-leader">${leaderOpts}</select>
               </label>
-              <button type="button" class="btn btn-ghost btn-sm st-remove" data-team-idx="${idx}">移除團隊</button>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                <span class="muted" style="font-size:.72rem;font-weight:700">${monthT ? `本月 KPI ${money(monthT)}` : "未設 Team KPI"}</span>
+                <button type="button" class="btn btn-ghost btn-sm st-remove" data-team-idx="${idx}">移除團隊</button>
+              </div>
             </div>
             <div class="eyebrow" style="margin-bottom:8px">其下 Sales 成員</div>
             <div class="st-members">${memberChecks || `<span class="muted">沒有可選成員</span>`}</div>
@@ -15960,8 +16462,8 @@
         const hash = (location.hash || "").replace("#", "");
         if (hash.startsWith("mgmt")) {
           const tab = hash.replace(/^mgmt-?/, "") || localStorage.getItem("crm_mgmt_tab") || "customers";
-          if (["customers", "partners", "sales", "users"].includes(tab)) {
-            mgmtTab = (tab === "users" && !isAdmin()) ? "customers" : tab;
+          if (["customers", "partners", "sales", "teams", "users"].includes(tab)) {
+            mgmtTab = ((tab === "users" || tab === "teams") && !isAdmin()) ? "customers" : tab;
           }
           showView("mgmt");
         } else {
@@ -16055,8 +16557,8 @@
       const hash = (location.hash || "").replace("#", "");
       if (hash.startsWith("mgmt")) {
         const tab = hash.replace(/^mgmt-?/, "") || localStorage.getItem("crm_mgmt_tab") || "customers";
-        if (["customers", "partners", "sales", "users"].includes(tab)) {
-          mgmtTab = (tab === "users" && !isAdmin()) ? "customers" : tab;
+        if (["customers", "partners", "sales", "teams", "users"].includes(tab)) {
+          mgmtTab = ((tab === "users" || tab === "teams") && !isAdmin()) ? "customers" : tab;
         }
         showView("mgmt");
       } else {
