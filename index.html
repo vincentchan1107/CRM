@@ -1181,6 +1181,21 @@
     .grid-stats { display: grid; gap: 14px; grid-template-columns: repeat(2, 1fr); margin: 16px 0; }
     @media (min-width: 800px) { .grid-stats { grid-template-columns: repeat(4, 1fr); } }
     @media (min-width: 1100px) { .grid-stats.cols-5 { grid-template-columns: repeat(5, 1fr); } }
+    .stat .stat-dual {
+      display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px;
+      font-size: 1.35rem; font-weight: 800; line-height: 1.15;
+    }
+    .stat .stat-dual .q { color: #15803d; }
+    .stat .stat-dual .u { color: #64748b; }
+    .stat .stat-dual .sep { color: var(--line); font-weight: 700; }
+    .stat .stat-dual .unit {
+      font-size: .68rem; font-weight: 800; color: var(--muted); letter-spacing: .02em;
+    }
+    .stat .partner-src {
+      margin-top: 6px; font-size: .68rem; font-weight: 700; color: var(--muted);
+      line-height: 1.35; word-break: break-word;
+    }
+    .stat .partner-src b { color: var(--ink-soft); font-weight: 800; }
     .stat {
       background: rgba(255,255,255,.95); border: 1px solid var(--line); border-radius: 22px; padding: 16px 16px 14px;
       box-shadow: var(--shadow);
@@ -7178,8 +7193,61 @@
       return normalizeLeadStatus(c.leadStatus) === "Qualified";
     }
 
+    function isUndefinedLead(c) {
+      if (isDq(c) || isQualified(c) || c.closeReason === "failed") return false;
+      const s = normalizeLeadStatus(c.leadStatus);
+      // —（未設）同 Undefined 一併計入 Undefined
+      return s === "Undefined" || s === "";
+    }
+
     function isWon(c) {
       return c.stage === "confirmation" || c.closeReason === "won";
+    }
+
+    function partnerSourceSummary(list, { limit = 4 } = {}) {
+      const map = new Map();
+      for (const c of list || []) {
+        const p = normalizePartner(c.partner) || "未分類";
+        map.set(p, (map.get(p) || 0) + 1);
+      }
+      const rows = [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-HK"));
+      if (!rows.length) return "來源 —";
+      const top = rows.slice(0, limit).map(([n, cnt]) => `${n} <b>${cnt}</b>`);
+      const more = rows.length > limit ? ` · +${rows.length - limit}` : "";
+      return `來源 ${top.join(" · ")}${more}`;
+    }
+
+    function qualifyUndefinedCounts(list) {
+      let q = 0;
+      let u = 0;
+      for (const c of list || []) {
+        if (isQualified(c)) q += 1;
+        else if (isUndefinedLead(c)) u += 1;
+      }
+      return { q, u, total: (list || []).length };
+    }
+
+    function thisAndLastMonthRanges() {
+      const now = new Date();
+      const thisFrom = new Date(now.getFullYear(), now.getMonth(), 1);
+      const thisTo = endOfDay(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+      const lastFrom = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastTo = endOfDay(new Date(now.getFullYear(), now.getMonth(), 0));
+      return {
+        thisMonth: { from: thisFrom, to: thisTo, label: `${now.getMonth() + 1}月` },
+        lastMonth: {
+          from: lastFrom,
+          to: lastTo,
+          label: `${lastFrom.getMonth() + 1}月`,
+        },
+      };
+    }
+
+    function caseInDateRange(d, from, to) {
+      if (!d || !from || !to) return false;
+      const t = d instanceof Date ? d.getTime() : new Date(d).getTime();
+      if (Number.isNaN(t)) return false;
+      return t >= from.getTime() && t <= to.getTime();
     }
 
     function daysAgo(n) {
@@ -9224,18 +9292,35 @@
       clock: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 2"/>',
     };
 
-    function renderStatCard({ label, value, sub = "", tone = "purple", icon = "cases", trend = "", valueStyle = "" }) {
+    function renderStatCard({ label, value, valueHtml = "", sub = "", subHtml = "", tone = "purple", icon = "cases", trend = "", valueStyle = "" }) {
       const path = STAT_ICONS[icon] || STAT_ICONS.cases;
       const trendHtml = trend ? `<span class="stat-trend">↑ ${escapeHtml(String(trend))}</span>` : "";
+      const valueBlock = valueHtml
+        ? `<div class="value" style="${valueStyle}">${valueHtml}</div>`
+        : `<div class="value" style="${valueStyle}">${typeof value === "number" ? value : escapeHtml(String(value))}</div>`;
+      const subBlock = subHtml
+        ? `<div class="partner-src">${subHtml}</div>`
+        : (sub ? `<div class="muted" style="font-size:.72rem;margin-top:4px">${escapeHtml(sub)}</div>` : "");
       return `<article class="stat">
         <div class="stat-top">
           <span class="stat-ico ${tone}" aria-hidden="true"><svg viewBox="0 0 24 24">${path}</svg></span>
           ${trendHtml}
         </div>
         <div class="label">${escapeHtml(label)}</div>
-        <div class="value" style="${valueStyle}">${typeof value === "number" ? value : escapeHtml(String(value))}</div>
-        ${sub ? `<div class="muted" style="font-size:.72rem;margin-top:4px">${escapeHtml(sub)}</div>` : ""}
+        ${valueBlock}
+        ${subBlock}
       </article>`;
+    }
+
+    function renderQualifyUndefStatCard({ label, list, tone = "mint", icon = "check" }) {
+      const { q, u } = qualifyUndefinedCounts(list);
+      return renderStatCard({
+        label,
+        valueHtml: `<div class="stat-dual"><span class="q">${q}</span><span class="unit">Qualified</span><span class="sep">/</span><span class="u">${u}</span><span class="unit">Undefined</span></div>`,
+        subHtml: partnerSourceSummary(list),
+        tone,
+        icon,
+      });
     }
 
     function startOfWeekLocal(d = new Date()) {
@@ -9628,15 +9713,29 @@
       const followN = filtered.filter((c) => c.followUpOpportunity).length;
       const rangeAmt = inRange.reduce((s, c) => s + (c.amount || 0), 0);
       const rangeWeighted = inRange.reduce((s, c) => s + (c.amount || 0) * ((c.successRate || 0) / 100), 0);
-      const winHint = open.length ? `${Math.min(99, Math.round((meetN / Math.max(open.length, 1)) * 100))}%` : "";
+      const monthRanges = thisAndLastMonthRanges();
+      const createdThisMonth = filtered.filter((c) => caseInDateRange(caseCreatedDate(c), monthRanges.thisMonth.from, monthRanges.thisMonth.to));
+      const createdLastMonth = filtered.filter((c) => caseInDateRange(caseCreatedDate(c), monthRanges.lastMonth.from, monthRanges.lastMonth.to));
+      const signedThisMonth = filtered.filter((c) => {
+        if (!isWon(c)) return false;
+        const d = caseClosingDate(c) || caseCreatedDate(c);
+        return caseInDateRange(d, monthRanges.thisMonth.from, monthRanges.thisMonth.to);
+      });
+      const signedAmt = signedThisMonth.reduce((s, c) => s + (Number(c.amount) || 0), 0);
       renderDashActionZone(filtered);
       renderDashActivityFeed(filtered);
       renderDashStaleClients(filtered);
       document.getElementById("dashStats").innerHTML = [
-        renderStatCard({ label: "公司 Cases", value: open.length, sub: `${closed.length} 宗 DQ／關閉`, tone: "purple", icon: "cases", trend: winHint }),
-        renderStatCard({ label: "已約會面", value: apptN, sub: "含待確認／已確認", tone: "orange", icon: "meet" }),
-        renderStatCard({ label: "已完成會面", value: meetN, sub: "會後可寫 comment", tone: "mint", icon: "check" }),
-        renderStatCard({ label: "所選期間案件", value: inRange.length, sub: `${money(rangeAmt)} · 加權 ${money(rangeWeighted)} · 指標 ${metricLabel()}`, tone: "sky", icon: "chart" }),
+        renderQualifyUndefStatCard({ label: "總 Qualified／Undefined", list: filtered, tone: "purple", icon: "cases" }),
+        renderQualifyUndefStatCard({ label: `上月 Qualified／Undefined（${monthRanges.lastMonth.label}）`, list: createdLastMonth, tone: "orange", icon: "chart" }),
+        renderQualifyUndefStatCard({ label: `本月 Qualified／Undefined（${monthRanges.thisMonth.label}）`, list: createdThisMonth, tone: "mint", icon: "check" }),
+        renderStatCard({
+          label: `本月簽單 Case（${monthRanges.thisMonth.label}）`,
+          value: signedThisMonth.length,
+          subHtml: `${money(signedAmt)} · ${partnerSourceSummary(signedThisMonth)}`,
+          tone: "sky",
+          icon: "money",
+        }),
       ].join("");
       renderDashCompareStats(filtered);
 
