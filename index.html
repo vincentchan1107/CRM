@@ -3503,6 +3503,122 @@
     .dash-target-story strong { color: var(--ink); font-weight: 800; }
     .dash-target-story .ok { color: #15803d; }
     .dash-target-story .warn { color: #9f1239; }
+    .dash-target-style-bar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      justify-content: space-between; margin: 10px 0 6px;
+    }
+    .dash-target-style-bar .lbl {
+      font-size: .72rem; font-weight: 800; color: var(--muted);
+    }
+    .dash-target-style-bar .seg button {
+      font-size: .72rem; padding: 6px 10px;
+    }
+    /* Style B: horizontal progress */
+    .st-progress-list { display: grid; gap: 10px; margin-top: 10px; }
+    .st-progress-row {
+      display: grid; grid-template-columns: 88px 1fr 72px;
+      gap: 10px; align-items: center;
+      padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px;
+      background: #fff;
+    }
+    @media (max-width: 640px) {
+      .st-progress-row { grid-template-columns: 1fr; gap: 6px; }
+    }
+    .st-progress-row .name { font-weight: 800; font-size: .88rem; }
+    .st-progress-row .meta { font-size: .68rem; color: var(--muted); font-weight: 700; margin-top: 2px; }
+    .st-progress-track {
+      position: relative; height: 16px; border-radius: 999px;
+      background: #efeaf8; overflow: hidden;
+    }
+    .st-progress-track .fill-closed {
+      position: absolute; inset: 0 auto 0 0; height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #5ee4b0, #27c281);
+      min-width: 0;
+    }
+    .st-progress-track .fill-forecast {
+      position: absolute; top: 3px; bottom: 3px; left: 0;
+      border-radius: 999px;
+      background: rgba(255, 138, 76, .55);
+      border: 1px solid rgba(255, 138, 76, .85);
+      box-sizing: border-box;
+      pointer-events: none;
+    }
+    .st-progress-track .mark-target {
+      position: absolute; top: -3px; bottom: -3px; width: 2px;
+      background: #6b46fe; border-radius: 2px;
+      box-shadow: 0 0 0 2px rgba(107, 70, 254, .18);
+    }
+    .st-progress-row .pct {
+      text-align: right; font-size: 1.05rem; font-weight: 800;
+    }
+    .st-progress-row .pct.ok { color: #15803d; }
+    .st-progress-row .pct.warn { color: #9f1239; }
+    .st-progress-nums {
+      grid-column: 1 / -1;
+      display: flex; flex-wrap: wrap; gap: 8px 14px;
+      font-size: .68rem; font-weight: 700; color: var(--muted);
+    }
+    .st-progress-nums b { color: var(--ink-soft); }
+    /* Style C: grouped horizontal bars */
+    .st-hbar-list { display: grid; gap: 12px; margin-top: 10px; }
+    .st-hbar-row {
+      padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: #faf8ff;
+    }
+    .st-hbar-row .head {
+      display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin-bottom: 8px;
+    }
+    .st-hbar-row .head strong { font-size: .9rem; }
+    .st-hbar-row .head .pct { font-weight: 800; font-size: .85rem; }
+    .st-hbar-bars { display: grid; gap: 5px; }
+    .st-hbar-bars .hb {
+      display: grid; grid-template-columns: 54px 1fr 90px; gap: 8px; align-items: center;
+      font-size: .68rem; font-weight: 700; color: var(--muted);
+    }
+    .st-hbar-bars .hb .track {
+      height: 10px; border-radius: 999px; background: #efeaf8; overflow: hidden;
+    }
+    .st-hbar-bars .hb .track > i {
+      display: block; height: 100%; border-radius: 999px; min-width: 2px;
+    }
+    .st-hbar-bars .hb.target .track > i { background: linear-gradient(90deg, #8b6fff, #6b46fe); }
+    .st-hbar-bars .hb.closed .track > i { background: linear-gradient(90deg, #5ee4b0, #27c281); }
+    .st-hbar-bars .hb.forecast .track > i { background: linear-gradient(90deg, #ffb072, #ff8a4c); }
+    .st-hbar-bars .hb .amt { text-align: right; color: var(--ink-soft); font-weight: 800; }
+    /* Style D: rank / rings */
+    .st-rank-grid {
+      display: grid; gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      margin-top: 10px;
+    }
+    .st-rank-card {
+      border: 1px solid var(--line); border-radius: 16px; background: #fff;
+      padding: 12px 14px; display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center;
+    }
+    .st-rank-card .ring {
+      width: 64px; height: 64px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: conic-gradient(var(--ring-color, #6b46fe) calc(var(--pct, 0) * 1%), #efeaf8 0);
+      position: relative;
+    }
+    .st-rank-card .ring::after {
+      content: "";
+      width: 46px; height: 46px; border-radius: 50%; background: #fff;
+      position: absolute;
+    }
+    .st-rank-card .ring span {
+      position: relative; z-index: 1;
+      font-size: .78rem; font-weight: 800; color: var(--ink);
+    }
+    .st-rank-card .name { font-weight: 800; font-size: .92rem; }
+    .st-rank-card .rank-no {
+      font-size: .62rem; font-weight: 800; color: var(--muted); letter-spacing: .04em;
+      text-transform: uppercase; margin-bottom: 2px;
+    }
+    .st-rank-card .nums {
+      margin-top: 4px; font-size: .68rem; font-weight: 700; color: var(--muted); line-height: 1.45;
+    }
+    .st-rank-card .nums b { color: var(--ink-soft); }
     #dashChartSalesTarget { width: 100%; box-sizing: border-box; }
     #dashChartSalesTarget .chart-legend {
       width: 100%;
@@ -5432,6 +5548,10 @@
     }
     let dashRole = localStorage.getItem("crm_dash_role") || "team"; // team | mine | mgmt
     let dashMetric = localStorage.getItem("crm_dash_metric") || "count"; // count | amount | weighted | rate
+    const SALES_TARGET_CHART_STYLES = ["progress", "hbar", "rank", "pill"];
+    let salesTargetChartStyle = SALES_TARGET_CHART_STYLES.includes(localStorage.getItem("crm_sales_target_chart"))
+      ? localStorage.getItem("crm_sales_target_chart")
+      : "progress";
     let dashCompareOn = localStorage.getItem("crm_dash_compare") === "1";
     let dashMineSales = normalizeCompanySales(localStorage.getItem("crm_dash_mine_sales") || "") || COMPANY_SALES[0];
     let dashCollapsed = loadDashArr("crm_dash_collapsed", []);
@@ -10530,6 +10650,120 @@
       animateSalesLineCharts(root);
     }
 
+    function renderSalesTargetChartByStyle(rows, style) {
+      const list = Array.isArray(rows) ? rows : [];
+      const maxMoney = Math.max(1, ...list.flatMap((r) => [r.targetAmt, r.closedAmt, r.forecastAmt]));
+      const pctCls = (r) => (!r.targetAmt ? "" : (r.pct >= 100 ? "ok" : (r.pct < 60 ? "warn" : "")));
+      const gapTxt = (r) => {
+        if (!r.targetAmt) return "—";
+        const gap = r.closedAmt - r.targetAmt;
+        return (gap >= 0 ? "+" : "") + money(gap);
+      };
+      const gapColor = (r) => {
+        if (!r.targetAmt) return "var(--muted)";
+        return r.closedAmt - r.targetAmt >= 0 ? "#15803d" : "#9f1239";
+      };
+
+      if (style === "pill") {
+        return `<div class="dual-money-bars">
+          ${list.map((r) => {
+            const tH = Math.max(r.targetAmt ? 4 : 0, (r.targetAmt / maxMoney) * 100);
+            const cH = Math.max(r.closedAmt ? 4 : 0, (r.closedAmt / maxMoney) * 100);
+            const fH = Math.max(r.forecastAmt ? 4 : 0, (r.forecastAmt / maxMoney) * 100);
+            return `<div class="dual-money-col" title="${escapeAttr(r.name)} · 目標 ${money(r.targetAmt)} · 已完成 ${money(r.closedAmt)}">
+              <div class="dual-money-pair">
+                <div class="mbar target"><i style="height:${tH}%"></i></div>
+                <div class="mbar closed"><i style="height:${cH}%"></i></div>
+                <div class="mbar forecast"><i style="height:${fH}%"></i></div>
+              </div>
+              <div class="mlbl">${escapeHtml(r.name)}</div>
+              <div class="mnums">
+                <div class="pct ${pctCls(r)}">${r.targetAmt ? r.pct + "%" : "未設目標"}</div>
+                <div class="row"><span>目標</span><b>${money(r.targetAmt)}</b></div>
+                <div class="row"><span>已完成</span><b>${money(r.closedAmt)}</b></div>
+                <div class="row"><span>Forecast</span><b>${money(r.forecastAmt)}</b></div>
+                <div class="row"><span>差距</span><b style="color:${gapColor(r)}">${gapTxt(r)}</b></div>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>`;
+      }
+
+      if (style === "hbar") {
+        return `<div class="st-hbar-list">
+          ${list.map((r) => {
+            const tw = Math.max(r.targetAmt ? 2 : 0, (r.targetAmt / maxMoney) * 100);
+            const cw = Math.max(r.closedAmt ? 2 : 0, (r.closedAmt / maxMoney) * 100);
+            const fw = Math.max(r.forecastAmt ? 2 : 0, (r.forecastAmt / maxMoney) * 100);
+            return `<div class="st-hbar-row">
+              <div class="head">
+                <strong>${escapeHtml(r.name)}</strong>
+                <span class="pct" style="color:${!r.targetAmt ? "var(--muted)" : (r.pct >= 100 ? "#15803d" : (r.pct < 60 ? "#9f1239" : "var(--ink)"))}">${r.targetAmt ? r.pct + "% 達成" : "未設目標"}</span>
+              </div>
+              <div class="st-hbar-bars">
+                <div class="hb target"><span>目標</span><div class="track"><i style="width:${tw}%"></i></div><span class="amt">${money(r.targetAmt)}</span></div>
+                <div class="hb closed"><span>已完成</span><div class="track"><i style="width:${cw}%"></i></div><span class="amt">${money(r.closedAmt)}</span></div>
+                <div class="hb forecast"><span>Forecast</span><div class="track"><i style="width:${fw}%"></i></div><span class="amt">${money(r.forecastAmt)}</span></div>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>`;
+      }
+
+      if (style === "rank") {
+        const ranked = [...list].sort((a, b) => {
+          const ap = a.targetAmt ? a.pct : -1;
+          const bp = b.targetAmt ? b.pct : -1;
+          if (bp !== ap) return bp - ap;
+          return (b.closedAmt || 0) - (a.closedAmt || 0);
+        });
+        return `<div class="st-rank-grid">
+          ${ranked.map((r, i) => {
+            const ringPct = r.targetAmt ? Math.min(100, Math.max(0, r.pct)) : 0;
+            const ringColor = !r.targetAmt ? "#cbd5e1" : (r.pct >= 100 ? "#27c281" : (r.pct < 60 ? "#f43f5e" : "#6b46fe"));
+            return `<article class="st-rank-card">
+              <div class="ring" style="--pct:${ringPct};--ring-color:${ringColor}"><span>${r.targetAmt ? r.pct + "%" : "—"}</span></div>
+              <div>
+                <div class="rank-no">#${i + 1}</div>
+                <div class="name">${escapeHtml(r.name)}</div>
+                <div class="nums">
+                  目標 <b>${money(r.targetAmt)}</b><br/>
+                  已完成 <b>${money(r.closedAmt)}</b> · Forecast <b>${money(r.forecastAmt)}</b><br/>
+                  差距 <b style="color:${gapColor(r)}">${gapTxt(r)}</b>
+                </div>
+              </div>
+            </article>`;
+          }).join("")}
+        </div>`;
+      }
+
+      // default: progress — best when target >> closed
+      return `<div class="st-progress-list">
+        ${list.map((r) => {
+          const closedPct = r.targetAmt ? Math.min(100, Math.max(0, (r.closedAmt / r.targetAmt) * 100)) : 0;
+          const forecastPct = r.targetAmt ? Math.min(100, Math.max(0, (r.forecastAmt / r.targetAmt) * 100)) : 0;
+          return `<div class="st-progress-row" title="${escapeAttr(r.name)} · ${r.targetAmt ? r.pct + "%" : "未設目標"}">
+            <div>
+              <div class="name">${escapeHtml(r.name)}</div>
+              <div class="meta">${r.targetAmt ? "相對個人目標" : "尚未設定目標"}</div>
+            </div>
+            <div class="st-progress-track" aria-hidden="true">
+              ${r.targetAmt ? `<span class="fill-forecast" style="width:${forecastPct}%"></span>` : ""}
+              <span class="fill-closed" style="width:${r.targetAmt ? closedPct : Math.min(100, (r.closedAmt / maxMoney) * 100)}%"></span>
+              ${r.targetAmt ? `<span class="mark-target" style="left:100%;transform:translateX(-1px)"></span>` : ""}
+            </div>
+            <div class="pct ${pctCls(r)}">${r.targetAmt ? r.pct + "%" : "—"}</div>
+            <div class="st-progress-nums">
+              <span>目標 <b>${money(r.targetAmt)}</b></span>
+              <span>已完成 <b>${money(r.closedAmt)}</b></span>
+              <span>Forecast <b>${money(r.forecastAmt)}</b></span>
+              <span>差距 <b style="color:${gapColor(r)}">${gapTxt(r)}</b></span>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>`;
+    }
+
     function renderDashCharts({ open, closed, inRange, range, followN, meetN, apptN, months, maxAmt, filtered }) {
       renderDashTeamSales(filtered);
 
@@ -10572,7 +10806,6 @@
         const periodTo = range.to;
         const salesTargetRows = scopedSalesNames().filter((name) => dashSalesSelected(name)).map((name) => {
           const targetAmt = salesClosingTargetSum(name, monthKeys);
-          // If period months don't match plan keys well, also include targets for monthKeys from range.months
           const closedAmt = salesClosedAmountInRange(name, periodFrom, periodTo);
           const forecastAmt = (filtered || cases)
             .filter((c) => normalizeCompanySales(c.companySales) === name && c.stage !== "closed")
@@ -10583,18 +10816,29 @@
             .reduce((s, c) => s + (Number(c.amount) || 0) * ((Number(c.successRate) || 0) / 100), 0);
           return { name, targetAmt, closedAmt, forecastAmt, pct: attainPct(closedAmt, targetAmt) };
         });
-        const maxMoney = Math.max(1, ...salesTargetRows.flatMap((r) => [r.targetAmt, r.closedAmt, r.forecastAmt]));
         const teamT = salesTargetRows.reduce((s, r) => s + r.targetAmt, 0);
         const teamC = salesTargetRows.reduce((s, r) => s + r.closedAmt, 0);
         const teamF = salesTargetRows.reduce((s, r) => s + r.forecastAmt, 0);
         const teamP = attainPct(teamC, teamT);
         const teamGap = teamC - teamT;
         const underN = salesTargetRows.filter((r) => r.targetAmt && r.pct < 100).length;
+        const styleOpts = [
+          { id: "progress", label: "達成進度" },
+          { id: "hbar", label: "橫向對比" },
+          { id: "rank", label: "排行榜" },
+          { id: "pill", label: "直柱對比" },
+        ];
         let targetBody = `
           <div class="dash-target-story">
             <span>期間達成 <strong class="${!teamT ? "" : (teamP >= 100 ? "ok" : "warn")}">${teamT ? teamP + "%" : "未設目標"}</strong></span>
             <span>差距 <strong class="${!teamT ? "" : (teamGap >= 0 ? "ok" : "warn")}">${teamT ? ((teamGap >= 0 ? "+" : "") + money(teamGap)) : "—"}</strong></span>
             <span>${underN ? `${underN} 位未達標` : (teamT ? "全員達標或未設" : "請先設定每月目標")}</span>
+          </div>
+          <div class="dash-target-style-bar">
+            <span class="lbl">圖表樣式</span>
+            <div class="seg" id="salesTargetChartSeg" role="tablist" aria-label="銷售目標圖表樣式">
+              ${styleOpts.map((o) => `<button type="button" data-sales-target-chart="${o.id}" class="${salesTargetChartStyle === o.id ? "active" : ""}">${escapeHtml(o.label)}</button>`).join("")}
+            </div>
           </div>
           <div class="chart-legend">
             <span><i style="background:#6b46fe"></i>Closing 目標 $</span>
@@ -10606,30 +10850,7 @@
             <div class="mc"><div class="lbl">已 Closing</div><div class="val">${money(teamC)}</div><div class="muted" style="font-size:.68rem">${teamT ? teamP + "% 達成" : "未設目標"}</div></div>
             <div class="mc"><div class="lbl">加權 Forecast</div><div class="val">${money(teamF)}</div><div class="muted" style="font-size:.68rem">Pipeline × 機率</div></div>
           </div>
-          <div class="dual-money-bars">
-            ${salesTargetRows.map((r) => {
-              const tH = Math.max(r.targetAmt ? 4 : 0, (r.targetAmt / maxMoney) * 100);
-              const cH = Math.max(r.closedAmt ? 4 : 0, (r.closedAmt / maxMoney) * 100);
-              const fH = Math.max(r.forecastAmt ? 4 : 0, (r.forecastAmt / maxMoney) * 100);
-              const gap = r.closedAmt - r.targetAmt;
-              const pctCls = !r.targetAmt ? "" : (r.pct >= 100 ? "ok" : (r.pct < 60 ? "warn" : ""));
-              return `<div class="dual-money-col" title="${escapeAttr(r.name)} · 目標 ${money(r.targetAmt)} · 已完成 ${money(r.closedAmt)} · Forecast ${money(r.forecastAmt)}">
-                <div class="dual-money-pair">
-                  <div class="mbar target"><i style="height:${tH}%"></i></div>
-                  <div class="mbar closed"><i style="height:${cH}%"></i></div>
-                  <div class="mbar forecast"><i style="height:${fH}%"></i></div>
-                </div>
-                <div class="mlbl">${escapeHtml(r.name)}</div>
-                <div class="mnums">
-                  <div class="pct ${pctCls}">${r.targetAmt ? r.pct + "%" : "未設目標"}</div>
-                  <div class="row"><span>目標</span><b>${money(r.targetAmt)}</b></div>
-                  <div class="row"><span>已完成</span><b>${money(r.closedAmt)}</b></div>
-                  <div class="row"><span>Forecast</span><b>${money(r.forecastAmt)}</b></div>
-                  <div class="row"><span>差距</span><b style="color:${!r.targetAmt ? "var(--muted)" : (gap >= 0 ? "#15803d" : "#9f1239")}">${r.targetAmt ? ((gap >= 0 ? "+" : "") + money(gap)) : "—"}</b></div>
-                </div>
-              </div>`;
-            }).join("")}
-          </div>
+          ${renderSalesTargetChartByStyle(salesTargetRows, salesTargetChartStyle)}
           <details style="margin-top:12px">
             <summary style="cursor:pointer;font-size:.78rem;font-weight:800;color:var(--ink-soft)">明細表（目標／已完成／Forecast）</summary>
             <div class="table-wrap" style="margin-top:8px"><table>
@@ -10649,7 +10870,7 @@
               </tbody>
             </table></div>
           </details>
-          <p class="muted" style="margin-top:8px;font-size:.72rem">目標喺「資料庫 → 銷售員管理」設定每位同事每月 Closing 銀碼</p>
+          <p class="muted" style="margin-top:8px;font-size:.72rem">目標喺「資料庫 → 銷售員管理」設定每位同事每月 Closing 銀碼 · 可切換四款圖表樣式</p>
         `;
         if (!salesTargetRows.some((r) => r.targetAmt || r.closedAmt || r.forecastAmt)) {
           targetBody += `<div class="breakdown-empty" style="margin-top:8px">尚未有目標或 Closing 數據 — 去銷售員管理設定每月目標</div>`;
@@ -10658,6 +10879,15 @@
           "銷售員目標 vs Closing",
           `期間 Closing 目標銀碼對比實際簽單 · 團隊達成 ${teamT ? teamP + "%" : "—"}`
         ) + targetBody;
+        salesTargetRoot.querySelectorAll("#salesTargetChartSeg [data-sales-target-chart]").forEach((btn) => {
+          btn.onclick = () => {
+            const next = btn.dataset.salesTargetChart;
+            if (!SALES_TARGET_CHART_STYLES.includes(next) || next === salesTargetChartStyle) return;
+            salesTargetChartStyle = next;
+            localStorage.setItem("crm_sales_target_chart", salesTargetChartStyle);
+            renderDashboard();
+          };
+        });
       }
 
       const allN = pool.length;
