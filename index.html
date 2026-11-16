@@ -4203,6 +4203,13 @@
         </div>
       </header>
       <main class="wrap">
+    <div id="customDomainBanner" class="setup-box hidden" style="border-color:#f9a8d4;background:#fff1f7">
+      <strong>網址仍顯示 github.io？</strong>
+      <p class="muted" style="margin:8px 0">而家 <code>achiever-ai.cloud</code> 係用「網域轉址／301」跳去 GitHub Pages，瀏覽器一定會變成 <code>vincentchan1107.github.io/CRM/…</code>。</p>
+      <p class="muted" style="margin:0 0 8px">要地址欄只顯示 <code>https://achiever-ai.cloud</code>，請取消轉址，改 DNS 指去 GitHub Pages，並喺 Repo → Settings → Pages 設定 Custom domain 為 <code>achiever-ai.cloud</code>（本 repo 已有 <code>CNAME</code> 檔）。</p>
+      <p class="muted" style="margin:0 0 8px;font-size:.75rem">Apex A 記錄：<code>185.199.108.153</code> · <code>185.199.109.153</code> · <code>185.199.110.153</code> · <code>185.199.111.153</code>（指向 <code>vincentchan1107.github.io</code>）</p>
+      <button type="button" class="btn btn-ghost btn-sm" id="btnDismissDomainBanner">知道了</button>
+    </div>
     <div id="setupBanner" class="setup-box hidden">
       <strong>需要匯入 Ricoh Excel／重建資料表</strong>
       <p class="muted" style="margin:8px 0">請打開 Supabase → SQL Editor，執行完整檔案 <code>supabase/ricoh_import.sql</code>（會刪除 sample cases，匯入 Ricoh Event leads、多聯絡人與 log）。完成後按「重新檢查」。</p>
@@ -7168,6 +7175,76 @@
       }
       root.classList.add("motion-play");
     }
+    function currentRouteKey(name) {
+      if (name === "mgmt") return `mgmt-${mgmtTab || "customers"}`;
+      if (name === "settings") return `settings-${settingsTab || "alerts"}`;
+      if (name === "home") return "dashboard";
+      return name || "dashboard";
+    }
+    /** 唔改地址欄 path／host；清走 hash，等自訂網域只顯示 https://achiever-ai.cloud */
+    function syncQuietUrl(name) {
+      const key = currentRouteKey(name);
+      try { sessionStorage.setItem("crm_last_view", key); } catch (_) {}
+      try {
+        const url = new URL(location.href);
+        if (url.hash) {
+          url.hash = "";
+          history.replaceState({ view: key }, "", `${url.pathname}${url.search}`);
+        } else if (!history.state || history.state.view !== key) {
+          history.replaceState({ view: key }, "", `${url.pathname}${url.search}`);
+        }
+      } catch (_) {
+        try {
+          if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+        } catch (__) {}
+      }
+    }
+    function readRouteKey() {
+      const hash = (location.hash || "").replace(/^#/, "");
+      if (hash) return hash;
+      try {
+        const saved = sessionStorage.getItem("crm_last_view") || "";
+        if (saved) return saved;
+      } catch (_) {}
+      return "";
+    }
+    function enterAppFromRoute() {
+      const route = readRouteKey();
+      if (route.startsWith("settings") || route === "mgmt-users") {
+        const tab = route === "mgmt-users"
+          ? "users"
+          : (route.replace(/^settings-?/, "") || localStorage.getItem("crm_settings_tab") || "alerts");
+        if (["alerts", "users"].includes(tab)) {
+          settingsTab = (tab === "users" && !isAdmin()) ? "alerts" : tab;
+        }
+        showView("settings");
+        return;
+      }
+      if (route.startsWith("mgmt")) {
+        const tab = route.replace(/^mgmt-?/, "") || localStorage.getItem("crm_mgmt_tab") || "customers";
+        if (tab === "users") {
+          settingsTab = isAdmin() ? "users" : "alerts";
+          showView("settings");
+          return;
+        }
+        if (["customers", "partners", "sales", "teams"].includes(tab)) {
+          mgmtTab = (tab === "teams" && !isAdmin()) ? "customers" : tab;
+        }
+        showView("mgmt");
+        return;
+      }
+      const allowed = ["portal", "dashboard", "board", "cases", "agenda", "potential", "settings", "marketing", "logs"];
+      showView(allowed.includes(route) ? route : "dashboard");
+    }
+    function maybeShowCustomDomainBanner() {
+      const el = document.getElementById("customDomainBanner");
+      if (!el) return;
+      const dismissed = localStorage.getItem("crm_hide_domain_banner") === "1";
+      const onGithubPages = /github\.io$/i.test(location.hostname);
+      // 只喺 github.io 提示；自訂網域 DNS 生效後地址欄唔會再係 github.io
+      el.classList.toggle("hidden", !(onGithubPages && !dismissed));
+    }
+
     function showView(name) {
       if (!currentSessionUser) {
         syncAuthUi();
@@ -7219,9 +7296,7 @@
       }
       if (name === "marketing") renderMarketing();
       if (name === "logs") renderLogHistory();
-      location.hash = (name === "dashboard" || name === "home")
-        ? ""
-        : (name === "mgmt" ? `mgmt-${mgmtTab}` : (name === "settings" ? `settings-${settingsTab}` : name));
+      syncQuietUrl(name);
       const viewRoot = document.getElementById(`view-${name}`);
       // wait a frame so render content exists before staggering
       requestAnimationFrame(() => {
@@ -16644,29 +16719,8 @@
       document.getElementById("loginPassword").value = "";
       toast(`歡迎回來，${res.user.displayName || res.user.username}`);
       const enterApp = () => {
-        const hash = (location.hash || "").replace("#", "");
-        if (hash.startsWith("settings") || hash === "mgmt-users") {
-          const tab = hash === "mgmt-users"
-            ? "users"
-            : (hash.replace(/^settings-?/, "") || localStorage.getItem("crm_settings_tab") || "alerts");
-          if (["alerts", "users"].includes(tab)) {
-            settingsTab = (tab === "users" && !isAdmin()) ? "alerts" : tab;
-          }
-          showView("settings");
-        } else if (hash.startsWith("mgmt")) {
-          const tab = hash.replace(/^mgmt-?/, "") || localStorage.getItem("crm_mgmt_tab") || "customers";
-          if (tab === "users") {
-            settingsTab = isAdmin() ? "users" : "alerts";
-            showView("settings");
-          } else {
-            if (["customers", "partners", "sales", "teams"].includes(tab)) {
-              mgmtTab = (tab === "teams" && !isAdmin()) ? "customers" : tab;
-            }
-            showView("mgmt");
-          }
-        } else {
-          showView(["portal", "dashboard", "board", "cases", "agenda", "potential", "settings", "marketing", "logs"].includes(hash) ? hash : "dashboard");
-        }
+        enterAppFromRoute();
+        maybeShowCustomDomainBanner();
         // 登入後即時彈今日約見／跟進／逾期提示
         requestAnimationFrame(() => openDailyBriefingModal({ force: true }));
       };
@@ -16761,31 +16815,14 @@
     loadCases().then(() => {
       casesLoading = false;
       if (!currentSessionUser) return;
-      const hash = (location.hash || "").replace("#", "");
-      if (hash.startsWith("settings") || hash === "mgmt-users") {
-        const tab = hash === "mgmt-users"
-          ? "users"
-          : (hash.replace(/^settings-?/, "") || localStorage.getItem("crm_settings_tab") || "alerts");
-        if (["alerts", "users"].includes(tab)) {
-          settingsTab = (tab === "users" && !isAdmin()) ? "alerts" : tab;
-        }
-        showView("settings");
-      } else if (hash.startsWith("mgmt")) {
-        const tab = hash.replace(/^mgmt-?/, "") || localStorage.getItem("crm_mgmt_tab") || "customers";
-        if (tab === "users") {
-          settingsTab = isAdmin() ? "users" : "alerts";
-          showView("settings");
-        } else {
-          if (["customers", "partners", "sales", "teams"].includes(tab)) {
-            mgmtTab = (tab === "teams" && !isAdmin()) ? "customers" : tab;
-          }
-          showView("mgmt");
-        }
-      } else {
-        showView(["portal", "dashboard", "board", "cases", "agenda", "potential", "settings", "marketing", "logs"].includes(hash) ? hash : "dashboard");
-      }
+      enterAppFromRoute();
+      maybeShowCustomDomainBanner();
       // 已登入再開頁：每日提示一次（今日約見／跟進／逾期）
       requestAnimationFrame(() => openDailyBriefingModal({ force: false }));
+    });
+    document.getElementById("btnDismissDomainBanner")?.addEventListener("click", () => {
+      localStorage.setItem("crm_hide_domain_banner", "1");
+      document.getElementById("customDomainBanner")?.classList.add("hidden");
     });
   </script>
 </body>
