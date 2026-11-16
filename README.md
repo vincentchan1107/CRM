@@ -45,6 +45,22 @@ create index if not exists crm_cases_caller_idx on public.crm_cases(caller);
 正式站（只跟 `main`，merge 後先會更新）：
 
 - https://vincentchan1107.github.io/CRM/
+- 自訂網域（建議）：https://achiever-ai.cloud
+
+### 自訂網域只顯示 `https://achiever-ai.cloud`（唔好用網域轉址）
+
+如果 DNS／網域商開咗 **URL Redirect／Forwarding（301）** 去 `vincentchan1107.github.io/CRM/#board`，瀏覽器地址欄**一定**會變成 github.io。要只顯示自訂網域：
+
+1. 取消 `achiever-ai.cloud` 嘅網域轉址／Forwarding  
+2. Apex DNS 改為 GitHub Pages A 記錄：
+   - `185.199.108.153`
+   - `185.199.109.153`
+   - `185.199.110.153`
+   - `185.199.111.153`
+3. GitHub Repo → **Settings → Pages → Custom domain** 填 `achiever-ai.cloud` 並 Save（repo 根目錄已有 `CNAME`）  
+4. 等 DNS／HTTPS 證書生效後，開啟 **Enforce HTTPS**
+
+本站 SPA 唔會再把 `#board` 寫入地址欄；頁面狀態改存 `sessionStorage`。
 
 最新分支 Preview（含 Log History／Dashboard 優化；無需自己 host）：
 
