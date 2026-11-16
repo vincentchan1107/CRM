@@ -4168,11 +4168,17 @@
             <button type="button" data-view="mgmt" data-mgmt="partners">Partner 管理</button>
             <button type="button" data-view="mgmt" data-mgmt="sales">銷售員管理</button>
             <button type="button" data-view="mgmt" data-mgmt="teams" data-admin-only="1">Team Leader</button>
-            <button type="button" data-view="mgmt" data-mgmt="users" data-admin-only="1">使用者權限</button>
           </div>
         </div>
         <button data-view="marketing"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h11l5 5v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M9 12h6M9 16h4"/></svg></span><span class="nav-label">市場推廣</span></button>
         <button data-view="logs"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span class="nav-label">Log History</span></button>
+        <div class="nav-group" id="navSettingsGroup">
+          <button type="button" data-view="settings" data-settings="alerts" class="nav-group-parent"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.2.6.7 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span><span class="nav-label">設定</span></button>
+          <div class="nav-sub" id="navSettingsSub">
+            <button type="button" data-view="settings" data-settings="alerts">無進度閃爍</button>
+            <button type="button" data-view="settings" data-settings="users" data-admin-only="1">使用者權限</button>
+          </div>
+        </div>
         <button data-view="portal"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/></svg></span><span class="nav-label">手機 Portal</span></button>
       </nav>
     </aside>
@@ -4698,7 +4704,47 @@
         </div>
       </div>
 
-      <div class="mgmt-panel" id="mgmt-users">
+    </section>
+
+    <section id="view-settings" class="hidden">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:end">
+        <div class="page-head">
+          <h1 id="settingsPageTitle">無進度閃爍</h1>
+          <p class="muted page-head-sub" id="settingsPageSub">設定個案停滯幾多日會紅燈閃爍</p>
+        </div>
+      </div>
+
+      <div class="mgmt-panel active" id="settings-alerts">
+        <div class="page-head" style="margin-bottom:8px">
+          <div>
+            <div class="eyebrow">看板提示</div>
+            <h2 style="margin:0;font-size:1.1rem">無進度閃爍日數</h2>
+            <p class="muted page-head-sub">超過設定日數冇 Log／會面／案件更新嘅個案，會喺看板同列表紅燈閃爍。</p>
+          </div>
+        </div>
+        <div class="mkt-panel" style="margin-bottom:12px">
+          <div class="mkt-panel-head"><strong>閃爍門檻</strong>
+            <button type="button" class="btn btn-teal btn-sm" id="btnSaveStaleDays">儲存</button>
+          </div>
+          <div class="users-form-grid" style="grid-template-columns:minmax(180px,280px) 1fr">
+            <label class="field"><span>超過多少日無進度</span>
+              <input type="number" id="settingsStaleDays" min="1" max="365" step="1" value="14" />
+            </label>
+            <div class="field" style="justify-content:end">
+              <span class="muted" style="font-size:.78rem;font-weight:700;line-height:1.45">預設 14 日 · 可設 1–365<br/>儲存後即時套用到看板／Case 列表／Sales 停滯個案</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+            <button type="button" class="btn btn-ghost btn-sm" data-stale-preset="7">7 日</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-stale-preset="14">14 日</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-stale-preset="21">21 日</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-stale-preset="30">30 日</button>
+          </div>
+        </div>
+        <div id="settingsStalePreview"></div>
+      </div>
+
+      <div class="mgmt-panel" id="settings-users">
         <div class="page-head" style="margin-bottom:8px">
           <div>
             <div class="eyebrow">權限管理</div>
@@ -5574,6 +5620,7 @@
         targetClosingSalesSel = [mine];
         localStorage.setItem("crm_tc_sales_sel", JSON.stringify(targetClosingSalesSel));
         if (mgmtTab === "users") mgmtTab = "customers";
+        if (typeof settingsTab !== "undefined" && settingsTab === "users") settingsTab = "alerts";
       }
     }
     function syncAuthUi() {
@@ -5739,9 +5786,19 @@
     let portalBound = false;
     let portalCardOcrLines = [];
     let portalCardOcrPickLine = "";
+    let settingsTab = localStorage.getItem("crm_settings_tab") || "alerts";
+    if (!["alerts", "users"].includes(settingsTab)) settingsTab = "alerts";
+    if (settingsTab === "users" && currentSessionUser && !isAdmin()) settingsTab = "alerts";
     let mgmtTab = localStorage.getItem("crm_mgmt_tab") || "customers";
-    if (!["customers", "partners", "sales", "teams", "users"].includes(mgmtTab)) mgmtTab = "customers";
-    if ((mgmtTab === "users" || mgmtTab === "teams") && currentSessionUser && !isAdmin()) mgmtTab = "customers";
+    // 舊書籤 mgmt-users → 設定頁
+    if (mgmtTab === "users") {
+      settingsTab = (!currentSessionUser || isAdmin()) ? "users" : "alerts";
+      localStorage.setItem("crm_settings_tab", settingsTab);
+      mgmtTab = "customers";
+      localStorage.setItem("crm_mgmt_tab", "customers");
+    }
+    if (!["customers", "partners", "sales", "teams"].includes(mgmtTab)) mgmtTab = "customers";
+    if (mgmtTab === "teams" && currentSessionUser && !isAdmin()) mgmtTab = "customers";
     let agendaPeriod = localStorage.getItem("crm_agenda_period") || "today";
     let agendaFrom = localStorage.getItem("crm_agenda_from") || "";
     let agendaTo = localStorage.getItem("crm_agenda_to") || "";
@@ -5789,7 +5846,17 @@
     };
     const DEFAULT_DASH_MODULE_ORDER = ["activity", "stale", "partner", "salesTarget", "teamSales", "targetClosing", "stage", "funnel"];
     const DASH_STALE_DAYS = 60; // ~兩個月內無動態（Dashboard）
-    const CARD_STALE_DAYS = 14; // 看板閃燈：超過 N 日無動態
+    const DEFAULT_CARD_STALE_DAYS = 14; // 看板閃燈預設：超過 N 日無動態
+    function getCardStaleDays() {
+      const n = Number(localStorage.getItem("crm_card_stale_days"));
+      if (!Number.isFinite(n) || n < 1) return DEFAULT_CARD_STALE_DAYS;
+      return Math.min(365, Math.floor(n));
+    }
+    function setCardStaleDays(days) {
+      const n = Math.min(365, Math.max(1, Math.floor(Number(days) || DEFAULT_CARD_STALE_DAYS)));
+      localStorage.setItem("crm_card_stale_days", String(n));
+      return n;
+    }
     let salesOpsTab = localStorage.getItem("crm_sales_ops_tab") || "kpi";
     let dashActivityPeriod = localStorage.getItem("crm_dash_activity_period") || "week"; // today | week
     let dashModuleOrder = (() => {
@@ -6841,6 +6908,7 @@
       agenda: "銷售員會議及 Case 跟進",
       potential: "Potential",
       mgmt: "資料庫管理",
+      settings: "設定",
       marketing: "市場推廣",
       logs: "Log History",
     };
@@ -7110,7 +7178,7 @@
         caseMgmtMode = viewToCaseMode(name);
         localStorage.setItem("crm_case_mgmt_mode", caseMgmtMode);
       }
-      ["home", "portal", "dashboard", "board", "cases", "agenda", "potential", "mgmt", "marketing", "logs"].forEach((v) => {
+      ["home", "portal", "dashboard", "board", "cases", "agenda", "potential", "mgmt", "settings", "marketing", "logs"].forEach((v) => {
         document.getElementById(`view-${v}`).classList.toggle("hidden", v !== name);
       });
       document.body.classList.toggle("mode-board", name === "board");
@@ -7121,11 +7189,18 @@
         mgmtGroup.classList.toggle("open", name === "mgmt");
         document.querySelector("#navMgmtGroup .nav-group-parent")?.classList.toggle("active", name === "mgmt");
       }
+      const settingsGroup = document.getElementById("navSettingsGroup");
+      if (settingsGroup) {
+        settingsGroup.classList.toggle("active-group", name === "settings");
+        settingsGroup.classList.toggle("open", name === "settings");
+        document.querySelector("#navSettingsGroup .nav-group-parent")?.classList.toggle("active", name === "settings");
+      }
       syncCaseMgmtNav();
       syncCaseModeBars();
       const titleEl = document.getElementById("topbarTitle");
       if (titleEl) {
         if (name === "mgmt") titleEl.textContent = (MGMT_META[mgmtTab] || MGMT_META.customers).top;
+        else if (name === "settings") titleEl.textContent = (SETTINGS_META[settingsTab] || SETTINGS_META.alerts).top;
         else titleEl.textContent = VIEW_TITLES[name] || "Achiever";
       }
       if (name === "dashboard") renderDashboard();
@@ -7135,12 +7210,18 @@
       if (name === "agenda") renderAgenda();
       if (name === "potential") renderPotentialPage();
       if (name === "mgmt") {
-        document.querySelectorAll(".mgmt-panel").forEach((p) => p.classList.toggle("active", p.id === `mgmt-${mgmtTab}`));
+        document.querySelectorAll("#view-mgmt .mgmt-panel").forEach((p) => p.classList.toggle("active", p.id === `mgmt-${mgmtTab}`));
         renderMgmt();
+      }
+      if (name === "settings") {
+        document.querySelectorAll("#view-settings .mgmt-panel").forEach((p) => p.classList.toggle("active", p.id === `settings-${settingsTab}`));
+        renderSettings();
       }
       if (name === "marketing") renderMarketing();
       if (name === "logs") renderLogHistory();
-      location.hash = (name === "dashboard" || name === "home") ? "" : (name === "mgmt" ? `mgmt-${mgmtTab}` : name);
+      location.hash = (name === "dashboard" || name === "home")
+        ? ""
+        : (name === "mgmt" ? `mgmt-${mgmtTab}` : (name === "settings" ? `settings-${settingsTab}` : name));
       const viewRoot = document.getElementById(`view-${name}`);
       // wait a frame so render content exists before staggering
       requestAnimationFrame(() => {
@@ -9765,7 +9846,7 @@
       return best ? new Date(best) : null;
     }
 
-    function isCaseStale(c, { days = CARD_STALE_DAYS } = {}) {
+    function isCaseStale(c, { days = getCardStaleDays() } = {}) {
       if (!c || c.stage === "closed" || isDq(c)) return false;
       const last = caseLastActivityAt(c);
       if (!last) return true;
@@ -9777,7 +9858,7 @@
       const now = todayStart().getTime();
       return Math.max(0, Math.floor((now - todayStartFromDate(last).getTime()) / 86400000));
     }
-    function buildStaleCaseRowsForSales(salesName, { days = CARD_STALE_DAYS } = {}) {
+    function buildStaleCaseRowsForSales(salesName, { days = getCardStaleDays() } = {}) {
       const pool = scopedCases(cases).filter((c) => {
         if (salesName && salesName !== "all") {
           return normalizeCompanySales(c.companySales) === salesName;
@@ -11606,7 +11687,7 @@
       if (boardAlert) {
         const parts = [overdueAlertHtml(overdueN, { source: "board" })];
         if (staleN) {
-          parts.push(`<div class="mgmt-alert" style="margin-top:8px">💡 有 <strong>${staleN}</strong> 宗個案超過 ${CARD_STALE_DAYS} 日無進度 — 看板卡片會<strong style="color:#b91c1c">紅燈閃爍</strong>提示</div>`);
+          parts.push(`<div class="mgmt-alert" style="margin-top:8px">💡 有 <strong>${staleN}</strong> 宗個案超過 ${getCardStaleDays()} 日無進度 — 看板卡片會<strong style="color:#b91c1c">紅燈閃爍</strong>提示</div>`);
         }
         boardAlert.innerHTML = parts.join("");
         bindOverdueAlert(boardAlert);
@@ -11639,7 +11720,7 @@
         !stale && followOverdue ? "follow-overdue-flash" : "",
       ].filter(Boolean).join(" ");
       const staleTitle = stale
-        ? `超過 ${CARD_STALE_DAYS} 日無動態${idle != null ? `（已閒置 ${idle} 日）` : ""}`
+        ? `超過 ${getCardStaleDays()} 日無動態${idle != null ? `（已閒置 ${idle} 日）` : ""}`
         : "拖曳可改 Stage";
       return `<article class="${cardClass}" data-id="${c.id}" title="${escapeAttr(staleTitle)}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
@@ -11660,7 +11741,7 @@
             ? ` · DQ${dqReasonLabel(c.dqReason) ? `：${escapeHtml(dqReasonLabel(c.dqReason).split(" / ")[0])}` : ""}`
             : ""}
         </div>
-        ${stale ? `<div class="stale-flag"><span class="dot" aria-hidden="true"></span>無進度 ${idle != null ? idle + " 日" : CARD_STALE_DAYS + "+ 日"}</div>` : ""}
+        ${stale ? `<div class="stale-flag"><span class="dot" aria-hidden="true"></span>無進度 ${idle != null ? idle + " 日" : getCardStaleDays() + "+ 日"}</div>` : ""}
         <div style="margin-top:6px"><span class="badge" style="color:${s.color};background:${s.bg}">${s.short}</span></div>
       </article>`;
     }
@@ -11817,7 +11898,7 @@
         const followOverdue = isFollowUpOverdue(c);
         const cells = {
           select: `<td><input type="checkbox" class="case-select" data-id="${escapeAttr(c.id)}" ${casesSelected.has(c.id) ? "checked" : ""} /></td>`,
-          customer: `<td><strong>${escapeHtml(companyLine)}</strong><div class="muted" style="font-size:.72rem">${n} contacts · ${escapeHtml(c.ricohSales || "—")}</div>${stale ? `<div class="stale-flag" style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;font-size:.68rem;font-weight:800;color:#b91c1c"><span class="dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;animation:staleDotBlink 1.1s ease-in-out infinite"></span>無進度 ${idle != null ? idle + " 日" : CARD_STALE_DAYS + "+ 日"}</div>` : ""}</td>`,
+          customer: `<td><strong>${escapeHtml(companyLine)}</strong><div class="muted" style="font-size:.72rem">${n} contacts · ${escapeHtml(c.ricohSales || "—")}</div>${stale ? `<div class="stale-flag" style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;font-size:.68rem;font-weight:800;color:#b91c1c"><span class="dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;animation:staleDotBlink 1.1s ease-in-out infinite"></span>無進度 ${idle != null ? idle + " 日" : getCardStaleDays() + "+ 日"}</div>` : ""}</td>`,
           partner: `<td>${escapeHtml(c.partner)}<div class="muted" style="font-size:.68rem">${escapeHtml(c.ricohHouse || "")}</div></td>`,
           sales: `<td>${escapeHtml(normalizeCompanySales(c.companySales) || "未指派")}</td>`,
           systems: `<td>${(c.systems || []).map((x) => `<span class="badge" style="background:var(--accent-soft);color:var(--accent);margin:1px">${escapeHtml(x)}</span>`).join(" ") || "—"}</td>`,
@@ -11911,6 +11992,9 @@
       partners: { title: "Partner 管理", sub: "Achiever（本公司）／外部 Partner → Team Leader → Sales", top: "Partner 管理" },
       sales: { title: "銷售員管理", sub: "KPI 同 Closing 目標設計", top: "銷售員管理" },
       teams: { title: "Team Leader 設定", sub: "設定 Team Leader／成員同 Team KPI（Dashboard 團隊視圖）", top: "Team Leader" },
+    };
+    const SETTINGS_META = {
+      alerts: { title: "無進度閃爍", sub: "設定個案停滯幾多日會紅燈閃爍", top: "設定" },
       users: { title: "使用者權限", sub: "ADMIN／SALES 帳號與屬性", top: "使用者權限" },
     };
 
@@ -11936,23 +12020,107 @@
       }
     }
 
+    function syncSettingsNav() {
+      const group = document.getElementById("navSettingsGroup");
+      if (group) {
+        group.classList.add("open");
+        group.classList.toggle("active-group", !document.getElementById("view-settings").classList.contains("hidden"));
+      }
+      document.querySelectorAll("#navSettingsSub button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.settings === settingsTab);
+      });
+      const parent = document.querySelector("#navSettingsGroup .nav-group-parent");
+      if (parent) parent.classList.toggle("active", !document.getElementById("view-settings").classList.contains("hidden"));
+      const meta = SETTINGS_META[settingsTab] || SETTINGS_META.alerts;
+      const titleEl = document.getElementById("settingsPageTitle");
+      const subEl = document.getElementById("settingsPageSub");
+      if (titleEl) titleEl.textContent = meta.title;
+      if (subEl) subEl.textContent = meta.sub;
+      const top = document.getElementById("topbarTitle");
+      if (top && !document.getElementById("view-settings").classList.contains("hidden")) {
+        top.textContent = meta.top;
+      }
+    }
+
     function setMgmtTab(tab) {
       mgmtTab = tab || "customers";
-      if ((mgmtTab === "users" || mgmtTab === "teams") && !isAdmin()) mgmtTab = "customers";
+      if (mgmtTab === "users") {
+        setSettingsTab("users");
+        showView("settings");
+        return;
+      }
+      if (mgmtTab === "teams" && !isAdmin()) mgmtTab = "customers";
       localStorage.setItem("crm_mgmt_tab", mgmtTab);
-      document.querySelectorAll(".mgmt-panel").forEach((p) => p.classList.toggle("active", p.id === `mgmt-${mgmtTab}`));
+      document.querySelectorAll("#view-mgmt .mgmt-panel").forEach((p) => p.classList.toggle("active", p.id === `mgmt-${mgmtTab}`));
       syncMgmtNav();
       renderMgmt();
     }
 
+    function setSettingsTab(tab) {
+      settingsTab = tab || "alerts";
+      if (settingsTab === "users" && !isAdmin()) settingsTab = "alerts";
+      if (!["alerts", "users"].includes(settingsTab)) settingsTab = "alerts";
+      localStorage.setItem("crm_settings_tab", settingsTab);
+      document.querySelectorAll("#view-settings .mgmt-panel").forEach((p) => p.classList.toggle("active", p.id === `settings-${settingsTab}`));
+      syncSettingsNav();
+      renderSettings();
+    }
+
+    function renderSettingsAlerts() {
+      const days = getCardStaleDays();
+      const input = document.getElementById("settingsStaleDays");
+      if (input && document.activeElement !== input) input.value = String(days);
+      const staleN = scopedCases(cases).filter((c) => isCaseStale(c, { days })).length;
+      const preview = document.getElementById("settingsStalePreview");
+      if (preview) {
+        preview.innerHTML = staleN
+          ? `<div class="mgmt-alert">💡 依目前設定（${days} 日），有 <strong>${staleN}</strong> 宗個案會紅燈閃爍</div>`
+          : `<div class="mgmt-alert ok">✓ 依目前設定（${days} 日），暫無個案需要閃爍提示</div>`;
+      }
+      document.querySelectorAll("[data-stale-preset]").forEach((btn) => {
+        const n = Number(btn.dataset.stalePreset);
+        btn.classList.toggle("active", n === days);
+        btn.onclick = () => {
+          if (input) input.value = String(n);
+          applyStaleDaysSetting(n);
+        };
+      });
+    }
+
+    function applyStaleDaysSetting(raw) {
+      const n = setCardStaleDays(raw);
+      toast(`已設定：超過 ${n} 日無進度會閃爍`);
+      renderSettingsAlerts();
+      if (!document.getElementById("view-board")?.classList.contains("hidden")) renderBoard();
+      if (!document.getElementById("view-cases")?.classList.contains("hidden")) renderCasesTable();
+      if (!document.getElementById("view-mgmt")?.classList.contains("hidden") && mgmtTab === "sales") renderSalesMgmt();
+      if (!document.getElementById("view-dashboard")?.classList.contains("hidden")) renderDashboard();
+      return n;
+    }
+
+    function renderSettings() {
+      if (settingsTab === "users" && !isAdmin()) settingsTab = "alerts";
+      syncSettingsNav();
+      syncAuthUi();
+      document.querySelectorAll("#view-settings .mgmt-panel").forEach((p) => {
+        p.classList.toggle("active", p.id === `settings-${settingsTab}`);
+      });
+      if (settingsTab === "users") renderUsersMgmt();
+      else renderSettingsAlerts();
+    }
+
     function renderMgmt() {
       document.getElementById("mgmtAlterBanner")?.classList.toggle("hidden", mgmtColsReady && addressColReady && cardsTableReady && salesTeamsTableReady);
-      if ((mgmtTab === "users" || mgmtTab === "teams") && !isAdmin()) mgmtTab = "customers";
+      if (mgmtTab === "users") {
+        setSettingsTab("users");
+        showView("settings");
+        return;
+      }
+      if (mgmtTab === "teams" && !isAdmin()) mgmtTab = "customers";
       syncMgmtNav();
       syncAuthUi();
       if (mgmtTab === "customers") renderCustomersMgmt();
       else if (mgmtTab === "partners") renderPartnersMgmt();
-      else if (mgmtTab === "users") renderUsersMgmt();
       else if (mgmtTab === "teams") renderSalesTeamsMgmt();
       else renderSalesMgmt();
     }
@@ -14105,7 +14273,7 @@
         <div class="ops-head">
           <div>
             <h3>${escapeHtml(salesName)} · 停滯個案</h3>
-            <div class="sub">超過 ${CARD_STALE_DAYS} 日無 Log／會面／案件更新 · 共 ${rows.length} 宗 · 看板會紅燈閃爍</div>
+            <div class="sub">超過 ${getCardStaleDays()} 日無 Log／會面／案件更新 · 共 ${rows.length} 宗 · 看板會紅燈閃爍</div>
           </div>
         </div>
         ${rows.length ? rows.slice(0, 80).map((r) => {
@@ -14123,7 +14291,7 @@
             <div><button type="button" class="btn btn-ghost btn-sm" data-case-id="${escapeAttr(c.id)}">詳情</button></div>
           </div>`;
         }).join("") + (rows.length > 80 ? `<p class="muted" style="margin-top:8px;font-size:.72rem">只顯示前 80 宗</p>` : "")
-        : `<div class="mgmt-alert ok">✓ 沒有超過 ${CARD_STALE_DAYS} 日停滯嘅個案</div>`}
+        : `<div class="mgmt-alert ok">✓ 沒有超過 ${getCardStaleDays()} 日停滯嘅個案</div>`}
       `;
     }
 
@@ -14159,7 +14327,7 @@
         renderStatCard({ label: isSales() ? "銷售員" : "本公司銷售員", value: salesNames.length, sub: salesNames.join(" · ") || "—", tone: "purple", icon: "people" }),
         renderStatCard({ label: `本月${scopeLabel} Closing`, value: money(teamClosed), sub: `目標 ${money(teamTarget)} · ${teamTarget ? teamPct + "%" : "未設"}`, tone: "sky", icon: "money", valueStyle: "font-size:1.05rem" }),
         renderStatCard({ label: "跟進提示", value: followRowsAll.length, sub: overdueN ? `${overdueN} 宗已逾期` : "逾期 0 · 三日內需跟進", tone: overdueN ? "orange" : "mint", icon: "cases", valueStyle: "font-size:1.2rem" }),
-        renderStatCard({ label: "停滯個案", value: staleRowsAll.length, sub: `>${CARD_STALE_DAYS} 日無進度 · 看板閃燈`, tone: staleRowsAll.length ? "orange" : "mint", icon: "chart", valueStyle: "font-size:1.2rem" }),
+        renderStatCard({ label: "停滯個案", value: staleRowsAll.length, sub: `>${getCardStaleDays()} 日無進度 · 看板閃燈`, tone: staleRowsAll.length ? "orange" : "mint", icon: "chart", valueStyle: "font-size:1.2rem" }),
       ].join("");
       // top cards: count from 0 → target within 3s
       requestAnimationFrame(() => {
@@ -15846,12 +16014,28 @@
       if (!btn) return;
       if (btn.dataset.view === "mgmt") {
         document.getElementById("navCaseGroup")?.classList.remove("open");
+        document.getElementById("navSettingsGroup")?.classList.remove("open");
         if (btn.dataset.mgmt) mgmtTab = btn.dataset.mgmt;
         else if (!mgmtTab) mgmtTab = "customers";
-        localStorage.setItem("crm_mgmt_tab", mgmtTab);
-        showView("mgmt");
+        if (mgmtTab === "users") {
+          settingsTab = "users";
+          localStorage.setItem("crm_settings_tab", settingsTab);
+          showView("settings");
+        } else {
+          localStorage.setItem("crm_mgmt_tab", mgmtTab);
+          showView("mgmt");
+        }
+      } else if (btn.dataset.view === "settings") {
+        document.getElementById("navCaseGroup")?.classList.remove("open");
+        document.getElementById("navMgmtGroup")?.classList.remove("open");
+        if (btn.dataset.settings) settingsTab = btn.dataset.settings;
+        else if (!settingsTab) settingsTab = "alerts";
+        if (settingsTab === "users" && !isAdmin()) settingsTab = "alerts";
+        localStorage.setItem("crm_settings_tab", settingsTab);
+        showView("settings");
       } else if (btn.dataset.view === "board" || btn.dataset.view === "cases") {
         document.getElementById("navMgmtGroup")?.classList.remove("open");
+        document.getElementById("navSettingsGroup")?.classList.remove("open");
         const mode = btn.dataset.caseMode || (btn.dataset.view === "cases" ? "list" : caseMgmtMode);
         // parent Case Management：用上次選擇；子項文件夾／列表：明確切換
         if (btn.classList.contains("nav-group-parent") && !btn.dataset.caseModeForced) {
@@ -15861,6 +16045,7 @@
         }
       } else {
         document.getElementById("navMgmtGroup")?.classList.remove("open");
+        document.getElementById("navSettingsGroup")?.classList.remove("open");
         document.getElementById("navCaseGroup")?.classList.remove("open");
         showView(btn.dataset.view);
       }
@@ -16460,14 +16645,27 @@
       toast(`歡迎回來，${res.user.displayName || res.user.username}`);
       const enterApp = () => {
         const hash = (location.hash || "").replace("#", "");
-        if (hash.startsWith("mgmt")) {
-          const tab = hash.replace(/^mgmt-?/, "") || localStorage.getItem("crm_mgmt_tab") || "customers";
-          if (["customers", "partners", "sales", "teams", "users"].includes(tab)) {
-            mgmtTab = ((tab === "users" || tab === "teams") && !isAdmin()) ? "customers" : tab;
+        if (hash.startsWith("settings") || hash === "mgmt-users") {
+          const tab = hash === "mgmt-users"
+            ? "users"
+            : (hash.replace(/^settings-?/, "") || localStorage.getItem("crm_settings_tab") || "alerts");
+          if (["alerts", "users"].includes(tab)) {
+            settingsTab = (tab === "users" && !isAdmin()) ? "alerts" : tab;
           }
-          showView("mgmt");
+          showView("settings");
+        } else if (hash.startsWith("mgmt")) {
+          const tab = hash.replace(/^mgmt-?/, "") || localStorage.getItem("crm_mgmt_tab") || "customers";
+          if (tab === "users") {
+            settingsTab = isAdmin() ? "users" : "alerts";
+            showView("settings");
+          } else {
+            if (["customers", "partners", "sales", "teams"].includes(tab)) {
+              mgmtTab = (tab === "teams" && !isAdmin()) ? "customers" : tab;
+            }
+            showView("mgmt");
+          }
         } else {
-          showView(["portal", "dashboard", "board", "cases", "agenda", "potential", "marketing", "logs"].includes(hash) ? hash : "dashboard");
+          showView(["portal", "dashboard", "board", "cases", "agenda", "potential", "settings", "marketing", "logs"].includes(hash) ? hash : "dashboard");
         }
         // 登入後即時彈今日約見／跟進／逾期提示
         requestAnimationFrame(() => openDailyBriefingModal({ force: true }));
@@ -16495,6 +16693,15 @@
     });
     document.getElementById("btnSaveUser")?.addEventListener("click", () => saveUserFromForm());
     document.getElementById("btnResetUserForm")?.addEventListener("click", () => resetUserForm());
+    document.getElementById("btnSaveStaleDays")?.addEventListener("click", () => {
+      applyStaleDaysSetting(document.getElementById("settingsStaleDays")?.value);
+    });
+    document.getElementById("settingsStaleDays")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        applyStaleDaysSetting(e.target.value);
+      }
+    });
     document.getElementById("userRole")?.addEventListener("change", () => {
       const role = document.getElementById("userRole")?.value;
       const salesSel = document.getElementById("userSalesName");
@@ -16530,7 +16737,7 @@
       document.getElementById("newSalesEmail").value = "";
       fillUserSalesSelect();
       renderSalesMgmt();
-      if (!document.getElementById("view-mgmt").classList.contains("hidden") && mgmtTab === "users") {
+      if (!document.getElementById("view-settings")?.classList.contains("hidden") && settingsTab === "users") {
         renderUsersMgmt();
       }
       toast(`已新增銷售員 ${result.name} · Login：${result.username}`);
@@ -16555,14 +16762,27 @@
       casesLoading = false;
       if (!currentSessionUser) return;
       const hash = (location.hash || "").replace("#", "");
-      if (hash.startsWith("mgmt")) {
-        const tab = hash.replace(/^mgmt-?/, "") || localStorage.getItem("crm_mgmt_tab") || "customers";
-        if (["customers", "partners", "sales", "teams", "users"].includes(tab)) {
-          mgmtTab = ((tab === "users" || tab === "teams") && !isAdmin()) ? "customers" : tab;
+      if (hash.startsWith("settings") || hash === "mgmt-users") {
+        const tab = hash === "mgmt-users"
+          ? "users"
+          : (hash.replace(/^settings-?/, "") || localStorage.getItem("crm_settings_tab") || "alerts");
+        if (["alerts", "users"].includes(tab)) {
+          settingsTab = (tab === "users" && !isAdmin()) ? "alerts" : tab;
         }
-        showView("mgmt");
+        showView("settings");
+      } else if (hash.startsWith("mgmt")) {
+        const tab = hash.replace(/^mgmt-?/, "") || localStorage.getItem("crm_mgmt_tab") || "customers";
+        if (tab === "users") {
+          settingsTab = isAdmin() ? "users" : "alerts";
+          showView("settings");
+        } else {
+          if (["customers", "partners", "sales", "teams"].includes(tab)) {
+            mgmtTab = (tab === "teams" && !isAdmin()) ? "customers" : tab;
+          }
+          showView("mgmt");
+        }
       } else {
-        showView(["portal", "dashboard", "board", "cases", "agenda", "potential", "marketing", "logs"].includes(hash) ? hash : "dashboard");
+        showView(["portal", "dashboard", "board", "cases", "agenda", "potential", "settings", "marketing", "logs"].includes(hash) ? hash : "dashboard");
       }
       // 已登入再開頁：每日提示一次（今日約見／跟進／逾期）
       requestAnimationFrame(() => openDailyBriefingModal({ force: false }));
