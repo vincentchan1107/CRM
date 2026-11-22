@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CLAIM MODULE 時間表 · 松本清 × ACHIEVER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --gutter: 248px;
+    --ink: #3e4750;
+    --muted: #8b949e;
+    --line: #e6ebf0;
+    --teal: #2ea0b8;
+    --bg: #f5f7f9;
+    --paper: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    height: 100vh;
+    overflow: hidden;
+    color: var(--ink);
+    background: var(--bg);
+    font-family: Manrope, "Noto Sans TC", "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .wrap {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 22px 12px;
+    gap: 8px;
+  }
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 28px;
+  }
+  .brand {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .22em;
+    color: var(--teal);
+  }
+  h1 {
+    margin: 2px 0 0;
+    font-size: 36px;
+    line-height: .95;
+    letter-spacing: .055em;
+    font-weight: 800;
+    color: #5c6570;
+  }
+  .sub {
+    margin-top: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #7b868f;
+    letter-spacing: .03em;
+  }
+  .client { width: min(440px, 40vw); }
+  .kicker {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .16em;
+    color: #9aa3ab;
+  }
+  .client-name {
+    margin-top: 2px;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    line-height: 1.05;
+    color: #3a434c;
+  }
+  .jp {
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: #8d969e;
+  }
+  .client p {
+    margin: 8px 0 0;
+    color: #8e979f;
+    font-size: 12px;
+    line-height: 1.55;
+    font-weight: 500;
+  }
+  .ribbon {
+    display: flex;
+    height: 4px;
+    border-radius: 99px;
+    overflow: hidden;
+    flex: none;
+  }
+  .ribbon i { flex: 1; display: block; }
+  .barline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+  }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px; }
+  .stat {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 6px 12px 7px;
+    min-width: 148px;
+  }
+  .stat span {
+    display: block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    color: var(--muted);
+  }
+  .stat b {
+    display: block;
+    margin-top: 1px;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: .01em;
+  }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-left: auto; }
+  .seg { display: inline-flex; padding: 2px; background: #e9eef1; border-radius: 999px; }
+  .seg button, .tools > button, .mini {
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 999px;
+    padding: 5px 11px;
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #4d5962;
+  }
+  .tools > button, .mini {
+    background: #fff;
+    border-color: var(--line);
+  }
+  .tools > button:hover, .mini:hover, .seg button:hover { border-color: #9fd4e0; color: #18788c; }
+  .seg button.on { background: var(--teal); color: #fff; }
+  .status { font-size: 12px; font-weight: 700; color: #8b949e; min-height: 1em; }
+  .inspector { min-height: 38px; display: flex; align-items: center; }
+  .hint { margin: 0; color: #7c868f; font-size: 13px; line-height: 1.45; }
+  .hint b, .hint strong { color: #1d7d92; font-weight: 800; }
+  .editor[hidden], .hint[hidden], .chip[hidden], .mini[hidden] { display: none !important; }
+  .editor { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; width: 100%; }
+  .who { min-width: 200px; }
+  .who b { display: block; font-size: 16px; letter-spacing: .02em; color: var(--c); }
+  .who small { color: #8b949e; font-weight: 700; }
+  .note { flex: 1 1 280px; margin: 0; color: #66717a; font-size: 13px; line-height: 1.45; }
+  .field { display: flex; flex-direction: column; gap: 2px; font-size: 10px; font-weight: 800; letter-spacing: .08em; color: #8b949e; }
+  .field input {
+    border: 1px solid #dce3e8;
+    background: #fff;
+    border-radius: 8px;
+    padding: 5px 8px;
+    font-weight: 700;
+    letter-spacing: 0;
+    color: var(--ink);
+  }
+  .dur {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .dur em { font-style: normal; color: #8b949e; font-weight: 700; }
+  .scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    position: relative;
+  }
+  .canvas { position: relative; min-height: 100%; }
+  .head {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    background: #fff;
+    box-shadow: 0 1px 0 var(--line);
+  }
+  .gutter {
+    position: sticky;
+    left: 0;
+    z-index: 4;
+    flex: 0 0 var(--gutter);
+    width: var(--gutter);
+    background: #fff;
+  }
+  .head .gutter {
+    z-index: 6;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 12px 8px 10px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .16em;
+    color: #9aa3ab;
+  }
+  .head-plot { position: relative; flex: none; }
+  .months {
+    display: flex;
+    height: 46px;
+    margin-top: 8px;
+    background: var(--teal);
+    color: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .month {
+    flex: none;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.05;
+    min-width: 0;
+  }
+  .month + .month::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 9px;
+    bottom: 9px;
+    width: 1px;
+    background: rgba(255,255,255,.45);
+  }
+  .month small { font-size: 10px; font-weight: 700; letter-spacing: .12em; opacity: .85; }
+  .month b { font-size: 14px; font-weight: 800; letter-spacing: .06em; }
+  .weekrow { position: relative; height: 22px; }
+  .wlab {
+    position: absolute;
+    top: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #9aa3ab;
+    transform: translateX(-50%);
+  }
+  .today-pill {
+    position: absolute;
+    top: 2px;
+    transform: translateX(-50%);
+    background: #ef3d68;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    padding: 2px 6px;
+    border-radius: 99px;
+    z-index: 2;
+    white-space: nowrap;
+  }
+  .phase, .row { display: flex; }
+  .phase { height: 32px; margin-top: 8px; }
+  .body > .phase:first-child { margin-top: 2px; }
+  .phase .gutter {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 0 10px 6px 12px;
+    color: var(--c);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .14em;
+  }
+  .phase em { font-style: normal; font-size: 10px; letter-spacing: .14em; opacity: .72; }
+  .tick { width: 8px; height: 8px; border-radius: 99px; background: var(--c); margin-bottom: 2px; }
+  .row { height: 56px; outline: none; }
+  .row .gutter {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    column-gap: 4px;
+    align-content: center;
+    padding: 0 12px 0 10px;
+    cursor: pointer;
+    box-shadow: 8px 0 12px -12px rgba(40, 50, 70, .45);
+  }
+  .row.is-selected .gutter { background: #f3fbfc; }
+  .row:hover .gutter { background: #f7fbfc; }
+  .row.is-selected:hover .gutter { background: #f3fbfc; }
+  .no {
+    grid-row: 1 / span 2;
+    align-self: center;
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--c);
+    font-variant-numeric: tabular-nums;
+  }
+  .task-name {
+    font-weight: 800;
+    font-size: 14.5px;
+    letter-spacing: .01em;
+    color: var(--c);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .meta {
+    color: #8b949e;
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 99px;
+    background: var(--c);
+    margin-right: 4px;
+    transform: translateY(-1px);
+  }
+  .plot { position: relative; flex: none; height: 100%; }
+  .bar, .ghost {
+    position: absolute;
+    top: 50%;
+    height: 18px;
+    margin-top: -9px;
+    border-radius: 999px;
+    touch-action: none;
+  }
+  .bar {
+    background: var(--c);
+    cursor: grab;
+    z-index: 1;
+  }
+  .bar::before, .bar::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    width: 2px;
+    border-radius: 2px;
+    background: rgba(255,255,255,.8);
+    pointer-events: none;
+  }
+  .bar::before { left: 8px; }
+  .bar::after { right: 20px; }
+  .bar.is-short::before, .bar.is-short::after { display: none; }
+  .bar.is-selected { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--c); }
+  .ghost {
+    border: 1.5px dashed rgba(70, 80, 90, .45);
+    background: transparent;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .handle {
+    position: absolute;
+    top: -14px;
+    bottom: -14px;
+    z-index: 3;
+    cursor: ew-resize;
+  }
+  .handle.start { left: -8px; width: 16px; }
+  .handle.end { right: -8px; width: 16px; }
+  .bar:not(.is-short) .handle.end { right: -16px; width: 36px; }
+  .cap {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    right: -14px;
+    top: 50%;
+    margin-top: -16px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--c);
+    border: 2px solid var(--c);
+    box-shadow: 0 3px 8px rgba(40, 50, 70, .12);
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .cap svg, .lg-icon svg { width: 15px; height: 15px; display: block; }
+  .legend {
+    flex: none;
+    background: #eef1f4;
+    border-radius: 14px;
+    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px 12px;
+  }
+  .lg { display: flex; gap: 8px; align-items: center; min-width: 0; }
+  .lg > span:last-child { min-width: 0; }
+  .lg-icon {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    display: grid;
+    place-items: center;
+    background: #fff;
+  }
+  .lg b { display: block; font-size: 12.5px; color: #5c6670; letter-spacing: .04em; }
+  .lg small { display: block; color: #9199a1; font-size: 11px; line-height: 1.3; }
+  .foot {
+    flex: none;
+    text-align: center;
+    color: #a0a8b0;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .12em;
+  }
+  .chip {
+    position: fixed;
+    z-index: 80;
+    pointer-events: none;
+    background: #24323a;
+    color: #fff;
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 8px 20px rgba(20, 30, 40, .22);
+    transform: translate(14px, -145%);
+  }
+  body.dragging, body.dragging * { cursor: grabbing !important; }
+  body.dragging-resize, body.dragging-resize * { cursor: ew-resize !important; }
+  @media (max-width: 1180px) {
+    h1 { font-size: 30px; }
+    .legend { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .client { display: none; }
+  }
+  @media print {
+    body { height: auto; overflow: visible; background: #fff; }
+    .wrap { height: auto; display: block; }
+    .tools, .hint, .status, .chip { display: none !important; }
+    .scroll { overflow: visible; border: 0; max-height: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div>
+        <div class="brand">ACHIEVER</div>
+        <h1>PROJECT TIMELINE</h1>
+        <div class="sub">CLAIM MODULE　·　客訴索償模組</div>
+      </div>
+      <div class="client">
+        <div class="kicker">CLIENT　客戶</div>
+        <div class="client-name">松本清</div>
+        <div class="jp">マツモトキヨシ　·　Matsumoto Kiyoshi</div>
+        <div class="kicker" style="margin-top:6px">SYSTEM　系統公司 ACHIEVER</div>
+        <p>由 2026 年 11 月合約確認，到 CLAIM MODULE 正式 LIVE RUN。涵蓋門店調查、賠付規則、設計開發、驗收培訓與上線。每一段時間都可以直接拖曳調整。</p>
+      </div>
+    </header>
+    <div class="ribbon" aria-hidden="true">
+      <i style="background:#ef3d68"></i>
+      <i style="background:#f5a142"></i>
+      <i style="background:#6fbf72"></i>
+      <i style="background:#2cb8b2"></i>
+      <i style="background:#3c8fd4"></i>
+      <i style="background:#ef6ea4"></i>
+      <i style="background:#c84bdd"></i>
+    </div>
+    <div class="barline">
+      <div class="stats">
+        <div class="stat"><span>合約確認</span><b id="statContract">—</b></div>
+        <div class="stat"><span>正式 LIVE RUN</span><b id="statLive">—</b></div>
+        <div class="stat"><span>專案工期</span><b id="statSpan">—</b></div>
+      </div>
+      <div class="tools">
+        <div class="seg" role="group" aria-label="微調單位">
+          <button type="button" id="snapDay" class="on">按日</button>
+          <button type="button" id="snapWeek">按週</button>
+        </div>
+        <button type="button" id="zoomOut" aria-label="縮小">縮小</button>
+        <button type="button" id="zoomIn" aria-label="放大">放大</button>
+        <button type="button" id="fitBtn">全覽</button>
+        <button type="button" id="copyBtn">複製時間表</button>
+        <button type="button" id="printBtn">列印</button>
+        <button type="button" id="resetBtn">還原預設</button>
+        <span class="status" id="status"></span>
+      </div>
+    </div>
+    <div class="inspector">
+      <p class="hint" id="hint">拖曳色條<b>中段</b>可移動時段，拉住<b>左右兩端</b>可改變長短。天數以日曆日計算，包含週末。調整會記在這部電腦。</p>
+      <div class="editor" id="editor" hidden>
+        <div class="who" id="who">
+          <b id="whoName"></b>
+          <small id="whoEn"></small>
+        </div>
+        <p class="note" id="note"></p>
+        <label class="field">開始<input type="date" id="startInput" min="2026-01-01" max="2028-12-31" /></label>
+        <label class="field">結束<input type="date" id="endInput" min="2026-01-01" max="2028-12-31" /></label>
+        <div class="dur" id="dur">—</div>
+        <button type="button" class="mini" id="restoreBtn" hidden>還原此項</button>
+      </div>
+    </div>
+    <div class="scroll" id="scroll">
+      <div class="canvas" id="canvas"></div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="foot">ACHIEVER　×　松本清　·　CLAIM MODULE　·　合約確認至正式 LIVE RUN</div>
+  </div>
+  <div class="chip" id="chip" hidden></div>
+  <style id="dyn"></style>
+<script>
+"use strict";
+
+const KEY = "achiever-mk-claim-timeline-v1";
+const GUTTER = 248;
+const PAD = 36;
+const MIN_DATE = parseDate("2026-01-01");
+const MAX_DATE = parseDate("2028-12-31");
+const WD = ["日", "一", "二", "三", "四", "五", "六"];
+const BANDS = ["#fde8ef", "#fff1e4", "#e7f6ea", "#e5f7f6", "#e7f2fb", "#fde8f3", "#f3e9fb"];
+
+const ICONS = {
+  seal: '<path d="M12 3.2l1.8 1.3 2.2-.3 1 2 2 .9-.3 2.2L20.6 12l-1.2 1.7.3 2.2-2 .9-1 2-2.2-.3L12 20.8l-1.8-1.3-2.2.3-1-2-2-.9.3-2.2L3.4 12l1.2-1.7-.3-2.2 2-.9 1-2 2.2.3L12 3.2z"/><path d="M8.7 12.2l2.2 2.2 4.4-4.6"/>',
+  users: '<path d="M9 11.2a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4z"/><path d="M16.2 10.6a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4z"/><path d="M3.8 19.2c.5-2.6 2.6-4.2 5.2-4.2s4.7 1.6 5.2 4.2"/><path d="M14 15.2c1.5-.3 3.2.1 4.3 1.6.6.8 1 1.8 1.1 2.8"/>',
+  search: '<circle cx="11" cy="11" r="6"/><path d="M15.8 15.8L20.5 20.5"/>',
+  chat: '<path d="M5 16.2V7.6A2.1 2.1 0 0 1 7.1 5.5h9.8A2.1 2.1 0 0 1 19 7.6v5.2a2.1 2.1 0 0 1-2.1 2.1H8.2L5 18.2v-2z"/>',
+  scale: '<path d="M12 4v15"/><path d="M8 20.5h8"/><path d="M12 4.5L18.2 8 12 9.2 5.8 8 12 4.5z"/><path d="M5.8 8L4 13.2a2.6 2.6 0 0 0 5.2 0L7.4 8"/><path d="M18.2 8l-1.8 5.2a2.6 2.6 0 0 0 5.2 0L19.6 8"/>',
+  file: '<path d="M7 3.5h6.2L18 8.2V20a1.2 1.2 0 0 1-1.2 1.2H7.2A1.2 1.2 0 0 1 6 20V4.7A1.2 1.2 0 0 1 7.2 3.5H7z"/><path d="M13 3.6V8.2h4.6"/><path d="M9 12.2h6M9 16h4"/>',
+  pen: '<path d="M13.8 5.2l5 5L8.2 20.8 3.5 21.5l.7-4.7L13.8 5.2z"/><path d="M12.2 6.8l5 5"/>',
+  layout: '<rect x="4" y="4.5" width="16" height="15" rx="1.6"/><path d="M4 9.2h16M10 9.2V19.5"/>',
+  layers: '<path d="M12 4l8 3.6-8 3.6-8-3.6L12 4z"/><path d="M4 12.2l8 3.6 8-3.6"/><path d="M4 16.2l8 3.6 8-3.6"/>',
+  key: '<circle cx="8" cy="12" r="3.2"/><path d="M11 12h9l-1.6 1.8L20 15.4"/>',
+  clipboard: '<path d="M9 4.2h6v2.4H9z"/><path d="M8.2 5.6H7a1.4 1.4 0 0 0-1.4 1.4v12.2A1.4 1.4 0 0 0 7 20.6h10a1.4 1.4 0 0 0 1.4-1.4V7A1.4 1.4 0 0 0 17 5.6h-1.2"/>',
+  branch: '<circle cx="7" cy="6" r="2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="12" r="2"/><path d="M7 8v8"/><path d="M7 12c0-2 3.2-4 8-4"/>',
+  store: '<path d="M4.5 10.2L6 5.2h12l1.5 5"/><path d="M5 10.2h14v8.6H5z"/><path d="M9.2 18.8v-4.6h5.6v4.6"/>',
+  clip: '<path d="M9 12.2l5.6-5.6a2.4 2.4 0 0 1 3.4 3.4l-6.8 6.8a3.3 3.3 0 0 1-4.7-4.7l6.2-6.2"/>',
+  receipt: '<path d="M7 3.5h10v17l-1.7-1.1L13.5 21 12 19.6 10.5 21 8.7 19.4 7 20.5z"/><path d="M9.2 8h5.6M9.2 11.5h5.6M9.2 15h3.4"/>',
+  chart: '<path d="M5 19V5"/><path d="M5 19h14"/><path d="M8.5 16v-4"/><path d="M12 16V8"/><path d="M15.5 16v-6"/>',
+  link: '<path d="M10 13.2a3.6 3.6 0 0 0 5.1.4l1.8-1.8a3.6 3.6 0 0 0-5.1-5.1l-1 1"/><path d="M14 10.8a3.6 3.6 0 0 0-5.1-.4l-1.8 1.8a3.6 3.6 0 0 0 5.1 5.1l1-1"/>',
+  flask: '<path d="M9.2 3.5h5.6"/><path d="M10 3.5V9L5.6 17.6A2.3 2.3 0 0 0 7.6 21h8.8a2.3 2.3 0 0 0 2-3.4L14 9V3.5"/>',
+  check: '<path d="M9 4.2h6v2.4H9z"/><path d="M8.2 5.6H7a1.4 1.4 0 0 0-1.4 1.4v12.2A1.4 1.4 0 0 0 7 20.6h10a1.4 1.4 0 0 0 1.4-1.4V7A1.4 1.4 0 0 0 17 5.6h-1.2"/><path d="M8.8 13.2l2.2 2.2 4.2-4.4"/>',
+  wrench: '<path d="M14.6 6.2a3.2 3.2 0 0 0-4.4 4.4L5 16.8V20h3.2l6.2-6.2a3.2 3.2 0 0 0 4.4-4.4L16.2 12l-3.2-3.2 1.6-2.6z"/>',
+  database: '<ellipse cx="12" cy="7" rx="6.5" ry="2.6"/><path d="M5.5 7v5c0 1.5 2.9 2.6 6.5 2.6s6.5-1.1 6.5-2.6V7"/><path d="M5.5 12v5c0 1.5 2.9 2.6 6.5 2.6s6.5-1.1 6.5-2.6v-5"/>',
+  cap: '<path d="M3.5 10.5L12 6l8.5 4.5L12 15 3.5 10.5z"/><path d="M7.2 12.4V16c1.4 1.2 3 1.8 4.8 1.8s3.4-.6 4.8-1.8v-3.6"/>',
+  flag: '<path d="M6.5 20.5V4.5"/><path d="M6.5 4.8h11l-2.2 3.6 2.2 3.6h-11"/>',
+  shield: '<path d="M12 3.5l7 2.6v5.6c0 4.2-2.8 7-7 8.8-4.2-1.8-7-4.6-7-8.8V6.1l7-2.6z"/><path d="M8.8 12.1l2.2 2.2 4.2-4.4"/>',
+  rocket: '<path d="M14 15.2l4.6-4.6s.2-4.6-2.2-6.6-6.4 1.6-6.4 1.6l-4.6 4.6 2.6.8-1.2 2.8 2.8-1.2.8 2.6 3.6-1z"/><path d="M8.2 16.2L6 20"/>',
+  headset: '<path d="M4.5 13a7.5 7.5 0 0 1 15 0"/><path d="M4.5 13v4.2A1.8 1.8 0 0 0 6.3 19H7.5v-6H6.3A1.8 1.8 0 0 0 4.5 14.8V13z"/><path d="M19.5 13v4.2A1.8 1.8 0 0 1 17.7 19H16.5v-6h1.2a1.8 1.8 0 0 1 1.8 1.8V13z"/>'
+};
+
+const PHASES = [
+  { id: "kick", name: "啟動", en: "KICK-OFF", color: "#ef3d68", icon: "users", blurb: "合約確認與項目啟動會" },
+  { id: "need", name: "需求", en: "DISCOVERY", color: "#f5a142", icon: "search", blurb: "調查、工作坊、規格與簽核" },
+  { id: "design", name: "設計", en: "DESIGN", color: "#6fbf72", icon: "layout", blurb: "畫面流程、架構與權限" },
+  { id: "build", name: "開發", en: "BUILD", color: "#2cb8b2", icon: "branch", blurb: "立案、審批、報表與整合" },
+  { id: "test", name: "測試", en: "TEST", color: "#3c8fd4", icon: "check", blurb: "SIT、UAT 與缺陷修正" },
+  { id: "ready", name: "上線準備", en: "READINESS", color: "#ef6ea4", icon: "shield", blurb: "遷移、培訓、試行與檢查" },
+  { id: "live", name: "正式上線", en: "GO LIVE", color: "#c84bdd", icon: "rocket", blurb: "LIVE RUN 與上線後支援" }
+];
+
+const DEFAULTS = [
+  { id: "contract", phase: "kick", name: "合約確認", en: "Contract Confirmation", icon: "seal", start: "2026-11-02", end: "2026-11-13", note: "確認 CLAIM MODULE 範圍、費用與合約條款，作為專案起點。" },
+  { id: "kickoff", phase: "kick", name: "項目啟動會", en: "Project Kick-off", icon: "users", start: "2026-11-16", end: "2026-11-20", note: "松本清與 ACHIEVER 對齊目標、干係人、溝通機制與里程碑。" },
+  { id: "asis", phase: "need", name: "門店現況調查", en: "Store As-Is Study", icon: "search", start: "2026-11-16", end: "2026-12-04", note: "走訪門店，梳理現行客訴、退貨與上報方式。" },
+  { id: "workshop", phase: "need", name: "客訴流程工作坊", en: "Claim Process Workshop", icon: "chat", start: "2026-11-23", end: "2026-12-11", note: "與總部、門店共識立案、分級、升級與結案流程。" },
+  { id: "rules", phase: "need", name: "賠付與退貨規則", en: "Refund & Return Rules", icon: "scale", start: "2026-12-01", end: "2026-12-18", note: "定義賠付、換貨、退貨的條件、權限與金額門檻。" },
+  { id: "spec", phase: "need", name: "需求規格書", en: "Requirement Specification", icon: "file", start: "2026-12-07", end: "2026-12-24", note: "產出需求規格，作為設計與驗收基準。" },
+  { id: "sign", phase: "need", name: "規格確認簽核", en: "Specification Sign-off", icon: "pen", start: "2026-12-21", end: "2026-12-31", note: "松本清確認規格並簽核，凍結本期範圍。" },
+  { id: "ui", phase: "design", name: "畫面與流程設計", en: "UI & Flow Design", icon: "layout", start: "2026-12-14", end: "2027-01-15", note: "門店與總部畫面、操作步驟與案件狀態流程。" },
+  { id: "arch", phase: "design", name: "系統架構設計", en: "System Design", icon: "layers", start: "2026-12-28", end: "2027-01-22", note: "模組架構、資料模型、介面與稽核紀錄。" },
+  { id: "matrix", phase: "design", name: "權限矩陣", en: "Role Matrix", icon: "key", start: "2027-01-11", end: "2027-01-22", note: "店員、店長、總部審核與系統管理員的權限。" },
+  { id: "intake", phase: "build", name: "索償立案", en: "Claim Intake", icon: "clipboard", start: "2027-01-18", end: "2027-02-19", note: "客訴／索償立案、編號、分類與查詢。" },
+  { id: "approve", phase: "build", name: "多級審批", en: "Approval Workflow", icon: "branch", start: "2027-02-01", end: "2027-03-05", note: "多級審批、退回、加簽與逾時提醒。" },
+  { id: "access", phase: "build", name: "門店與總部權限", en: "Store & HQ Access", icon: "store", start: "2027-02-08", end: "2027-03-05", note: "門店與總部角色、資料範圍與操作權限。" },
+  { id: "evidence", phase: "build", name: "證據附件與通知", en: "Evidence & Notification", icon: "clip", start: "2027-02-15", end: "2027-03-12", note: "相片、單據附件，以及電郵／系統通知。" },
+  { id: "refund", phase: "build", name: "賠付退貨處理", en: "Refund Handling", icon: "receipt", start: "2027-02-22", end: "2027-03-19", note: "賠付、換貨、退貨的處理狀態與紀錄。" },
+  { id: "report", phase: "build", name: "報表與儀表板", en: "Reports & Dashboard", icon: "chart", start: "2027-03-01", end: "2027-03-26", note: "案件量、處理時效、門店與原因分析。" },
+  { id: "integrate", phase: "build", name: "外部系統整合", en: "System Integration", icon: "link", start: "2027-02-22", end: "2027-03-26", note: "與 POS、會員或既有系統的資料介面。" },
+  { id: "sit", phase: "test", name: "SIT 整合測試", en: "System Integration Test", icon: "flask", start: "2027-03-15", end: "2027-04-02", note: "ACHIEVER 進行跨流程與介面情境測試。" },
+  { id: "uat", phase: "test", name: "UAT 用戶驗收", en: "User Acceptance Test", icon: "check", start: "2027-03-29", end: "2027-04-23", note: "松本清按驗收腳本進行用戶驗收。" },
+  { id: "fix", phase: "test", name: "缺陷修正與回歸", en: "Defect Fix", icon: "wrench", start: "2027-04-13", end: "2027-04-30", note: "修正缺陷並回歸，確認達到上線標準。" },
+  { id: "migrate", phase: "ready", name: "歷史資料遷移", en: "Data Migration", icon: "database", start: "2027-04-13", end: "2027-04-30", note: "必要的歷史客訴資料清理、匯入與抽樣核對。" },
+  { id: "train", phase: "ready", name: "門店與總部培訓", en: "User Training", icon: "cap", start: "2027-04-20", end: "2027-05-07", note: "門店與總部操作培訓、教材與問答。" },
+  { id: "pilot", phase: "ready", name: "試行門店", en: "Pilot Stores", icon: "flag", start: "2027-04-26", end: "2027-05-14", note: "選定試行門店，以真實案件試跑。" },
+  { id: "checklist", phase: "ready", name: "上線前檢查", en: "Go-Live Checklist", icon: "shield", start: "2027-05-10", end: "2027-05-20", note: "權限、資料、備份、回退方案與上線清單。" },
+  { id: "gonogo", phase: "ready", name: "上線決策", en: "Go / No-Go", icon: "seal", start: "2027-05-18", end: "2027-05-20", note: "上線決策會議，確認是否進入 LIVE RUN。" },
+  { id: "live", phase: "live", name: "正式 LIVE RUN", en: "Go Live", icon: "rocket", start: "2027-05-24", end: "2027-05-28", note: "系統正式切換，CLAIM MODULE 開始運行。" },
+  { id: "care", phase: "live", name: "上線後支援", en: "Hypercare", icon: "headset", start: "2027-05-24", end: "2027-06-18", note: "上線後伴走支援、問題處理與營運交接。" }
+];
+
+const DEFAULT_BY_ID = Object.fromEntries(DEFAULTS.map((t) => [t.id, t]));
+const PHASE_BY_ID = Object.fromEntries(PHASES.map((p) => [p.id, p]));
+
+let tasks = cloneTasks();
+let range = { start: parseDate("2026-11-01"), end: parseDate("2027-06-30") };
+let px = 8;
+let pxIsCustom = true;
+let snap = "day";
+let selected = null;
+let drag = null;
+let raf = 0;
+let scrollFix = 0;
+
+const scroll = document.getElementById("scroll");
+const canvas = document.getElementById("canvas");
+const dyn = document.getElementById("dyn");
+const chip = document.getElementById("chip");
+const hint = document.getElementById("hint");
+const editor = document.getElementById("editor");
+const who = document.getElementById("who");
+const whoName = document.getElementById("whoName");
+const whoEn = document.getElementById("whoEn");
+const noteEl = document.getElementById("note");
+const startInput = document.getElementById("startInput");
+const endInput = document.getElementById("endInput");
+const durEl = document.getElementById("dur");
+const restoreBtn = document.getElementById("restoreBtn");
+const statusEl = document.getElementById("status");
+const legend = document.getElementById("legend");
+
+function parseDate(s) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+function formatDate(d) {
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+function addDays(d, n) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+}
+function diffDays(a, b) {
+  const ua = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+  const ub = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round((ub - ua) / 86400000);
+}
+function duration(a, b) {
+  return diffDays(a, b) + 1;
+}
+function startOfMonth(d) {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+function endOfMonth(d) {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+}
+function fmtMD(d) {
+  return `${d.getMonth() + 1}/${String(d.getDate()).padStart(2, "0")}`;
+}
+function fmtCN(d) {
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
+}
+function businessDays(a, b) {
+  let n = 0;
+  for (let d = new Date(a.getFullYear(), a.getMonth(), a.getDate()); d <= b; d = addDays(d, 1)) {
+    const w = d.getDay();
+    if (w !== 0 && w !== 6) n += 1;
+  }
+  return n;
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function svg(name) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ICONS.seal}</svg>`;
+}
+function cloneTasks() {
+  return DEFAULTS.map((t) => ({ ...t, start: parseDate(t.start), end: parseDate(t.end) }));
+}
+function taskById(id) {
+  return tasks.find((t) => t.id === id);
+}
+function isTaskDirty(t) {
+  const def = DEFAULT_BY_ID[t.id];
+  return formatDate(t.start) !== def.start || formatDate(t.end) !== def.end;
+}
+function isDirty() {
+  return tasks.some(isTaskDirty);
+}
+function clamp(n, a, b) {
+  return Math.max(a, Math.min(b, n));
+}
+function todayDate() {
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+}
+function eachMonth(start, end) {
+  const out = [];
+  let y = start.getFullYear();
+  let m = start.getMonth();
+  const last = end.getFullYear() * 12 + end.getMonth();
+  while (y * 12 + m <= last) {
+    const first = new Date(y, m, 1);
+    const endDay = new Date(y, m + 1, 0);
+    const from = first < start ? start : first;
+    const to = endDay > end ? end : endDay;
+    out.push({ year: y, month: m + 1, start: from, days: diffDays(from, to) + 1 });
+    m += 1;
+    if (m > 11) { m = 0; y += 1; }
+  }
+  return out;
+}
+function setStatus(msg) {
+  statusEl.textContent = msg;
+}
+
+function clampTask(t, mode) {
+  if (mode === "move") {
+    if (t.start < MIN_DATE) {
+      const s = diffDays(t.start, MIN_DATE);
+      t.start = addDays(t.start, s);
+      t.end = addDays(t.end, s);
+    }
+    if (t.end > MAX_DATE) {
+      const s = diffDays(t.end, MAX_DATE);
+      t.start = addDays(t.start, s);
+      t.end = addDays(t.end, s);
+    }
+  } else {
+    if (t.start < MIN_DATE) t.start = new Date(MIN_DATE);
+    if (t.end > MAX_DATE) t.end = new Date(MAX_DATE);
+    if (t.start > t.end) {
+      if (mode === "start") t.start = new Date(t.end);
+      else t.end = new Date(t.start);
+    }
+  }
+}
+
+function expandRange() {
+  let changed = false;
+  for (const t of tasks) {
+    const s = startOfMonth(t.start);
+    const e = endOfMonth(t.end);
+    if (s < range.start) {
+      scrollFix += diffDays(s, range.start) * px;
+      range.start = s;
+      changed = true;
+    }
+    if (e > range.end) {
+      range.end = e;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+function fit() {
+  const days = diffDays(range.start, range.end) + 1;
+  const avail = Math.max(520, scroll.clientWidth - GUTTER - 8);
+  px = clamp(avail / days, 2.2, 20);
+}
+
+function save() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify({
+      v: 1,
+      px,
+      pxIsCustom,
+      snap,
+      range: [formatDate(range.start), formatDate(range.end)],
+      tasks: Object.fromEntries(tasks.map((t) => [t.id, [formatDate(t.start), formatDate(t.end)]]))
+    }));
+    setStatus(isDirty() ? "已儲存於本機" : "");
+  } catch (err) {
+    setStatus("未能寫入本機儲存");
+  }
+}
+
+function load() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (!raw || raw.v !== 1) return false;
+    if (raw.tasks) {
+      for (const t of tasks) {
+        const pair = raw.tasks[t.id];
+        if (!pair || pair.length !== 2) continue;
+        const s = parseDate(pair[0]);
+        const e = parseDate(pair[1]);
+        if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime()) || s > e) continue;
+        t.start = s;
+        t.end = e;
+      }
+    }
+    if (Array.isArray(raw.range) && raw.range.length === 2) {
+      const s = parseDate(raw.range[0]);
+      const e = parseDate(raw.range[1]);
+      if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime()) && s < e) {
+        range = { start: s, end: e };
+      }
+    }
+    if (typeof raw.px === "number") px = clamp(raw.px, 2.2, 20);
+    pxIsCustom = !!raw.pxIsCustom;
+    if (raw.snap === "week" || raw.snap === "day") snap = raw.snap;
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+function plotStyle(days) {
+  const total = days * px;
+  const months = eachMonth(range.start, range.end);
+  const monthStops = [];
+  months.forEach((m, i) => {
+    const x0 = diffDays(range.start, m.start) * px;
+    const x1 = x0 + m.days * px;
+    monthStops.push(`${BANDS[i % BANDS.length]} ${x0}px ${x1}px`);
+  });
+  const lineStops = [];
+  let cursor = 0;
+  const pushGap = (to) => {
+    if (to > cursor) lineStops.push(`transparent ${cursor}px ${to}px`);
+  };
+  for (let i = 0; i < days; i++) {
+    const d = addDays(range.start, i);
+    if (d.getDay() === 0 || d.getDate() === 1) {
+      const lx = i * px;
+      pushGap(lx);
+      const color = d.getDate() === 1 ? "rgba(255,255,255,.95)" : "rgba(255,255,255,.7)";
+      lineStops.push(`${color} ${lx}px ${lx + 1}px`);
+      cursor = lx + 1;
+    }
+  }
+  pushGap(total);
+  const today = todayDate();
+  const ti = diffDays(range.start, today);
+  let todayGrad = "linear-gradient(to right, transparent, transparent)";
+  if (ti >= 0 && ti < days) {
+    const a = ti * px;
+    const b = a + Math.max(px, 2);
+    todayGrad = `linear-gradient(to right, transparent ${a}px, rgba(239,61,104,.18) ${a}px ${b}px, transparent ${b}px)`;
+  }
+  const monthGrad = `linear-gradient(to right, ${monthStops.join(",")})`;
+  const lineGrad = `linear-gradient(to right, ${lineStops.join(",")})`;
+  dyn.textContent = `.plot{background-image:${todayGrad},${lineGrad},${monthGrad};background-size:${total}px 100%,${total}px 100%,${total}px 100%;background-repeat:no-repeat;}`;
+  return { days, total, months };
+}
+
+function metaHTML(t) {
+  const dirty = isTaskDirty(t);
+  return `${dirty ? '<i class="dot" title="已調整"></i>' : ""}${fmtMD(t.start)} – ${fmtMD(t.end)} · ${duration(t.start, t.end)}天`;
+}
+
+function renderChart() {
+  const sl = scroll.scrollLeft + scrollFix;
+  const st = scroll.scrollTop;
+  scrollFix = 0;
+  const days = diffDays(range.start, range.end) + 1;
+  const bg = plotStyle(days);
+  const timeW = bg.total + PAD;
+  canvas.style.width = `${GUTTER + timeW}px`;
+
+  const monthsHTML = bg.months.map((m) => `
+    <div class="month" style="width:${m.days * px}px">
+      <small>${m.year}</small>
+      <b>${m.month}月</b>
+    </div>`).join("");
+
+  let weeks = "";
+  if (px >= 3.4) {
+    for (let i = 0; i < days; i++) {
+      const d = addDays(range.start, i);
+      if (d.getDay() === 0) {
+        const shift = i === 0 ? "translateX(0)" : "translateX(-50%)";
+        weeks += `<span class="wlab" style="left:${i * px}px;transform:${shift}">${d.getDate()}</span>`;
+      }
+    }
+  }
+  const today = todayDate();
+  const ti = diffDays(range.start, today);
+  if (ti >= 0 && ti < days) {
+    weeks += `<span class="today-pill" style="left:${(ti + 0.5) * px}px">今天 ${today.getMonth() + 1}/${today.getDate()}</span>`;
+  }
+
+  let body = "";
+  let n = 0;
+  for (const phase of PHASES) {
+    body += `<div class="phase" style="--c:${phase.color}">
+      <div class="gutter"><i class="tick"></i><span>${phase.name}</span><em>${phase.en}</em></div>
+      <div class="plot" style="width:${timeW}px"></div>
+    </div>`;
+    for (const t of tasks) {
+      if (t.phase !== phase.id) continue;
+      n += 1;
+      const left = diffDays(range.start, t.start) * px;
+      const width = Math.max(px, duration(t.start, t.end) * px);
+      const short = width < 64;
+      const selectedClass = t.id === selected ? " is-selected" : "";
+      let ghost = "";
+      if (drag && drag.id === t.id) {
+        const gl = diffDays(range.start, drag.originStart) * px;
+        const gw = Math.max(px, duration(drag.originStart, drag.originEnd) * px);
+        ghost = `<div class="ghost" style="left:${gl}px;width:${gw}px"></div>`;
+      }
+      body += `<div class="row${selectedClass}" data-id="${t.id}" tabindex="0" style="--c:${phase.color}">
+        <div class="gutter">
+          <span class="no">${String(n).padStart(2, "0")}</span>
+          <div class="task-name" title="${esc(t.note)}">${esc(t.name)}</div>
+          <div class="meta">${metaHTML(t)}</div>
+        </div>
+        <div class="plot" style="width:${timeW}px">
+          ${ghost}
+          <div class="bar${short ? " is-short" : ""}${selectedClass}" style="left:${left}px;width:${width}px" aria-label="${esc(t.name)} ${formatDate(t.start)} 至 ${formatDate(t.end)}">
+            <i class="handle start" data-resize="start"></i>
+            <i class="handle end" data-resize="end"></i>
+            <span class="cap">${svg(t.icon)}</span>
+          </div>
+        </div>
+      </div>`;
+    }
+  }
+
+  canvas.innerHTML = `
+    <div class="head">
+      <div class="gutter">工作項目</div>
+      <div class="head-plot" style="width:${timeW}px">
+        <div class="months" style="width:${bg.total}px">${monthsHTML}</div>
+        <div class="weekrow" style="width:${bg.total}px">${weeks}</div>
+      </div>
+    </div>
+    <div class="body">${body}</div>`;
+  scroll.scrollLeft = sl;
+  scroll.scrollTop = st;
+}
+
+function paintTask(t) {
+  const row = canvas.querySelector(`[data-id="${t.id}"]`);
+  if (!row) return false;
+  const bar = row.querySelector(".bar");
+  const left = diffDays(range.start, t.start) * px;
+  const width = Math.max(px, duration(t.start, t.end) * px);
+  bar.style.left = `${left}px`;
+  bar.style.width = `${width}px`;
+  bar.classList.toggle("is-short", width < 64);
+  row.querySelector(".meta").innerHTML = metaHTML(t);
+  const ghost = row.querySelector(".ghost");
+  if (ghost && drag) {
+    ghost.style.left = `${diffDays(range.start, drag.originStart) * px}px`;
+    ghost.style.width = `${Math.max(px, duration(drag.originStart, drag.originEnd) * px)}px`;
+  }
+  return true;
+}
+
+function updateStats() {
+  const contract = taskById("contract");
+  const live = taskById("live");
+  document.getElementById("statContract").textContent = fmtCN(contract.start);
+  document.getElementById("statLive").textContent = fmtCN(live.start);
+  const days = duration(contract.start, live.end);
+  const months = Math.max(1, Math.round(days / 30.4));
+  document.getElementById("statSpan").textContent = `${days} 天 · 約 ${months} 個月`;
+}
+
+function updateInspector() {
+  const t = selected ? taskById(selected) : null;
+  hint.hidden = !!t;
+  editor.hidden = !t;
+  if (!t) return;
+  const phase = PHASE_BY_ID[t.phase];
+  who.style.setProperty("--c", phase.color);
+  whoName.textContent = `${t.name}`;
+  whoEn.textContent = `${phase.name} · ${t.en}`;
+  noteEl.textContent = t.note;
+  const sv = formatDate(t.start);
+  const ev = formatDate(t.end);
+  if (document.activeElement !== startInput) startInput.value = sv;
+  if (document.activeElement !== endInput) endInput.value = ev;
+  const days = duration(t.start, t.end);
+  durEl.innerHTML = `${days} 日曆日<br><em>${businessDays(t.start, t.end)} 工作天</em>`;
+  restoreBtn.hidden = !isTaskDirty(t);
+}
+
+function renderLegend() {
+  legend.innerHTML = PHASES.map((p) => `
+    <div class="lg">
+      <span class="lg-icon" style="color:${p.color}">${svg(p.icon)}</span>
+      <span><b>${p.name}</b><small>${p.blurb}</small></span>
+    </div>`).join("");
+}
+
+function syncSnapButtons() {
+  document.getElementById("snapDay").classList.toggle("on", snap === "day");
+  document.getElementById("snapWeek").classList.toggle("on", snap === "week");
+}
+
+function renderAll() {
+  expandRange();
+  renderChart();
+  updateInspector();
+  updateStats();
+  syncSnapButtons();
+}
+
+function applyDrag() {
+  const t = taskById(drag.id);
+  const raw = (drag.cx - drag.x + (scroll.scrollLeft - drag.scroll0)) / px;
+  const step = snap === "week" ? 7 : 1;
+  const days = Math.round(raw / step) * step;
+  if (drag.mode === "move") {
+    t.start = addDays(drag.originStart, days);
+    t.end = addDays(drag.originEnd, days);
+  } else if (drag.mode === "start") {
+    let ns = addDays(drag.originStart, days);
+    if (ns > drag.originEnd) ns = new Date(drag.originEnd);
+    t.start = ns;
+    t.end = new Date(drag.originEnd);
+  } else {
+    let ne = addDays(drag.originEnd, days);
+    if (ne < drag.originStart) ne = new Date(drag.originStart);
+    t.end = ne;
+    t.start = new Date(drag.originStart);
+  }
+  clampTask(t, drag.mode);
+}
+
+function chipText() {
+  const t = taskById(drag.id);
+  const days = duration(t.start, t.end);
+  let change = "未移動";
+  if (drag.mode === "move") {
+    const d = diffDays(drag.originStart, t.start);
+    change = d === 0 ? "未移動" : d > 0 ? `延後 ${d} 天` : `提早 ${-d} 天`;
+  } else {
+    const d = days - duration(drag.originStart, drag.originEnd);
+    change = d === 0 ? "長度不變" : d > 0 ? `加長 ${d} 天` : `縮短 ${-d} 天`;
+  }
+  return `${t.name}　${fmtMD(t.start)} → ${fmtMD(t.end)}　·　${days}天　·　${change}`;
+}
+
+function autoScroll() {
+  const rect = scroll.getBoundingClientRect();
+  const edge = 46;
+  if (drag.cx > rect.right - 28) scroll.scrollLeft += 18;
+  else if (drag.cx < rect.left + GUTTER + 20) scroll.scrollLeft -= 18;
+  else if (drag.cx > rect.right - edge) scroll.scrollLeft += 10;
+  else if (drag.cx < rect.left + GUTTER + edge) scroll.scrollLeft -= 10;
+}
+
+function loop() {
+  if (!drag) return;
+  const before = scroll.scrollLeft;
+  autoScroll();
+  if (scroll.scrollLeft !== before) paintDrag();
+  raf = requestAnimationFrame(loop);
+}
+
+function endDrag(commit = true) {
+  if (!drag) return;
+  if (commit) applyDrag();
+  const id = drag.id;
+  drag = null;
+  if (raf) cancelAnimationFrame(raf);
+  raf = 0;
+  chip.hidden = true;
+  document.body.classList.remove("dragging", "dragging-resize");
+  save();
+  renderAll();
+  const row = canvas.querySelector(`[data-id="${id}"]`);
+  if (row) row.focus({ preventScroll: true });
+}
+
+function selectOnly(id) {
+  selected = id;
+  canvas.querySelectorAll(".row").forEach((r) => r.classList.toggle("is-selected", r.dataset.id === id));
+  canvas.querySelectorAll(".bar").forEach((b) => b.classList.toggle("is-selected", b.closest(".row").dataset.id === id));
+  updateInspector();
+}
+
+canvas.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0) return;
+  const handle = e.target.closest("[data-resize]");
+  const bar = e.target.closest(".bar");
+  const plot = e.target.closest(".plot");
+  const row = e.target.closest("[data-id]");
+  if (!row) return;
+  if (!handle && !bar && !plot) {
+    selectOnly(row.dataset.id);
+    return;
+  }
+  e.preventDefault();
+  const t = taskById(row.dataset.id);
+  selected = t.id;
+  drag = {
+    id: t.id,
+    mode: handle ? handle.dataset.resize : "move",
+    x: e.clientX,
+    cx: e.clientX,
+    cy: e.clientY,
+    scroll0: scroll.scrollLeft,
+    originStart: new Date(t.start),
+    originEnd: new Date(t.end)
+  };
+  document.body.classList.add(drag.mode === "move" ? "dragging" : "dragging-resize");
+  renderChart();
+  updateInspector();
+  loop();
+});
+
+function paintDrag() {
+  applyDrag();
+  const t = taskById(drag.id);
+  if (expandRange() || !paintTask(t)) renderChart();
+  updateInspector();
+  updateStats();
+  chip.hidden = false;
+  chip.style.left = `${drag.cx}px`;
+  chip.style.top = `${drag.cy}px`;
+  chip.textContent = chipText();
+}
+window.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  e.preventDefault();
+  drag.cx = e.clientX;
+  drag.cy = e.clientY;
+  paintDrag();
+}, { passive: false });
+window.addEventListener("pointerup", endDrag);
+window.addEventListener("pointercancel", endDrag);
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && drag) {
+    const t = taskById(drag.id);
+    t.start = new Date(drag.originStart);
+    t.end = new Date(drag.originEnd);
+    endDrag(false);
+    return;
+  }
+  if (!selected) return;
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  const row = e.target.closest ? e.target.closest("[data-id]") : null;
+  if (!row) return;
+  e.preventDefault();
+  const dir = e.key === "ArrowLeft" ? -1 : 1;
+  const step = (snap === "week" ? 7 : 1) * dir;
+  const t = taskById(selected);
+  if (e.shiftKey) {
+    t.end = addDays(t.end, step);
+    if (t.end < t.start) t.end = new Date(t.start);
+    clampTask(t, "end");
+  } else if (e.altKey) {
+    t.start = addDays(t.start, step);
+    if (t.start > t.end) t.start = new Date(t.end);
+    clampTask(t, "start");
+  } else {
+    t.start = addDays(t.start, step);
+    t.end = addDays(t.end, step);
+    clampTask(t, "move");
+  }
+  save();
+  renderAll();
+  const again = canvas.querySelector(`[data-id="${t.id}"]`);
+  if (again) again.focus({ preventScroll: true });
+});
+
+function commitInput(which) {
+  const t = selected ? taskById(selected) : null;
+  if (!t) return;
+  const s = parseDate(startInput.value);
+  const e = parseDate(endInput.value);
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return;
+  t.start = s;
+  t.end = e;
+  if (t.start > t.end) {
+    if (which === "start") t.end = new Date(t.start);
+    else t.start = new Date(t.end);
+  }
+  clampTask(t, "end");
+  if (t.start < MIN_DATE) t.start = new Date(MIN_DATE);
+  save();
+  renderAll();
+}
+startInput.addEventListener("change", () => commitInput("start"));
+endInput.addEventListener("change", () => commitInput("end"));
+
+document.getElementById("snapDay").addEventListener("click", () => { snap = "day"; save(); syncSnapButtons(); });
+document.getElementById("snapWeek").addEventListener("click", () => { snap = "week"; save(); syncSnapButtons(); });
+document.getElementById("zoomOut").addEventListener("click", () => {
+  pxIsCustom = true;
+  px = clamp(px / 1.25, 2.2, 20);
+  save();
+  renderChart();
+});
+document.getElementById("zoomIn").addEventListener("click", () => {
+  pxIsCustom = true;
+  px = clamp(px * 1.25, 2.2, 20);
+  save();
+  renderChart();
+});
+document.getElementById("fitBtn").addEventListener("click", () => {
+  pxIsCustom = false;
+  fit();
+  save();
+  renderChart();
+  setStatus("已縮放至全覽");
+});
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (!confirm("還原成最初的計畫時間？你手動調整過的位置會清除。")) return;
+  tasks = cloneTasks();
+  range = { start: parseDate("2026-11-01"), end: parseDate("2027-06-30") };
+  pxIsCustom = false;
+  snap = "day";
+  selected = null;
+  try { localStorage.removeItem(KEY); } catch (err) { /* ignore */ }
+  fit();
+  renderAll();
+  setStatus("已還原預設時間");
+});
+restoreBtn.addEventListener("click", () => {
+  const t = selected ? taskById(selected) : null;
+  if (!t) return;
+  const def = DEFAULT_BY_ID[t.id];
+  t.start = parseDate(def.start);
+  t.end = parseDate(def.end);
+  save();
+  renderAll();
+  setStatus("已還原此項");
+});
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  const lines = ["階段\t工作項目\t英文\t開始\t結束\t日曆日\t工作天\t說明"];
+  for (const t of tasks) {
+    const p = PHASE_BY_ID[t.phase];
+    lines.push([p.name, t.name, t.en, formatDate(t.start), formatDate(t.end), duration(t.start, t.end), businessDays(t.start, t.end), t.note].join("\t"));
+  }
+  const text = lines.join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    setStatus("已複製，可貼到 Excel");
+  } catch (err) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+    setStatus("已複製，可貼到 Excel");
+  }
+});
+document.getElementById("printBtn").addEventListener("click", () => window.print());
+
+let resizeTimer = 0;
+window.addEventListener("resize", () => {
+  if (pxIsCustom || drag) return;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { fit(); renderChart(); }, 120);
+});
+
+function init() {
+  document.documentElement.style.setProperty("--gutter", `${GUTTER}px`);
+  const loaded = load();
+  expandRange();
+  if (loaded && !pxIsCustom) fit();
+  renderLegend();
+  renderAll();
+  if (loaded && isDirty()) setStatus("已載入你上次調整的時間");
+}
+init();
+</script>
+</body>
+</html>
