@@ -459,15 +459,31 @@
   .row.is-selected .gutter { background: #f3fbfc; }
   .row:hover .gutter { background: #f7fbfc; }
   .row.is-selected:hover .gutter { background: #f3fbfc; }
-  .no {
+  .grip, .no {
     grid-column: 1;
     grid-row: 1 / span 3;
     align-self: center;
+    justify-self: center;
+    width: 28px;
+    height: 36px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    padding: 0;
     font-weight: 800;
     font-size: 13px;
     color: var(--c);
     font-variant-numeric: tabular-nums;
+    cursor: grab;
+    touch-action: none;
   }
+  .no { display: grid; place-items: center; cursor: default; }
+  .grip:hover, .row.is-rowdrag .grip { background: #e7f4f7; }
+  .row.is-rowdrag { opacity: .45; }
+  .row.drop-before { box-shadow: inset 0 3px 0 #1d7d92; }
+  .row.drop-after { box-shadow: inset 0 -3px 0 #1d7d92; }
+  .phase.drop-in .gutter { background: #e7f6fb; }
+  body.row-dragging, body.row-dragging * { cursor: grabbing; }
   .task-name, .task-en, .meta { grid-column: 2; min-width: 0; }
   .task-name {
     font-weight: 800;
@@ -702,7 +718,7 @@
       </div>
     </div>
     <div class="inspector">
-      <p class="hint" id="hint">左上標題、模組名稱、客戶名稱、讀音、系統公司和頁尾都可以點擊修改。左方每一列可改名稱、日期和天數。「儲存範本」留下這份時間表；「套用範本」時選擇合約開始日，全部工序會一起順延。</p>
+      <p class="hint" id="hint">左方編號可以拖放，改變順序和所屬階段。新項目會加在目前這列的下面。「儲存範本」留下這份時間表；套用時選擇合約開始日，全部工序會一起順延。</p>
     </div>
     <div class="tpl" id="tplPanel" hidden>
       <label>範本
@@ -1173,7 +1189,7 @@ function renderChart() {
   let body = "";
   let n = 0;
   for (const phase of PHASES) {
-    body += `<div class="phase" style="--c:${phase.color}">
+      body += `<div class="phase" data-phase="${phase.id}" style="--c:${phase.color}">
       <div class="gutter"><i class="tick"></i><span>${phase.name}</span><em>${phase.en}</em></div>
       <div class="plot" style="width:${timeW}px"></div>
     </div>`;
@@ -1192,7 +1208,7 @@ function renderChart() {
       }
       body += `<div class="row${selectedClass}" data-id="${t.id}" tabindex="0" style="--c:${phase.color}">
         <div class="gutter">
-          <span class="no">${String(n).padStart(2, "0")}</span>
+          <button type="button" class="grip" data-grip="1" aria-label="拖動調整${esc(t.name)}的順序">${String(n).padStart(2, "0")}</button>
           <input class="name-in" data-field="name" value="${esc(t.name)}" maxlength="40" aria-label="工作項目" />
           <input class="en-in" data-field="en" value="${esc(t.en)}" maxlength="48" aria-label="English" />
           <div class="row-edit">
@@ -1328,14 +1344,12 @@ function shiftTaskToStart(t, dateStr) {
   revealTask(t);
 }
 function addTask() {
-  const anchor = selected ? taskById(selected) : null;
+  const anchor = selected ? taskById(selected) : tasks[tasks.length - 1];
   const phase = anchor ? anchor.phase : "need";
-  const phaseTasks = tasks.filter((t) => t.phase === phase);
-  const after = anchor && anchor.phase === phase ? anchor : phaseTasks[phaseTasks.length - 1];
-  const start = after ? addDays(after.end, 1) : parseDate("2026-11-02");
   const phaseObj = PHASE_BY_ID[phase];
+  const start = anchor ? addDays(anchor.end, 1) : parseDate("2026-11-02");
   const t = {
-    id: `c${Date.now().toString(36)}`,
+    id: `c${Date.now().toString(36)}${Math.floor(Math.random() * 36).toString(36)}`,
     phase,
     name: "新工作項目",
     en: "New Process",
@@ -1345,14 +1359,55 @@ function addTask() {
     end: addDays(start, 6)
   };
   clampTask(t, "end");
-  if (after) tasks.splice(tasks.indexOf(after) + 1, 0, t);
+  if (anchor) tasks.splice(tasks.indexOf(anchor) + 1, 0, t);
   else tasks.push(t);
   selected = t.id;
   save();
   renderAll();
-  revealTask(t);
-  const nameField = canvas.querySelector(`[data-id="${t.id}"] [data-field="name"]`);
-  if (nameField) { nameField.focus(); nameField.select(); }
+  const row = canvas.querySelector(`[data-id="${t.id}"]`);
+  if (row) {
+    const place = () => {
+      const view = scroll.getBoundingClientRect();
+      const rect = row.getBoundingClientRect();
+      scroll.scrollTop += rect.top - view.top - Math.max(8, (view.height - rect.height) / 2);
+      scroll.scrollLeft = Math.max(0, diffDays(range.start, t.start) * px - 48);
+    };
+    place();
+    const nameField = row.querySelector('[data-field="name"]');
+    if (nameField) {
+      nameField.focus({ preventScroll: true });
+      nameField.select();
+    }
+    place();
+  }
+  setStatus("已加入工作項目，拖左邊編號可以調整順序");
+}
+function moveTask(id, phaseId, beforeId) {
+  const t = taskById(id);
+  if (!t || !PHASE_BY_ID[phaseId] || beforeId === id) return false;
+  const oldPhase = t.phase;
+  const from = tasks.indexOf(t);
+  tasks.splice(from, 1);
+  let index;
+  if (beforeId) {
+    index = tasks.findIndex((x) => x.id === beforeId);
+    if (index < 0) index = tasks.length;
+  } else {
+    let last = -1;
+    tasks.forEach((x, i) => { if (x.phase === phaseId) last = i; });
+    if (last >= 0) index = last + 1;
+    else {
+      const phaseIndex = PHASES.findIndex((p) => p.id === phaseId);
+      index = tasks.findIndex((x) => PHASES.findIndex((p) => p.id === x.phase) > phaseIndex);
+      if (index < 0) index = tasks.length;
+    }
+  }
+  if (oldPhase !== phaseId) {
+    if (t.icon === PHASE_BY_ID[oldPhase].icon) t.icon = PHASE_BY_ID[phaseId].icon;
+    t.phase = phaseId;
+  }
+  tasks.splice(index, 0, t);
+  return true;
 }
 function removeTask(id) {
   const t = taskById(id);
@@ -1453,8 +1508,87 @@ canvas.addEventListener("click", (e) => {
   }
   if (e.target.closest("[data-add]")) addTask();
 });
+let rowDrag = null;
+function clearDropMarks() {
+  canvas.querySelectorAll(".drop-before, .drop-after, .drop-in, .is-rowdrag").forEach((el) => {
+    el.classList.remove("drop-before", "drop-after", "drop-in", "is-rowdrag");
+  });
+}
+function dropTargetAt(x, y) {
+  const nodes = document.elementsFromPoint(x, y);
+  for (const el of nodes) {
+    if (!(el instanceof Element)) continue;
+    if (el.closest(`[data-id="${rowDrag.id}"]`)) continue;
+    const row = el.closest(".row[data-id]");
+    if (row) {
+      const phase = taskById(row.dataset.id).phase;
+      const rect = row.getBoundingClientRect();
+      const before = y < rect.top + rect.height / 2;
+      let beforeId = null;
+      if (before) beforeId = row.dataset.id;
+      else {
+        let next = row.nextElementSibling;
+        while (next && !next.dataset.id) next = next.nextElementSibling;
+        if (next && taskById(next.dataset.id).phase === phase) beforeId = next.dataset.id;
+      }
+      return { phase, beforeId, row, before };
+    }
+    const phaseEl = el.closest(".phase[data-phase]");
+    if (phaseEl) {
+      const phase = phaseEl.dataset.phase;
+      const first = tasks.find((t) => t.phase === phase);
+      return { phase, beforeId: first ? first.id : null, phaseEl };
+    }
+  }
+  return null;
+}
+function markDrop(target) {
+  clearDropMarks();
+  const row = canvas.querySelector(`[data-id="${rowDrag.id}"]`);
+  if (row) row.classList.add("is-rowdrag");
+  if (!target) return;
+  if (target.row) target.row.classList.add(target.before ? "drop-before" : "drop-after");
+  else if (target.phaseEl) target.phaseEl.classList.add("drop-in");
+}
+function endRowDrag(commit = true) {
+  if (!rowDrag) return;
+  const target = commit ? rowDrag.target : null;
+  const id = rowDrag.id;
+  rowDrag = null;
+  document.body.classList.remove("row-dragging");
+  if (!target) {
+    clearDropMarks();
+    return;
+  }
+  const beforeOrder = tasks.map((t) => `${t.id}:${t.phase}`).join("|");
+  moveTask(id, target.phase, target.beforeId);
+  const afterOrder = tasks.map((t) => `${t.id}:${t.phase}`).join("|");
+  if (beforeOrder === afterOrder) {
+    clearDropMarks();
+    return;
+  }
+  selected = id;
+  save();
+  renderAll();
+  const moved = canvas.querySelector(`[data-id="${id}"]`);
+  if (moved) {
+    const view = scroll.getBoundingClientRect();
+    const rect = moved.getBoundingClientRect();
+    scroll.scrollTop += rect.top - view.top - Math.max(8, (view.height - rect.height) / 2);
+  }
+  setStatus("已調整順序");
+}
 canvas.addEventListener("pointerdown", (e) => {
   if (e.button !== 0) return;
+  if (e.target.closest("[data-grip]")) {
+    const row = e.target.closest("[data-id]");
+    if (!row) return;
+    e.preventDefault();
+    rowDrag = { id: row.dataset.id, target: null };
+    document.body.classList.add("row-dragging");
+    markDrop(null);
+    return;
+  }
   if (e.target.closest("input, select, textarea, button, [data-del], [data-add]")) return;
   const handle = e.target.closest("[data-resize]");
   const bar = e.target.closest(".bar");
@@ -1496,15 +1630,31 @@ function paintDrag() {
   chip.textContent = chipText();
 }
 window.addEventListener("pointermove", (e) => {
+  if (rowDrag) {
+    const rect = scroll.getBoundingClientRect();
+    if (e.clientY < rect.top + 48) scroll.scrollTop -= 16;
+    else if (e.clientY > rect.bottom - 28) scroll.scrollTop += 16;
+    rowDrag.target = dropTargetAt(e.clientX, e.clientY);
+    markDrop(rowDrag.target);
+    return;
+  }
   if (!drag) return;
   e.preventDefault();
   drag.cx = e.clientX;
   drag.cy = e.clientY;
   paintDrag();
 }, { passive: false });
-window.addEventListener("pointerup", endDrag);
-window.addEventListener("pointercancel", endDrag);
+function onPointerUp() {
+  if (rowDrag) endRowDrag(true);
+  endDrag();
+}
+window.addEventListener("pointerup", onPointerUp);
+window.addEventListener("pointercancel", onPointerUp);
 window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && rowDrag) {
+    endRowDrag(false);
+    return;
+  }
   if (e.key === "Escape" && drag) {
     const t = taskById(drag.id);
     t.start = new Date(drag.originStart);
