@@ -422,7 +422,8 @@
   }
   .phase em { font-style: normal; font-size: 10px; letter-spacing: .14em; opacity: .72; }
   .tick { width: 8px; height: 8px; border-radius: 99px; background: var(--c); margin-bottom: 2px; }
-  .row { height: 82px; outline: none; }
+  .row { height: 64px; outline: none; cursor: pointer; }
+  .row.is-selected { height: 86px; cursor: default; }
   .row .gutter {
     display: grid;
     grid-template-columns: 34px 1fr 28px;
@@ -433,6 +434,9 @@
     padding: 4px 8px 4px 10px;
     box-shadow: 8px 0 12px -12px rgba(40, 50, 70, .45);
   }
+  .view, .fields { display: contents; }
+  .row.is-selected .view { display: none; }
+  .row:not(.is-selected) .fields { display: none; }
   .name-in, .en-in, .row-edit { grid-column: 2; min-width: 0; }
   .name-in, .en-in, .row-edit input {
     width: 100%;
@@ -521,6 +525,7 @@
     transform: translateY(-1px);
   }
   .del {
+    display: none;
     grid-column: 3;
     grid-row: 1 / span 3;
     align-self: center;
@@ -528,16 +533,14 @@
     height: 22px;
     border: 0;
     border-radius: 50%;
-    background: transparent;
+    background: #fff;
     color: #c43b5a;
     font-size: 16px;
     font-weight: 700;
     line-height: 1;
+    place-items: center;
   }
-  .row:hover .del, .row.is-selected .del, .del:focus-visible {
-    color: #c43b5a;
-    background: #fff;
-  }
+  .row.is-selected .del { display: grid; }
   .plot { position: relative; flex: none; height: 100%; }
   .bar, .ghost {
     position: absolute;
@@ -718,7 +721,7 @@
       </div>
     </div>
     <div class="inspector">
-      <p class="hint" id="hint">左方編號可以拖放，改變順序和所屬階段。新項目會加在目前這列的下面。「儲存範本」留下這份時間表；套用時選擇合約開始日，全部工序會一起順延。</p>
+      <p class="hint" id="hint">平常只顯示名稱和日期。點擊工作項目才會出現輸入格和刪除，可改名稱和時間。左方編號可以拖放來調整順序。</p>
     </div>
     <div class="tpl" id="tplPanel" hidden>
       <label>範本
@@ -1210,13 +1213,20 @@ function renderChart() {
       body += `<div class="row${selectedClass}" data-id="${t.id}" tabindex="0" style="--c:${phase.color}">
         <div class="gutter">
           <button type="button" class="grip" data-grip="1" aria-label="拖動調整${esc(t.name)}的順序">${String(n).padStart(2, "0")}</button>
-          <input class="name-in" data-field="name" value="${esc(t.name)}" maxlength="40" aria-label="工作項目" />
-          <input class="en-in" data-field="en" value="${esc(t.en)}" maxlength="48" aria-label="English" />
-          <div class="row-edit">
-            <input type="date" data-field="start" value="${formatDate(t.start)}" min="2018-01-01" max="2040-12-31" aria-label="開始日期" />
-            <input type="date" data-field="end" value="${formatDate(t.end)}" min="2018-01-01" max="2040-12-31" aria-label="結束日期" />
-            <input type="number" data-field="days" value="${duration(t.start, t.end)}" min="1" max="900" aria-label="天數" />
-            <span class="unit">天</span>
+          <div class="view">
+            <div class="task-name">${esc(t.name)}</div>
+            <div class="task-en">${esc(t.en)}</div>
+            <div class="meta">${metaHTML(t)}</div>
+          </div>
+          <div class="fields">
+            <input class="name-in" data-field="name" value="${esc(t.name)}" maxlength="40" aria-label="工作項目" />
+            <input class="en-in" data-field="en" value="${esc(t.en)}" maxlength="48" aria-label="English" />
+            <div class="row-edit">
+              <input type="date" data-field="start" value="${formatDate(t.start)}" min="2018-01-01" max="2040-12-31" aria-label="開始日期" />
+              <input type="date" data-field="end" value="${formatDate(t.end)}" min="2018-01-01" max="2040-12-31" aria-label="結束日期" />
+              <input type="number" data-field="days" value="${duration(t.start, t.end)}" min="1" max="900" aria-label="天數" />
+              <span class="unit">天</span>
+            </div>
           </div>
           <button type="button" class="del" data-del="${t.id}" aria-label="刪除${esc(t.name)}">×</button>
         </div>
@@ -1507,7 +1517,11 @@ canvas.addEventListener("click", (e) => {
     removeTask(del.dataset.del);
     return;
   }
-  if (e.target.closest("[data-add]")) addTask();
+  if (e.target.closest("[data-add]")) {
+    addTask();
+    return;
+  }
+  if (!e.target.closest(".row")) selectOnly(null);
 });
 let rowDrag = null;
 function clearDropMarks() {
@@ -1568,7 +1582,6 @@ function endRowDrag(commit = true) {
     clearDropMarks();
     return;
   }
-  selected = id;
   save();
   renderAll();
   const moved = canvas.querySelector(`[data-id="${id}"]`);
@@ -1602,7 +1615,6 @@ canvas.addEventListener("pointerdown", (e) => {
   }
   e.preventDefault();
   const t = taskById(row.dataset.id);
-  selected = t.id;
   drag = {
     id: t.id,
     mode: handle ? handle.dataset.resize : "move",
@@ -1697,15 +1709,20 @@ function applyField(t, field, value, commit) {
     const name = String(value).trim();
     if (name) t.name = name;
     else if (commit) t.name = "未命名";
+    const row = canvas.querySelector(`[data-id="${t.id}"]`);
     if (commit) {
-      const input = canvas.querySelector(`[data-id="${t.id}"] [data-field="name"]`);
+      const input = row && row.querySelector('[data-field="name"]');
       if (input) input.value = t.name;
     }
+    const nameEl = row && row.querySelector(".task-name");
+    if (nameEl) nameEl.textContent = t.name;
     save();
     return;
   }
   if (field === "en") {
     t.en = String(value).trim();
+    const enEl = canvas.querySelector(`[data-id="${t.id}"] .task-en`);
+    if (enEl) enEl.textContent = t.en;
     save();
     return;
   }
