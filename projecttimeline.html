@@ -653,12 +653,12 @@
     .top { flex-wrap: wrap; align-items: flex-start; }
     .client { width: min(440px, 100%); }
   }
+  .print-sheet { display: none; }
+  @page { size: A4 landscape; margin: 8mm; }
   @media print {
     body { height: auto; overflow: visible; background: #fff; }
-    .wrap { height: auto; display: block; }
-    .tools, .hint, .status, .chip, .editor, .del, .add-mini, .stat input, .tpl { display: none !important; }
-    .edit-text::after, .client-name::after { content: none; }
-    .scroll { overflow: visible; border: 0; max-height: none; }
+    .wrap, .chip, .tpl { display: none !important; }
+    .print-sheet { display: block; width: 100%; height: auto; }
   }
 </style>
 </head>
@@ -712,7 +712,7 @@
         <button type="button" id="saveTplBtn">儲存範本</button>
         <button type="button" id="useTplBtn">套用範本</button>
         <button type="button" id="copyBtn">複製時間表</button>
-        <button type="button" id="printBtn">列印</button>
+        <button type="button" id="printBtn" title="下載整段時間表的橫向 JPG">橫向 JPG</button>
         <button type="button" id="resetBtn">還原預設</button>
         <span class="status" id="status"></span>
       </div>
@@ -739,6 +739,7 @@
     <div class="foot"><button type="button" class="edit-text" id="footText" title="點擊修改頁尾">ACHIEVER　×　松本清　·　CLAIM MODULE　·　合約確認至正式 LIVE RUN</button></div>
   </div>
   <div class="chip" id="chip" hidden></div>
+  <img id="printSheet" class="print-sheet" alt="CLAIM MODULE 時間表" />
   <style id="dyn"></style>
 <script>
 "use strict";
@@ -1991,7 +1992,220 @@ document.getElementById("copyBtn").addEventListener("click", async () => {
     setStatus("已複製，可貼到 Excel");
   }
 });
-document.getElementById("printBtn").addEventListener("click", () => window.print());
+function posterRound(ctx, x, y, w, h, r) {
+  const radius = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+}
+function posterFit(ctx, text, maxWidth) {
+  const value = String(text || "");
+  if (ctx.measureText(value).width <= maxWidth) return value;
+  let next = value;
+  while (next.length > 1 && ctx.measureText(`${next}…`).width > maxWidth) next = next.slice(0, -1);
+  return `${next}…`;
+}
+function buildPoster() {
+  fitRange();
+  const pad = 56;
+  const gutter = 560;
+  const W = 3400;
+  const rowH = 48;
+  const phaseH = 34;
+  const plotX = pad + gutter;
+  const plotW = W - pad - plotX;
+  const days = Math.max(1, diffDays(range.start, range.end) + 1);
+  const dayPx = plotW / days;
+  const visiblePhases = PHASES.filter((p) => tasks.some((t) => t.phase === p.id));
+  const bodyH = visiblePhases.length * phaseH + Math.max(tasks.length, 1) * rowH;
+  const plotTop = 348;
+  const H = plotTop + bodyH + 220;
+  const sheet = document.createElement("canvas");
+  sheet.width = W;
+  sheet.height = H;
+  const ctx = sheet.getContext("2d");
+  const font = "Manrope, 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif";
+  ctx.fillStyle = "#f5f7f9";
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#ffffff";
+  posterRound(ctx, 28, 28, W - 56, H - 56, 28);
+  ctx.fill();
+
+  const logo = document.querySelector(".logo");
+  if (logo && logo.complete && logo.naturalWidth) {
+    const lh = 52;
+    const lw = Math.min(280, logo.naturalWidth * lh / logo.naturalHeight);
+    ctx.drawImage(logo, pad, 52, lw, lh);
+  }
+  ctx.fillStyle = "#5c6570";
+  ctx.font = `800 40px ${font}`;
+  ctx.fillText(pageTitle, pad, 148);
+  ctx.fillStyle = "#7b868f";
+  ctx.font = `700 22px ${font}`;
+  ctx.fillText(posterFit(ctx, moduleTitle, 900), pad, 184);
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#9aa3ab";
+  ctx.font = `800 15px ${font}`;
+  ctx.fillText("CLIENT　客戶", W - pad, 78);
+  ctx.fillStyle = "#3a434c";
+  ctx.font = `800 36px ${font}`;
+  ctx.fillText(posterFit(ctx, clientName, 640), W - pad, 122);
+  ctx.fillStyle = "#8d969e";
+  ctx.font = `700 16px ${font}`;
+  ctx.fillText(posterFit(ctx, clientReading, 720), W - pad, 152);
+  ctx.fillText(posterFit(ctx, systemLine, 720), W - pad, 178);
+  ctx.textAlign = "left";
+
+  const seg = (W - pad * 2) / PHASES.length;
+  PHASES.forEach((p, i) => {
+    ctx.fillStyle = p.color;
+    ctx.fillRect(pad + i * seg, 206, seg + 1, 6);
+  });
+
+  const contract = contractTask();
+  const live = liveTask();
+  if (contract && live) {
+    const from = contract.start <= live.end ? contract.start : live.end;
+    const to = contract.start <= live.end ? live.end : contract.start;
+    const spanDays = duration(from, to);
+    const months = Math.max(1, Math.round(spanDays / 30.4));
+    ctx.fillStyle = "#5c6670";
+    ctx.font = `700 20px ${font}`;
+    ctx.fillText(`合約確認  ${fmtCN(contract.start)}      正式 LIVE RUN  ${fmtCN(live.start)}      專案工期  ${spanDays} 天 · 約 ${months} 個月`, pad, 258);
+  }
+
+  const monthY = 278;
+  ctx.fillStyle = "#2ea0b8";
+  posterRound(ctx, plotX, monthY, plotW, 58, 12);
+  ctx.fill();
+  const months = eachMonth(range.start, range.end);
+  months.forEach((m, i) => {
+    const x0 = plotX + diffDays(range.start, m.start) * dayPx;
+    const mw = m.days * dayPx;
+    ctx.fillStyle = BANDS[i % BANDS.length];
+    ctx.fillRect(x0, plotTop, mw, bodyH);
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `700 13px ${font}`;
+    ctx.fillText(String(m.year), x0 + mw / 2, monthY + 22);
+    ctx.font = `800 20px ${font}`;
+    ctx.fillText(`${m.month}月`, x0 + mw / 2, monthY + 46);
+    if (i) {
+      ctx.fillStyle = "rgba(255,255,255,.45)";
+      ctx.fillRect(x0, monthY + 12, 1, 34);
+    }
+  });
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(pad, plotTop, gutter - 12, bodyH);
+
+  let cursor = plotTop;
+  let n = 0;
+  if (!tasks.length) {
+    ctx.fillStyle = "#8b949e";
+    ctx.font = `700 20px ${font}`;
+    ctx.fillText("尚未有工作項目", pad + 16, cursor + 32);
+  }
+  for (const phase of visiblePhases) {
+    ctx.fillStyle = phase.color;
+    ctx.beginPath();
+    ctx.arc(pad + 18, cursor + phaseH / 2, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = `800 16px ${font}`;
+    ctx.fillText(`${phase.name}   ${phase.en}`, pad + 34, cursor + 22);
+    ctx.strokeStyle = "#e6ebf0";
+    ctx.beginPath();
+    ctx.moveTo(pad, cursor + phaseH - 1);
+    ctx.lineTo(W - pad, cursor + phaseH - 1);
+    ctx.stroke();
+    cursor += phaseH;
+    for (const t of tasks) {
+      if (t.phase !== phase.id) continue;
+      n += 1;
+      if (n % 2 === 0) {
+        ctx.fillStyle = "#f7fbfc";
+        ctx.fillRect(pad, cursor, gutter - 12, rowH);
+      }
+      ctx.fillStyle = phase.color;
+      ctx.font = `800 15px ${font}`;
+      ctx.fillText(String(n).padStart(2, "0"), pad + 10, cursor + 29);
+      ctx.fillStyle = "#3e4750";
+      ctx.font = `800 18px ${font}`;
+      ctx.fillText(posterFit(ctx, t.name, 280), pad + 52, cursor + 22);
+      ctx.fillStyle = "#6f7a84";
+      ctx.font = `700 14px ${font}`;
+      ctx.fillText(posterFit(ctx, `${t.en}    ${fmtMD(t.start)} – ${fmtMD(t.end)} · ${duration(t.start, t.end)}天`, gutter - 80), pad + 52, cursor + 41);
+      const x = plotX + diffDays(range.start, t.start) * dayPx;
+      const w = Math.max(dayPx, duration(t.start, t.end) * dayPx);
+      ctx.fillStyle = phase.color;
+      posterRound(ctx, x, cursor + 13, Math.max(8, w), 22, 11);
+      ctx.fill();
+      cursor += rowH;
+    }
+  }
+
+  const today = todayDate();
+  const todayIndex = diffDays(range.start, today);
+  if (todayIndex >= 0 && todayIndex < days) {
+    const tx = plotX + (todayIndex + 0.5) * dayPx;
+    ctx.strokeStyle = "#ef3d68";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(tx, plotTop);
+    ctx.lineTo(tx, plotTop + bodyH);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+  }
+
+  const legendY = plotTop + bodyH + 24;
+  ctx.fillStyle = "#eef1f4";
+  posterRound(ctx, pad, legendY, W - pad * 2, 92, 16);
+  ctx.fill();
+  const cell = (W - pad * 2) / PHASES.length;
+  PHASES.forEach((p, i) => {
+    const x = pad + i * cell + 18;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(x + 7, legendY + 30, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#5c6670";
+    ctx.font = `800 16px ${font}`;
+    ctx.fillText(p.name, x + 22, legendY + 28);
+    ctx.fillStyle = "#9199a1";
+    ctx.font = `700 13px ${font}`;
+    ctx.fillText(posterFit(ctx, p.en, cell - 58), x + 22, legendY + 50);
+    ctx.fillText(posterFit(ctx, p.blurb, cell - 58), x + 22, legendY + 70);
+  });
+  ctx.fillStyle = "#a0a8b0";
+  ctx.font = `800 16px ${font}`;
+  ctx.textAlign = "center";
+  ctx.fillText(footText || autoFoot(), W / 2, legendY + 128);
+  ctx.textAlign = "left";
+  return sheet;
+}
+function posterFileName() {
+  const day = contractTask() ? formatDate(contractTask().start) : "timeline";
+  return `${clientName}-timeline-${day}.jpg`;
+}
+function downloadPoster() {
+  const sheet = buildPoster();
+  const link = document.createElement("a");
+  link.download = posterFileName();
+  link.href = sheet.toDataURL("image/jpeg", 0.92);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setStatus("已下載橫向 JPG，包含整段時間表");
+}
+document.getElementById("printBtn").addEventListener("click", downloadPoster);
+window.addEventListener("beforeprint", () => {
+  document.getElementById("printSheet").src = buildPoster().toDataURL("image/jpeg", 0.92);
+});
 
 let resizeTimer = 0;
 window.addEventListener("resize", () => {
