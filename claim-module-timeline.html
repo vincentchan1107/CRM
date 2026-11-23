@@ -479,7 +479,6 @@
         <div class="client-name">松本清</div>
         <div class="jp">マツモトキヨシ　·　Matsumoto Kiyoshi</div>
         <div class="kicker" style="margin-top:6px">SYSTEM　系統公司 ACHIEVER</div>
-        <p>由 2026 年 11 月合約確認，到 CLAIM MODULE 正式 LIVE RUN。涵蓋門店調查、賠付規則、設計開發、驗收培訓與上線。每一段時間都可以直接拖曳調整。</p>
       </div>
     </header>
     <div class="ribbon" aria-hidden="true">
@@ -785,7 +784,7 @@ function save() {
       range: [formatDate(range.start), formatDate(range.end)],
       tasks: Object.fromEntries(tasks.map((t) => [t.id, [formatDate(t.start), formatDate(t.end)]]))
     }));
-    setStatus(isDirty() ? "已儲存於本機" : "");
+    setStatus("");
   } catch (err) {
     setStatus("未能寫入本機儲存");
   }
