@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;800&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --gutter: 300px;
+    --gutter: 460px;
     --ink: #3e4750;
     --muted: #8b949e;
     --line: #e6ebf0;
@@ -32,7 +32,7 @@
     height: 100vh;
     display: flex;
     flex-direction: column;
-    padding: 16px 22px 12px;
+    padding: 12px 18px 8px;
     gap: 8px;
   }
   .top {
@@ -89,6 +89,13 @@
     text-align: left;
     max-width: 100%;
   }
+  .client-name::after {
+    content: "✎";
+    margin-left: 8px;
+    font-size: 16px;
+    letter-spacing: 0;
+    color: #1d7d92;
+  }
   .client-name:hover, .client-name:focus-visible {
     border-bottom-color: #9fd4e0;
     color: #18788c;
@@ -142,19 +149,20 @@
     border: 1px solid var(--line);
     border-radius: 12px;
     padding: 6px 12px 7px;
-    min-width: 148px;
-    cursor: pointer;
+    min-width: 168px;
   }
   .stat:hover, .stat:focus-within { border-color: #9fd4e0; }
-  .stat.plain, .stat.plain:hover, .stat.plain:focus-within { cursor: default; border-color: var(--line); }
+  .stat.plain, .stat.plain:hover, .stat.plain:focus-within { border-color: var(--line); }
   .stat input[type="date"] {
-    position: absolute;
-    inset: 0;
+    display: block;
     width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-    border: 0;
+    margin-top: 4px;
+    border: 1px solid #d5dee4;
+    border-radius: 8px;
+    background: #fff;
+    padding: 3px 6px;
+    font-size: 12px;
+    font-weight: 700;
   }
   .stat span {
     display: block;
@@ -339,17 +347,40 @@
   }
   .phase em { font-style: normal; font-size: 10px; letter-spacing: .14em; opacity: .72; }
   .tick { width: 8px; height: 8px; border-radius: 99px; background: var(--c); margin-bottom: 2px; }
-  .row { height: 68px; outline: none; }
+  .row { height: 82px; outline: none; }
   .row .gutter {
     display: grid;
-    grid-template-columns: 34px 1fr 22px;
+    grid-template-columns: 34px 1fr 28px;
     grid-template-rows: auto auto auto;
     column-gap: 4px;
+    row-gap: 2px;
     align-content: center;
-    padding: 0 8px 0 10px;
-    cursor: pointer;
+    padding: 4px 8px 4px 10px;
     box-shadow: 8px 0 12px -12px rgba(40, 50, 70, .45);
   }
+  .name-in, .en-in, .row-edit { grid-column: 2; min-width: 0; }
+  .name-in, .en-in, .row-edit input {
+    width: 100%;
+    border: 1px solid #d5dee4;
+    background: #fff;
+    border-radius: 6px;
+    padding: 1px 6px;
+  }
+  .name-in {
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--c);
+  }
+  .en-in {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6f7a84;
+  }
+  .row-edit { display: flex; align-items: center; gap: 4px; }
+  .row-edit input { width: auto; font-size: 11px; font-weight: 700; padding: 1px 4px; }
+  .row-edit input[type="date"] { width: 124px; }
+  .row-edit input[type="number"] { width: 52px; }
+  .row-edit .unit { flex: none; font-size: 11px; font-weight: 800; color: #6f7a84; }
   .row.is-selected .gutter { background: #f3fbfc; }
   .row:hover .gutter { background: #f7fbfc; }
   .row.is-selected:hover .gutter { background: #f3fbfc; }
@@ -407,7 +438,7 @@
     border: 0;
     border-radius: 50%;
     background: transparent;
-    color: #c5ced6;
+    color: #c43b5a;
     font-size: 16px;
     font-weight: 700;
     line-height: 1;
@@ -482,7 +513,7 @@
     flex: none;
     background: #eef1f4;
     border-radius: 14px;
-    padding: 10px 12px;
+    padding: 6px 10px;
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 8px 12px;
@@ -593,18 +624,7 @@
       </div>
     </div>
     <div class="inspector">
-      <p class="hint" id="hint">點左方工作項目可改名稱、日期和天數，也可以新增或刪除。改完之後，右邊的月份和色條會跟著移動。點右上角客戶名稱可修改。拖曳色條中段可移動時段，拉住左右兩端可改變長短。</p>
-      <div class="editor" id="editor" hidden>
-        <label class="field grow">工作項目<input type="text" id="nameInput" maxlength="40" autocomplete="off" /></label>
-        <label class="field grow">ENGLISH<input type="text" id="enInput" maxlength="48" autocomplete="off" /></label>
-        <label class="field">階段<select id="phaseInput"></select></label>
-        <label class="field">開始<input type="date" id="startInput" min="2024-01-01" max="2032-12-31" /></label>
-        <label class="field">結束<input type="date" id="endInput" min="2024-01-01" max="2032-12-31" /></label>
-        <label class="field days">天數<input type="number" id="daysInput" min="1" max="900" step="1" /></label>
-        <div class="dur" id="dur">—</div>
-        <button type="button" class="mini" id="restoreBtn" hidden>還原此項</button>
-        <button type="button" class="mini danger" id="deleteBtn">刪除此項</button>
-      </div>
+      <p class="hint" id="hint">左方每一列都可以直接改名稱、開始日、結束日和天數，× 刪除，表頭「＋ 新增」加入。改完之後右邊的月份和色條會跟著移動。上方日期格和右上角客戶名稱也可以直接改。</p>
     </div>
     <div class="scroll" id="scroll">
       <div class="canvas" id="canvas"></div>
@@ -618,7 +638,7 @@
 "use strict";
 
 const KEY = "achiever-mk-claim-timeline-v1";
-const GUTTER = 300;
+const GUTTER = 460;
 const PAD = 36;
 const MIN_DATE = parseDate("2024-01-01");
 const MAX_DATE = parseDate("2032-12-31");
@@ -713,23 +733,11 @@ const scroll = document.getElementById("scroll");
 const canvas = document.getElementById("canvas");
 const dyn = document.getElementById("dyn");
 const chip = document.getElementById("chip");
-const hint = document.getElementById("hint");
-const editor = document.getElementById("editor");
-const nameInput = document.getElementById("nameInput");
-const enInput = document.getElementById("enInput");
-const phaseInput = document.getElementById("phaseInput");
-const startInput = document.getElementById("startInput");
-const endInput = document.getElementById("endInput");
-const daysInput = document.getElementById("daysInput");
-const durEl = document.getElementById("dur");
-const restoreBtn = document.getElementById("restoreBtn");
-const deleteBtn = document.getElementById("deleteBtn");
 const statusEl = document.getElementById("status");
 const legend = document.getElementById("legend");
 const clientBtn = document.getElementById("clientName");
 const contractDate = document.getElementById("contractDate");
 const liveDate = document.getElementById("liveDate");
-phaseInput.innerHTML = PHASES.map((p) => `<option value="${p.id}">${p.name}　${p.en}</option>`).join("");
 
 function parseDate(s) {
   const [y, m, d] = s.split("-").map(Number);
@@ -1047,9 +1055,14 @@ function renderChart() {
       body += `<div class="row${selectedClass}" data-id="${t.id}" tabindex="0" style="--c:${phase.color}">
         <div class="gutter">
           <span class="no">${String(n).padStart(2, "0")}</span>
-          <div class="task-name" title="${esc(t.note)}">${esc(t.name)}</div>
-          <div class="task-en">${esc(t.en)}</div>
-          <div class="meta">${metaHTML(t)}</div>
+          <input class="name-in" data-field="name" value="${esc(t.name)}" maxlength="40" aria-label="工作項目" />
+          <input class="en-in" data-field="en" value="${esc(t.en)}" maxlength="48" aria-label="English" />
+          <div class="row-edit">
+            <input type="date" data-field="start" value="${formatDate(t.start)}" min="2024-01-01" max="2032-12-31" aria-label="開始日期" />
+            <input type="date" data-field="end" value="${formatDate(t.end)}" min="2024-01-01" max="2032-12-31" aria-label="結束日期" />
+            <input type="number" data-field="days" value="${duration(t.start, t.end)}" min="1" max="900" aria-label="天數" />
+            <span class="unit">天</span>
+          </div>
           <button type="button" class="del" data-del="${t.id}" aria-label="刪除${esc(t.name)}">×</button>
         </div>
         <div class="plot" style="width:${timeW}px">
@@ -1098,7 +1111,14 @@ function paintTask(t) {
   bar.style.left = `${left}px`;
   bar.style.width = `${width}px`;
   bar.classList.toggle("is-short", width < 64);
-  row.querySelector(".meta").innerHTML = metaHTML(t);
+  const meta = row.querySelector(".meta");
+  if (meta) meta.innerHTML = metaHTML(t);
+  const startField = row.querySelector('[data-field="start"]');
+  const endField = row.querySelector('[data-field="end"]');
+  const daysField = row.querySelector('[data-field="days"]');
+  if (startField && document.activeElement !== startField) startField.value = formatDate(t.start);
+  if (endField && document.activeElement !== endField) endField.value = formatDate(t.end);
+  if (daysField && document.activeElement !== daysField) daysField.value = String(duration(t.start, t.end));
   const ghost = row.querySelector(".ghost");
   if (ghost && drag) {
     ghost.style.left = `${diffDays(range.start, drag.originStart) * px}px`;
@@ -1130,23 +1150,7 @@ function updateStats() {
   spanLabel.textContent = `${days} 天 · 約 ${months} 個月`;
 }
 
-function updateInspector() {
-  const t = selected ? taskById(selected) : null;
-  hint.hidden = !!t;
-  editor.hidden = !t;
-  if (!t) return;
-  if (document.activeElement !== nameInput) nameInput.value = t.name;
-  if (document.activeElement !== enInput) enInput.value = t.en;
-  if (document.activeElement !== phaseInput) phaseInput.value = t.phase;
-  const sv = formatDate(t.start);
-  const ev = formatDate(t.end);
-  if (document.activeElement !== startInput) startInput.value = sv;
-  if (document.activeElement !== endInput) endInput.value = ev;
-  const days = duration(t.start, t.end);
-  if (document.activeElement !== daysInput) daysInput.value = String(days);
-  durEl.innerHTML = `${days} 日曆日<br><em>${businessDays(t.start, t.end)} 工作天</em>`;
-  restoreBtn.hidden = !DEFAULT_BY_ID[t.id] || !isTaskDirty(t);
-}
+function updateInspector() {}
 
 function renderLegend() {
   legend.innerHTML = PHASES.map((p) => `
@@ -1209,8 +1213,8 @@ function addTask() {
   save();
   renderAll();
   revealTask(t);
-  nameInput.focus();
-  nameInput.select();
+  const nameField = canvas.querySelector(`[data-id="${t.id}"] [data-field="name"]`);
+  if (nameField) { nameField.focus(); nameField.select(); }
 }
 function removeTask(id) {
   const t = taskById(id);
@@ -1313,7 +1317,7 @@ canvas.addEventListener("click", (e) => {
 });
 canvas.addEventListener("pointerdown", (e) => {
   if (e.button !== 0) return;
-  if (e.target.closest("[data-del], [data-add], button")) return;
+  if (e.target.closest("input, select, textarea, button, [data-del], [data-add]")) return;
   const handle = e.target.closest("[data-resize]");
   const bar = e.target.closest(".bar");
   const plot = e.target.closest(".plot");
@@ -1398,73 +1402,70 @@ window.addEventListener("keydown", (e) => {
   if (again) again.focus({ preventScroll: true });
 });
 
-function commitInput(which) {
-  const t = selected ? taskById(selected) : null;
+function applyField(t, field, value, commit) {
   if (!t) return;
-  const s = parseDate(startInput.value);
-  const e = parseDate(endInput.value);
-  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return;
-  t.start = s;
-  t.end = e;
-  if (t.start > t.end) {
-    if (which === "start") t.end = new Date(t.start);
-    else t.start = new Date(t.end);
+  if (field === "name") {
+    const name = String(value).trim();
+    if (name) t.name = name;
+    else if (commit) t.name = "未命名";
+    if (commit) {
+      const input = canvas.querySelector(`[data-id="${t.id}"] [data-field="name"]`);
+      if (input) input.value = t.name;
+    }
+    save();
+    return;
   }
-  clampTask(t, "end");
-  if (t.start < MIN_DATE) t.start = new Date(MIN_DATE);
+  if (field === "en") {
+    t.en = String(value).trim();
+    save();
+    return;
+  }
+  if (field === "start") {
+    const s = parseDate(value);
+    if (Number.isNaN(s.getTime())) return;
+    const days = duration(t.start, t.end);
+    t.start = s;
+    t.end = addDays(t.start, days - 1);
+    clampTask(t, "move");
+  } else if (field === "end") {
+    const e = parseDate(value);
+    if (Number.isNaN(e.getTime())) return;
+    t.end = e;
+    if (t.end < t.start) t.start = new Date(t.end);
+    clampTask(t, "end");
+  } else if (field === "days") {
+    const n = Number(value);
+    if (!Number.isInteger(n) || n < 1 || n > 900) return;
+    t.end = addDays(t.start, n - 1);
+    clampTask(t, "end");
+  } else {
+    return;
+  }
   save();
-  renderAll();
+  if (fitRange()) renderAll();
+  else {
+    paintTask(t);
+    updateStats();
+  }
   revealTask(t);
 }
-function commitDays() {
-  const t = selected ? taskById(selected) : null;
-  if (!t) return;
-  const n = Number(daysInput.value);
-  if (!Number.isInteger(n) || n < 1 || n > 900) return;
-  t.end = addDays(t.start, n - 1);
-  clampTask(t, "end");
-  save();
-  renderAll();
-  revealTask(t);
-}
-function paintNames(commit) {
-  const t = selected ? taskById(selected) : null;
-  if (!t) return;
-  const name = nameInput.value.trim();
-  const en = enInput.value.trim();
-  if (name) t.name = name;
-  else if (commit) t.name = "未命名";
-  t.en = en;
-  const row = canvas.querySelector(`[data-id="${t.id}"]`);
-  if (row) {
-    row.querySelector(".task-name").textContent = name || t.name;
-    row.querySelector(".task-en").textContent = t.en;
-  }
-  if (commit) {
-    nameInput.value = t.name;
-    enInput.value = t.en;
-  }
-  save();
-}
-startInput.addEventListener("change", () => commitInput("start"));
-endInput.addEventListener("change", () => commitInput("end"));
-daysInput.addEventListener("change", commitDays);
-nameInput.addEventListener("input", () => paintNames(false));
-enInput.addEventListener("input", () => paintNames(false));
-nameInput.addEventListener("change", () => paintNames(true));
-enInput.addEventListener("change", () => paintNames(true));
-phaseInput.addEventListener("change", () => {
-  const t = selected ? taskById(selected) : null;
-  if (!t || !PHASE_BY_ID[phaseInput.value]) return;
-  t.phase = phaseInput.value;
-  if (!DEFAULT_BY_ID[t.id]) t.icon = PHASE_BY_ID[t.phase].icon;
-  save();
-  renderAll();
+canvas.addEventListener("input", (e) => {
+  const field = e.target.dataset.field;
+  if (field !== "name" && field !== "en") return;
+  const row = e.target.closest("[data-id]");
+  if (!row) return;
+  applyField(taskById(row.dataset.id), field, e.target.value, false);
+});
+canvas.addEventListener("change", (e) => {
+  const field = e.target.dataset.field;
+  if (!field) return;
+  const row = e.target.closest("[data-id]");
+  if (!row) return;
+  applyField(taskById(row.dataset.id), field, e.target.value, true);
 });
 contractDate.addEventListener("change", () => shiftTaskToStart(contractTask(), contractDate.value));
 liveDate.addEventListener("change", () => shiftTaskToStart(liveTask(), liveDate.value));
 document.getElementById("addTaskBtn").addEventListener("click", addTask);
-deleteBtn.addEventListener("click", () => { if (selected) removeTask(selected); });
 clientBtn.addEventListener("click", () => {
   if (!clientBtn.isConnected) return;
   const input = document.createElement("input");
@@ -1528,21 +1529,6 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   fit();
   renderAll();
   setStatus("已還原預設時間");
-});
-restoreBtn.addEventListener("click", () => {
-  const t = selected ? taskById(selected) : null;
-  const def = t && DEFAULT_BY_ID[t.id];
-  if (!def) return;
-  t.phase = def.phase;
-  t.name = def.name;
-  t.en = def.en;
-  t.icon = def.icon;
-  t.note = def.note;
-  t.start = parseDate(def.start);
-  t.end = parseDate(def.end);
-  save();
-  renderAll();
-  setStatus("已還原此項");
 });
 document.getElementById("copyBtn").addEventListener("click", async () => {
   const lines = ["階段\t工作項目\t英文\t開始\t結束\t日曆日\t工作天\t說明"];
