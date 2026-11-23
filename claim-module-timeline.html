@@ -75,7 +75,32 @@
     color: #9aa3ab;
   }
   .client-name {
+    display: inline-block;
     margin-top: 2px;
+    padding: 0 2px;
+    border: 0;
+    border-bottom: 1px dashed transparent;
+    background: transparent;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    line-height: 1.05;
+    color: #3a434c;
+    text-align: left;
+    max-width: 100%;
+  }
+  .client-name:hover, .client-name:focus-visible {
+    border-bottom-color: #9fd4e0;
+    color: #18788c;
+  }
+  .client-name-input {
+    display: block;
+    width: 100%;
+    margin-top: 2px;
+    border: 1px solid #9fd4e0;
+    border-radius: 8px;
+    background: #fff;
+    padding: 2px 8px;
     font-size: 28px;
     font-weight: 800;
     letter-spacing: .12em;
@@ -112,11 +137,24 @@
   }
   .stats { display: flex; flex-wrap: wrap; gap: 8px; }
   .stat {
+    position: relative;
     background: #fff;
     border: 1px solid var(--line);
     border-radius: 12px;
     padding: 6px 12px 7px;
     min-width: 148px;
+    cursor: pointer;
+  }
+  .stat:hover, .stat:focus-within { border-color: #9fd4e0; }
+  .stat.plain, .stat.plain:hover, .stat.plain:focus-within { cursor: default; border-color: var(--line); }
+  .stat input[type="date"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    border: 0;
   }
   .stat span {
     display: block;
@@ -160,7 +198,10 @@
   .who small { color: #8b949e; font-weight: 700; }
   .note { flex: 1 1 280px; margin: 0; color: #66717a; font-size: 13px; line-height: 1.45; }
   .field { display: flex; flex-direction: column; gap: 2px; font-size: 10px; font-weight: 800; letter-spacing: .08em; color: #8b949e; }
-  .field input {
+  .field.grow { flex: 1 1 150px; min-width: 120px; }
+  .field.days { width: 76px; }
+  .field input, .field select {
+    width: 100%;
     border: 1px solid #dce3e8;
     background: #fff;
     border-radius: 8px;
@@ -169,6 +210,8 @@
     letter-spacing: 0;
     color: var(--ink);
   }
+  .mini.danger { color: #c43b5a; }
+  .mini.danger:hover { border-color: #f3b3c2; color: #c43b5a; }
   .dur {
     background: #fff;
     border: 1px solid var(--line);
@@ -208,12 +251,25 @@
     z-index: 6;
     display: flex;
     align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px;
     padding: 0 12px 8px 10px;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: .16em;
     color: #9aa3ab;
   }
+  .add-mini {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0;
+    color: #18788c;
+  }
+  .add-mini:hover { border-color: #9fd4e0; }
   .head-plot { position: relative; flex: none; }
   .months {
     display: flex;
@@ -286,11 +342,11 @@
   .row { height: 68px; outline: none; }
   .row .gutter {
     display: grid;
-    grid-template-columns: 34px 1fr;
+    grid-template-columns: 34px 1fr 22px;
     grid-template-rows: auto auto auto;
     column-gap: 4px;
     align-content: center;
-    padding: 0 12px 0 10px;
+    padding: 0 8px 0 10px;
     cursor: pointer;
     box-shadow: 8px 0 12px -12px rgba(40, 50, 70, .45);
   }
@@ -341,6 +397,24 @@
     background: var(--c);
     margin-right: 4px;
     transform: translateY(-1px);
+  }
+  .del {
+    grid-column: 3;
+    grid-row: 1 / span 3;
+    align-self: center;
+    width: 22px;
+    height: 22px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #c5ced6;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .row:hover .del, .row.is-selected .del, .del:focus-visible {
+    color: #c43b5a;
+    background: #fff;
   }
   .plot { position: relative; flex: none; height: 100%; }
   .bar, .ghost {
@@ -454,12 +528,13 @@
   @media (max-width: 1180px) {
     h1 { font-size: 30px; }
     .legend { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .client { display: none; }
+    .top { flex-wrap: wrap; align-items: flex-start; }
+    .client { width: min(440px, 100%); }
   }
   @media print {
     body { height: auto; overflow: visible; background: #fff; }
     .wrap { height: auto; display: block; }
-    .tools, .hint, .status, .chip { display: none !important; }
+    .tools, .hint, .status, .chip, .editor, .del, .add-mini, .stat input { display: none !important; }
     .scroll { overflow: visible; border: 0; max-height: none; }
   }
 </style>
@@ -476,7 +551,7 @@
       </div>
       <div class="client">
         <div class="kicker">CLIENT　客戶</div>
-        <div class="client-name">松本清</div>
+        <button type="button" class="client-name" id="clientName" title="點擊修改客戶名稱">松本清</button>
         <div class="jp">マツモトキヨシ　·　Matsumoto Kiyoshi</div>
         <div class="kicker" style="margin-top:6px">SYSTEM　系統公司 ACHIEVER</div>
       </div>
@@ -492,9 +567,15 @@
     </div>
     <div class="barline">
       <div class="stats">
-        <div class="stat"><span>合約確認</span><b id="statContract">—</b></div>
-        <div class="stat"><span>正式 LIVE RUN</span><b id="statLive">—</b></div>
-        <div class="stat"><span>專案工期</span><b id="statSpan">—</b></div>
+        <label class="stat" title="點擊選擇合約確認日，時間軸會跟著調整">
+          <span>合約確認</span><b id="statContract">—</b>
+          <input type="date" id="contractDate" min="2024-01-01" max="2032-12-31" aria-label="合約確認日" />
+        </label>
+        <label class="stat" title="點擊選擇正式 LIVE RUN 日，時間軸會跟著調整">
+          <span>正式 LIVE RUN</span><b id="statLive">—</b>
+          <input type="date" id="liveDate" min="2024-01-01" max="2032-12-31" aria-label="正式 LIVE RUN 日" />
+        </label>
+        <div class="stat plain"><span>專案工期</span><b id="statSpan">—</b></div>
       </div>
       <div class="tools">
         <div class="seg" role="group" aria-label="微調單位">
@@ -504,6 +585,7 @@
         <button type="button" id="zoomOut" aria-label="縮小">縮小</button>
         <button type="button" id="zoomIn" aria-label="放大">放大</button>
         <button type="button" id="fitBtn">全覽</button>
+        <button type="button" id="addTaskBtn">＋ 工作項目</button>
         <button type="button" id="copyBtn">複製時間表</button>
         <button type="button" id="printBtn">列印</button>
         <button type="button" id="resetBtn">還原預設</button>
@@ -511,17 +593,17 @@
       </div>
     </div>
     <div class="inspector">
-      <p class="hint" id="hint">拖曳色條<b>中段</b>可移動時段，拉住<b>左右兩端</b>可改變長短。天數以日曆日計算，包含週末。調整會記在這部電腦。</p>
+      <p class="hint" id="hint">點左方工作項目可改名稱、日期和天數，也可以新增或刪除。改完之後，右邊的月份和色條會跟著移動。點右上角客戶名稱可修改。拖曳色條中段可移動時段，拉住左右兩端可改變長短。</p>
       <div class="editor" id="editor" hidden>
-        <div class="who" id="who">
-          <b id="whoName"></b>
-          <small id="whoEn"></small>
-        </div>
-        <p class="note" id="note"></p>
-        <label class="field">開始<input type="date" id="startInput" min="2026-01-01" max="2028-12-31" /></label>
-        <label class="field">結束<input type="date" id="endInput" min="2026-01-01" max="2028-12-31" /></label>
+        <label class="field grow">工作項目<input type="text" id="nameInput" maxlength="40" autocomplete="off" /></label>
+        <label class="field grow">ENGLISH<input type="text" id="enInput" maxlength="48" autocomplete="off" /></label>
+        <label class="field">階段<select id="phaseInput"></select></label>
+        <label class="field">開始<input type="date" id="startInput" min="2024-01-01" max="2032-12-31" /></label>
+        <label class="field">結束<input type="date" id="endInput" min="2024-01-01" max="2032-12-31" /></label>
+        <label class="field days">天數<input type="number" id="daysInput" min="1" max="900" step="1" /></label>
         <div class="dur" id="dur">—</div>
         <button type="button" class="mini" id="restoreBtn" hidden>還原此項</button>
+        <button type="button" class="mini danger" id="deleteBtn">刪除此項</button>
       </div>
     </div>
     <div class="scroll" id="scroll">
@@ -538,8 +620,9 @@
 const KEY = "achiever-mk-claim-timeline-v1";
 const GUTTER = 300;
 const PAD = 36;
-const MIN_DATE = parseDate("2026-01-01");
-const MAX_DATE = parseDate("2028-12-31");
+const MIN_DATE = parseDate("2024-01-01");
+const MAX_DATE = parseDate("2032-12-31");
+const DEFAULT_CLIENT = "松本清";
 const WD = ["日", "一", "二", "三", "四", "五", "六"];
 const BANDS = ["#fde8ef", "#fff1e4", "#e7f6ea", "#e5f7f6", "#e7f2fb", "#fde8f3", "#f3e9fb"];
 
@@ -616,6 +699,7 @@ const DEFAULT_BY_ID = Object.fromEntries(DEFAULTS.map((t) => [t.id, t]));
 const PHASE_BY_ID = Object.fromEntries(PHASES.map((p) => [p.id, p]));
 
 let tasks = cloneTasks();
+let clientName = DEFAULT_CLIENT;
 let range = { start: parseDate("2026-11-01"), end: parseDate("2027-06-30") };
 let px = 8;
 let pxIsCustom = true;
@@ -631,16 +715,21 @@ const dyn = document.getElementById("dyn");
 const chip = document.getElementById("chip");
 const hint = document.getElementById("hint");
 const editor = document.getElementById("editor");
-const who = document.getElementById("who");
-const whoName = document.getElementById("whoName");
-const whoEn = document.getElementById("whoEn");
-const noteEl = document.getElementById("note");
+const nameInput = document.getElementById("nameInput");
+const enInput = document.getElementById("enInput");
+const phaseInput = document.getElementById("phaseInput");
 const startInput = document.getElementById("startInput");
 const endInput = document.getElementById("endInput");
+const daysInput = document.getElementById("daysInput");
 const durEl = document.getElementById("dur");
 const restoreBtn = document.getElementById("restoreBtn");
+const deleteBtn = document.getElementById("deleteBtn");
 const statusEl = document.getElementById("status");
 const legend = document.getElementById("legend");
+const clientBtn = document.getElementById("clientName");
+const contractDate = document.getElementById("contractDate");
+const liveDate = document.getElementById("liveDate");
+phaseInput.innerHTML = PHASES.map((p) => `<option value="${p.id}">${p.name}　${p.en}</option>`).join("");
 
 function parseDate(s) {
   const [y, m, d] = s.split("-").map(Number);
@@ -696,10 +785,27 @@ function taskById(id) {
 }
 function isTaskDirty(t) {
   const def = DEFAULT_BY_ID[t.id];
-  return formatDate(t.start) !== def.start || formatDate(t.end) !== def.end;
+  if (!def) return true;
+  return formatDate(t.start) !== def.start || formatDate(t.end) !== def.end || t.name !== def.name || t.en !== def.en || t.phase !== def.phase;
 }
 function isDirty() {
+  if (clientName !== DEFAULT_CLIENT) return true;
+  if (tasks.length !== DEFAULTS.length) return true;
+  const ids = new Set(tasks.map((t) => t.id));
+  if (DEFAULTS.some((t) => !ids.has(t.id))) return true;
   return tasks.some(isTaskDirty);
+}
+function contractTask() {
+  return taskById("contract") || tasks.slice().sort((a, b) => a.start - b.start)[0] || null;
+}
+function liveTask() {
+  return taskById("live") || tasks.slice().sort((a, b) => b.start - a.start)[0] || null;
+}
+function paintClient() {
+  clientBtn.textContent = clientName;
+  document.title = `CLAIM MODULE 時間表 · ${clientName} × ACHIEVER`;
+  const foot = document.querySelector(".foot");
+  if (foot) foot.textContent = `ACHIEVER　×　${clientName}　·　CLAIM MODULE　·　合約確認至正式 LIVE RUN`;
 }
 function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n));
@@ -750,22 +856,21 @@ function clampTask(t, mode) {
   }
 }
 
-function expandRange() {
-  let changed = false;
+function fitRange() {
+  if (!tasks.length) return false;
+  let min = tasks[0].start;
+  let max = tasks[0].end;
   for (const t of tasks) {
-    const s = startOfMonth(t.start);
-    const e = endOfMonth(t.end);
-    if (s < range.start) {
-      scrollFix += diffDays(s, range.start) * px;
-      range.start = s;
-      changed = true;
-    }
-    if (e > range.end) {
-      range.end = e;
-      changed = true;
-    }
+    if (t.start < min) min = t.start;
+    if (t.end > max) max = t.end;
   }
-  return changed;
+  const s = startOfMonth(min);
+  const e = endOfMonth(max);
+  if (formatDate(s) === formatDate(range.start) && formatDate(e) === formatDate(range.end)) return false;
+  scrollFix += diffDays(s, range.start) * px;
+  range.start = s;
+  range.end = e;
+  return true;
 }
 
 function fit() {
@@ -774,15 +879,39 @@ function fit() {
   px = clamp(avail / days, 2.2, 20);
 }
 
+function serializeTask(t) {
+  return {
+    id: t.id,
+    phase: t.phase,
+    name: t.name,
+    en: t.en,
+    icon: t.icon,
+    note: t.note || "",
+    start: formatDate(t.start),
+    end: formatDate(t.end)
+  };
+}
+function taskFromRaw(raw) {
+  if (!raw || typeof raw.id !== "string" || !PHASE_BY_ID[raw.phase]) return null;
+  if (typeof raw.start !== "string" || typeof raw.end !== "string") return null;
+  const s = parseDate(raw.start);
+  const e = parseDate(raw.end);
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime()) || s > e) return null;
+  const phase = PHASE_BY_ID[raw.phase];
+  const name = String(raw.name || "").trim() || "未命名";
+  const en = String(raw.en || "").trim();
+  const icon = ICONS[raw.icon] ? raw.icon : phase.icon;
+  return { id: raw.id, phase: raw.phase, name, en, icon, note: String(raw.note || ""), start: s, end: e };
+}
 function save() {
   try {
     localStorage.setItem(KEY, JSON.stringify({
-      v: 1,
+      v: 2,
       px,
       pxIsCustom,
       snap,
-      range: [formatDate(range.start), formatDate(range.end)],
-      tasks: Object.fromEntries(tasks.map((t) => [t.id, [formatDate(t.start), formatDate(t.end)]]))
+      clientName,
+      tasks: tasks.map(serializeTask)
     }));
     setStatus("");
   } catch (err) {
@@ -793,8 +922,12 @@ function save() {
 function load() {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (!raw || raw.v !== 1) return false;
-    if (raw.tasks) {
+    if (!raw) return false;
+    if (raw.v === 2 && Array.isArray(raw.tasks)) {
+      const next = raw.tasks.map(taskFromRaw).filter(Boolean);
+      if (next.length) tasks = next;
+      if (typeof raw.clientName === "string" && raw.clientName.trim()) clientName = raw.clientName.trim();
+    } else if (raw.v === 1 && raw.tasks) {
       for (const t of tasks) {
         const pair = raw.tasks[t.id];
         if (!pair || pair.length !== 2) continue;
@@ -804,13 +937,8 @@ function load() {
         t.start = s;
         t.end = e;
       }
-    }
-    if (Array.isArray(raw.range) && raw.range.length === 2) {
-      const s = parseDate(raw.range[0]);
-      const e = parseDate(raw.range[1]);
-      if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime()) && s < e) {
-        range = { start: s, end: e };
-      }
+    } else {
+      return false;
     }
     if (typeof raw.px === "number") px = clamp(raw.px, 2.2, 20);
     pxIsCustom = !!raw.pxIsCustom;
@@ -922,6 +1050,7 @@ function renderChart() {
           <div class="task-name" title="${esc(t.note)}">${esc(t.name)}</div>
           <div class="task-en">${esc(t.en)}</div>
           <div class="meta">${metaHTML(t)}</div>
+          <button type="button" class="del" data-del="${t.id}" aria-label="刪除${esc(t.name)}">×</button>
         </div>
         <div class="plot" style="width:${timeW}px">
           ${ghost}
@@ -935,9 +1064,21 @@ function renderChart() {
     }
   }
 
+  if (!n) {
+    body += `<div class="row" style="--c:#8b949e">
+      <div class="gutter">
+        <span class="no">—</span>
+        <div class="task-name">尚未有工作項目</div>
+        <div class="task-en">按「＋ 新增」加入</div>
+        <div class="meta"></div>
+      </div>
+      <div class="plot" style="width:${timeW}px"></div>
+    </div>`;
+  }
+
   canvas.innerHTML = `
     <div class="head">
-      <div class="gutter">工作項目　PROCESS</div>
+      <div class="gutter"><span>工作項目　PROCESS</span><button type="button" class="add-mini" data-add="1">＋ 新增</button></div>
       <div class="head-plot" style="width:${timeW}px">
         <div class="months" style="width:${bg.total}px">${monthsHTML}</div>
         <div class="weekrow" style="width:${bg.total}px">${weeks}</div>
@@ -967,13 +1108,26 @@ function paintTask(t) {
 }
 
 function updateStats() {
-  const contract = taskById("contract");
-  const live = taskById("live");
-  document.getElementById("statContract").textContent = fmtCN(contract.start);
-  document.getElementById("statLive").textContent = fmtCN(live.start);
-  const days = duration(contract.start, live.end);
+  const contract = contractTask();
+  const live = liveTask();
+  const contractLabel = document.getElementById("statContract");
+  const liveLabel = document.getElementById("statLive");
+  const spanLabel = document.getElementById("statSpan");
+  if (!contract || !live) {
+    contractLabel.textContent = "—";
+    liveLabel.textContent = "—";
+    spanLabel.textContent = "—";
+    return;
+  }
+  contractLabel.textContent = fmtCN(contract.start);
+  liveLabel.textContent = fmtCN(live.start);
+  if (document.activeElement !== contractDate) contractDate.value = formatDate(contract.start);
+  if (document.activeElement !== liveDate) liveDate.value = formatDate(live.start);
+  const from = contract.start <= live.end ? contract.start : live.end;
+  const to = contract.start <= live.end ? live.end : contract.start;
+  const days = duration(from, to);
   const months = Math.max(1, Math.round(days / 30.4));
-  document.getElementById("statSpan").textContent = `${days} 天 · 約 ${months} 個月`;
+  spanLabel.textContent = `${days} 天 · 約 ${months} 個月`;
 }
 
 function updateInspector() {
@@ -981,18 +1135,17 @@ function updateInspector() {
   hint.hidden = !!t;
   editor.hidden = !t;
   if (!t) return;
-  const phase = PHASE_BY_ID[t.phase];
-  who.style.setProperty("--c", phase.color);
-  whoName.textContent = `${t.name}　${t.en}`;
-  whoEn.textContent = `${phase.name}　${phase.en}`;
-  noteEl.textContent = t.note;
+  if (document.activeElement !== nameInput) nameInput.value = t.name;
+  if (document.activeElement !== enInput) enInput.value = t.en;
+  if (document.activeElement !== phaseInput) phaseInput.value = t.phase;
   const sv = formatDate(t.start);
   const ev = formatDate(t.end);
   if (document.activeElement !== startInput) startInput.value = sv;
   if (document.activeElement !== endInput) endInput.value = ev;
   const days = duration(t.start, t.end);
+  if (document.activeElement !== daysInput) daysInput.value = String(days);
   durEl.innerHTML = `${days} 日曆日<br><em>${businessDays(t.start, t.end)} 工作天</em>`;
-  restoreBtn.hidden = !isTaskDirty(t);
+  restoreBtn.hidden = !DEFAULT_BY_ID[t.id] || !isTaskDirty(t);
 }
 
 function renderLegend() {
@@ -1009,11 +1162,69 @@ function syncSnapButtons() {
 }
 
 function renderAll() {
-  expandRange();
+  fitRange();
   renderChart();
   updateInspector();
   updateStats();
   syncSnapButtons();
+}
+function revealTask(t) {
+  if (!t) return;
+  const left = Math.max(0, diffDays(range.start, t.start) * px - 48);
+  requestAnimationFrame(() => { scroll.scrollLeft = left; });
+}
+function shiftTaskToStart(t, dateStr) {
+  const ns = parseDate(dateStr);
+  if (!t || Number.isNaN(ns.getTime())) return;
+  const delta = diffDays(t.start, ns);
+  if (delta === 0) return;
+  t.start = addDays(t.start, delta);
+  t.end = addDays(t.end, delta);
+  clampTask(t, "move");
+  save();
+  renderAll();
+  revealTask(t);
+}
+function addTask() {
+  const anchor = selected ? taskById(selected) : null;
+  const phase = anchor ? anchor.phase : "need";
+  const phaseTasks = tasks.filter((t) => t.phase === phase);
+  const after = anchor && anchor.phase === phase ? anchor : phaseTasks[phaseTasks.length - 1];
+  const start = after ? addDays(after.end, 1) : parseDate("2026-11-02");
+  const phaseObj = PHASE_BY_ID[phase];
+  const t = {
+    id: `c${Date.now().toString(36)}`,
+    phase,
+    name: "新工作項目",
+    en: "New Process",
+    icon: phaseObj.icon,
+    note: "",
+    start,
+    end: addDays(start, 6)
+  };
+  clampTask(t, "end");
+  if (after) tasks.splice(tasks.indexOf(after) + 1, 0, t);
+  else tasks.push(t);
+  selected = t.id;
+  save();
+  renderAll();
+  revealTask(t);
+  nameInput.focus();
+  nameInput.select();
+}
+function removeTask(id) {
+  const t = taskById(id);
+  if (!t) return;
+  const label = t.en ? `${t.name} / ${t.en}` : t.name;
+  if (!confirm(`刪除「${label}」？右邊的時間條會一併移除。`)) return;
+  const index = tasks.indexOf(t);
+  tasks.splice(index, 1);
+  if (selected === id) {
+    const neighbor = tasks[index] || tasks[index - 1] || null;
+    selected = neighbor ? neighbor.id : null;
+  }
+  save();
+  renderAll();
 }
 
 function applyDrag() {
@@ -1091,8 +1302,18 @@ function selectOnly(id) {
   updateInspector();
 }
 
+canvas.addEventListener("click", (e) => {
+  const del = e.target.closest("[data-del]");
+  if (del) {
+    e.preventDefault();
+    removeTask(del.dataset.del);
+    return;
+  }
+  if (e.target.closest("[data-add]")) addTask();
+});
 canvas.addEventListener("pointerdown", (e) => {
   if (e.button !== 0) return;
+  if (e.target.closest("[data-del], [data-add], button")) return;
   const handle = e.target.closest("[data-resize]");
   const bar = e.target.closest(".bar");
   const plot = e.target.closest(".plot");
@@ -1124,7 +1345,7 @@ canvas.addEventListener("pointerdown", (e) => {
 function paintDrag() {
   applyDrag();
   const t = taskById(drag.id);
-  if (expandRange() || !paintTask(t)) renderChart();
+  if (fitRange() || !paintTask(t)) renderChart();
   updateInspector();
   updateStats();
   chip.hidden = false;
@@ -1150,6 +1371,7 @@ window.addEventListener("keydown", (e) => {
     return;
   }
   if (!selected) return;
+  if (e.target.closest("input, select, textarea, button")) return;
   if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
   const row = e.target.closest ? e.target.closest("[data-id]") : null;
   if (!row) return;
@@ -1192,9 +1414,85 @@ function commitInput(which) {
   if (t.start < MIN_DATE) t.start = new Date(MIN_DATE);
   save();
   renderAll();
+  revealTask(t);
+}
+function commitDays() {
+  const t = selected ? taskById(selected) : null;
+  if (!t) return;
+  const n = Number(daysInput.value);
+  if (!Number.isInteger(n) || n < 1 || n > 900) return;
+  t.end = addDays(t.start, n - 1);
+  clampTask(t, "end");
+  save();
+  renderAll();
+  revealTask(t);
+}
+function paintNames(commit) {
+  const t = selected ? taskById(selected) : null;
+  if (!t) return;
+  const name = nameInput.value.trim();
+  const en = enInput.value.trim();
+  if (name) t.name = name;
+  else if (commit) t.name = "未命名";
+  t.en = en;
+  const row = canvas.querySelector(`[data-id="${t.id}"]`);
+  if (row) {
+    row.querySelector(".task-name").textContent = name || t.name;
+    row.querySelector(".task-en").textContent = t.en;
+  }
+  if (commit) {
+    nameInput.value = t.name;
+    enInput.value = t.en;
+  }
+  save();
 }
 startInput.addEventListener("change", () => commitInput("start"));
 endInput.addEventListener("change", () => commitInput("end"));
+daysInput.addEventListener("change", commitDays);
+nameInput.addEventListener("input", () => paintNames(false));
+enInput.addEventListener("input", () => paintNames(false));
+nameInput.addEventListener("change", () => paintNames(true));
+enInput.addEventListener("change", () => paintNames(true));
+phaseInput.addEventListener("change", () => {
+  const t = selected ? taskById(selected) : null;
+  if (!t || !PHASE_BY_ID[phaseInput.value]) return;
+  t.phase = phaseInput.value;
+  if (!DEFAULT_BY_ID[t.id]) t.icon = PHASE_BY_ID[t.phase].icon;
+  save();
+  renderAll();
+});
+contractDate.addEventListener("change", () => shiftTaskToStart(contractTask(), contractDate.value));
+liveDate.addEventListener("change", () => shiftTaskToStart(liveTask(), liveDate.value));
+document.getElementById("addTaskBtn").addEventListener("click", addTask);
+deleteBtn.addEventListener("click", () => { if (selected) removeTask(selected); });
+clientBtn.addEventListener("click", () => {
+  if (!clientBtn.isConnected) return;
+  const input = document.createElement("input");
+  input.className = "client-name-input";
+  input.value = clientName;
+  input.maxLength = 40;
+  input.setAttribute("aria-label", "客戶名稱");
+  clientBtn.replaceWith(input);
+  input.focus();
+  input.select();
+  let done = false;
+  const finish = (commit) => {
+    if (done) return;
+    done = true;
+    if (commit) {
+      const next = input.value.trim();
+      if (next) clientName = next;
+    }
+    if (input.isConnected) input.replaceWith(clientBtn);
+    paintClient();
+    save();
+  };
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); finish(true); }
+    else if (e.key === "Escape") { e.preventDefault(); finish(false); }
+  });
+  input.addEventListener("blur", () => finish(true));
+});
 
 document.getElementById("snapDay").addEventListener("click", () => { snap = "day"; save(); syncSnapButtons(); });
 document.getElementById("snapWeek").addEventListener("click", () => { snap = "week"; save(); syncSnapButtons(); });
@@ -1220,6 +1518,8 @@ document.getElementById("fitBtn").addEventListener("click", () => {
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (!confirm("還原成最初的計畫時間？你手動調整過的位置會清除。")) return;
   tasks = cloneTasks();
+  clientName = DEFAULT_CLIENT;
+  paintClient();
   range = { start: parseDate("2026-11-01"), end: parseDate("2027-06-30") };
   pxIsCustom = false;
   snap = "day";
@@ -1231,8 +1531,13 @@ document.getElementById("resetBtn").addEventListener("click", () => {
 });
 restoreBtn.addEventListener("click", () => {
   const t = selected ? taskById(selected) : null;
-  if (!t) return;
-  const def = DEFAULT_BY_ID[t.id];
+  const def = t && DEFAULT_BY_ID[t.id];
+  if (!def) return;
+  t.phase = def.phase;
+  t.name = def.name;
+  t.en = def.en;
+  t.icon = def.icon;
+  t.note = def.note;
   t.start = parseDate(def.start);
   t.end = parseDate(def.end);
   save();
@@ -1271,7 +1576,8 @@ window.addEventListener("resize", () => {
 function init() {
   document.documentElement.style.setProperty("--gutter", `${GUTTER}px`);
   const loaded = load();
-  expandRange();
+  paintClient();
+  fitRange();
   if (loaded && !pxIsCustom) fit();
   renderLegend();
   renderAll();
