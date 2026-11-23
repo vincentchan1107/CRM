@@ -545,8 +545,8 @@
   .bar, .ghost {
     position: absolute;
     top: 50%;
-    height: 30px;
-    margin-top: -15px;
+    height: 45px;
+    margin-top: -22.5px;
     border-radius: 999px;
     touch-action: none;
   }
@@ -558,15 +558,15 @@
   .bar::before, .bar::after {
     content: "";
     position: absolute;
-    top: 3px;
-    bottom: 3px;
-    width: 2px;
+    top: 4.5px;
+    bottom: 4.5px;
+    width: 3px;
     border-radius: 2px;
     background: rgba(255,255,255,.8);
     pointer-events: none;
   }
-  .bar::before { left: 8px; }
-  .bar::after { right: 20px; }
+  .bar::before { left: 12px; }
+  .bar::after { right: 30px; }
   .bar.is-short::before, .bar.is-short::after { display: none; }
   .bar.is-selected { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--c); }
   .ghost {
@@ -584,25 +584,26 @@
   }
   .handle.start { left: -8px; width: 16px; }
   .handle.end { right: -8px; width: 16px; }
-  .bar:not(.is-short) .handle.end { right: -16px; width: 36px; }
+  .bar:not(.is-short) .handle.end { right: -24px; width: 54px; }
   .cap {
     position: absolute;
-    width: 32px;
-    height: 32px;
-    right: -14px;
+    width: 48px;
+    height: 48px;
+    right: -21px;
     top: 50%;
-    margin-top: -16px;
+    margin-top: -24px;
     border-radius: 50%;
     background: #fff;
     color: var(--c);
-    border: 2px solid var(--c);
+    border: 3px solid var(--c);
     box-shadow: 0 3px 8px rgba(40, 50, 70, .12);
     display: grid;
     place-items: center;
     pointer-events: none;
     z-index: 2;
   }
-  .cap svg, .lg-icon svg { width: 15px; height: 15px; display: block; }
+  .cap svg { width: 22px; height: 22px; display: block; }
+  .lg-icon svg { width: 15px; height: 15px; display: block; }
   .legend {
     flex: none;
     background: #eef1f4;
@@ -2157,7 +2158,7 @@ function buildPoster() {
       const x = plotX + diffDays(range.start, t.start) * dayPx;
       const w = Math.max(dayPx, duration(t.start, t.end) * dayPx);
       ctx.fillStyle = phase.color;
-      posterRound(ctx, x, cursor + 13, Math.max(8, w), 22, 11);
+      posterRound(ctx, x, cursor + 7.5, Math.max(8, w), 33, 16.5);
       ctx.fill();
       cursor += rowH;
     }
