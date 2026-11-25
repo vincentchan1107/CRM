@@ -117,10 +117,19 @@
       left: 0;
       min-width: 190px;
       max-width: 240px;
-      box-shadow: 1px 0 0 #d5ddd8;
     }
     table.sheet th.col-company { z-index: 3; background: #217346; }
     table.sheet td.col-company { z-index: 1; font-weight: 700; }
+    table.sheet th.col-company::after,
+    table.sheet td.col-company::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: -1px;
+      left: 100%;
+      width: 28px;
+      background: inherit;
+    }
     .co-zh { display: block; font-weight: 600; color: var(--ink-soft); font-size: 12px; margin-top: 1px; }
     table.sheet td.col-note,
     table.sheet td.col-update { min-width: 200px; max-width: 280px; }
