@@ -221,6 +221,45 @@
       color: #fff;
       background: rgba(255, 255, 255, .18);
     }
+    .nav-pills a.nav-page {
+      border: 0;
+      background: transparent;
+      color: var(--ink-soft);
+      text-align: left;
+      padding: 11px 12px;
+      border-radius: 12px;
+      font-size: .84rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .nav-pills a.nav-page .nav-ico {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: #f3effc;
+      color: var(--muted);
+    }
+    .nav-pills a.nav-page .nav-ico svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .nav-pills a.nav-page .nav-label { overflow: hidden; text-overflow: ellipsis; }
+    .nav-pills a.nav-page:hover { background: var(--accent-soft); color: var(--ink); }
+    .nav-pills a.nav-page:hover .nav-ico { color: var(--accent); background: #fff; }
     .nav-group { display: flex; flex-direction: column; gap: 4px; }
     .nav-sub {
       display: none;
@@ -278,7 +317,13 @@
       width: 38px;
       height: 38px;
     }
-    .app-shell.sidebar-collapsed .nav-pills button .nav-label { display: none; }
+    .app-shell.sidebar-collapsed .nav-pills button .nav-label,
+    .app-shell.sidebar-collapsed .nav-pills a.nav-page .nav-label { display: none; }
+    .app-shell.sidebar-collapsed .nav-pills a.nav-page {
+      justify-content: center;
+      padding: 10px 8px;
+      gap: 0;
+    }
     .app-main {
       flex: 1;
       min-width: 0;
@@ -524,8 +569,10 @@
       }
       .app-shell.sidebar-collapsed .sidebar-brand img.logo-full { display: block; }
       .app-shell.sidebar-collapsed .sidebar-brand img.logo-mark { display: none; }
-      .app-shell.sidebar-collapsed .nav-pills button { justify-content: flex-start; padding: 10px 12px; }
-      .app-shell.sidebar-collapsed .nav-pills button .nav-label { display: inline; }
+      .app-shell.sidebar-collapsed .nav-pills button,
+      .app-shell.sidebar-collapsed .nav-pills a.nav-page { justify-content: flex-start; padding: 10px 12px; }
+      .app-shell.sidebar-collapsed .nav-pills button .nav-label,
+      .app-shell.sidebar-collapsed .nav-pills a.nav-page .nav-label { display: inline; }
       .sidebar-brand img.logo-full { width: 140px; }
       .topbar { display: flex; }
       .topbar-company { display: none; }
@@ -4159,6 +4206,7 @@
             <button type="button" data-view="cases" data-case-mode="list">列表</button>
           </div>
         </div>
+        <a class="nav-page" href="./ricoh-visited.html"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg></span><span class="nav-label">Ricoh 已拜訪</span></a>
         <button data-view="agenda"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></span><span class="nav-label">會議／跟進</span></button>
         <button data-view="potential"><span class="nav-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.9 7.2 18l.9-5.4L4.2 8.7l5.4-.8L12 3z"/></svg></span><span class="nav-label">Potential</span></button>
         <div class="nav-group" id="navMgmtGroup">
