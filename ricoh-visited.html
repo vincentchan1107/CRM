@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Ricoh 已拜訪 · Achiever CRM</title>
+  <link rel="icon" type="image/png" href="./images/achiever-icon.png?v=2" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --ink: #1a1630;
+      --ink-soft: #5a5470;
+      --muted: #9a93ad;
+      --paper: #f6f3fb;
+      --panel: #ffffff;
+      --line: #ebe6f4;
+      --accent: #6b46fe;
+      --accent-soft: #efeaff;
+      --success: #27c281;
+      --success-soft: #e8faf2;
+      --amber: #d97706;
+      --amber-soft: #fff4e5;
+      --rose: #e11d48;
+      --rose-soft: #ffe4e6;
+      --sky: #2563eb;
+      --shadow: 0 14px 36px rgba(80, 55, 160, 0.08);
+      --radius: 20px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "IBM Plex Sans", "Noto Sans TC", sans-serif;
+      background:
+        radial-gradient(900px 520px at 8% -10%, rgba(167, 139, 250, .42), transparent 60%),
+        radial-gradient(820px 480px at 92% 4%, rgba(251, 182, 206, .38), transparent 58%),
+        linear-gradient(165deg, #fbf8ff 0%, #f4f0fb 48%, #eef4ff 100%);
+      min-height: 100vh;
+    }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 22px 18px 48px; }
+    header.top {
+      display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand img { height: 42px; width: auto; }
+    h1 { margin: 0; font-size: 1.55rem; letter-spacing: -.02em; }
+    .sub { margin: 4px 0 0; color: var(--ink-soft); font-size: .88rem; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .btn {
+      border: 1px solid var(--line); background: #fff; border-radius: 12px;
+      padding: 10px 14px; font-weight: 650; font-size: .86rem;
+    }
+    .btn:hover { border-color: #d9d0f0; }
+    .btn-accent { background: var(--accent); color: #fff; border-color: transparent; box-shadow: 0 10px 22px rgba(107, 70, 254, .28); }
+    .btn-accent:hover { filter: brightness(1.05); }
+    .btn-ghost { background: transparent; }
+    .search {
+      border: 1px solid var(--line); background: #fff; border-radius: 12px;
+      padding: 10px 12px; min-width: min(240px, 70vw);
+    }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+    .stat {
+      background: rgba(255,255,255,.86); border: 1px solid rgba(255,255,255,.8);
+      border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); text-align: left;
+    }
+    .stat b { display: block; font-size: 1.45rem; line-height: 1.1; }
+    .stat span { color: var(--ink-soft); font-size: .78rem; font-weight: 650; }
+    .stat.active { outline: 2px solid var(--accent); }
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .chip {
+      border: 1px solid var(--line); background: #fff; border-radius: 999px;
+      padding: 7px 12px; font-size: .8rem; font-weight: 700; color: var(--ink-soft);
+    }
+    .chip.on { background: var(--accent); color: #fff; border-color: transparent; }
+    .list { display: flex; flex-direction: column; gap: 10px; }
+    .card {
+      background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,.7); overflow: hidden;
+    }
+    .card.new { box-shadow: 0 0 0 2px #c4b5fd, var(--shadow); }
+    .card-main { padding: 14px 16px 12px; }
+    .card-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+    .name { font-size: 1.05rem; font-weight: 750; line-height: 1.25; }
+    .name-zh { display: block; font-size: .82rem; font-weight: 600; color: var(--ink-soft); margin-top: 2px; }
+    .pills { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .pill { border-radius: 999px; padding: 4px 9px; font-size: .72rem; font-weight: 750; white-space: nowrap; }
+    .pill.follow { background: var(--success-soft); color: #0f9f62; }
+    .pill.hold { background: #f1f5f9; color: #64748b; }
+    .pill.won { background: #d1fae5; color: #047857; }
+    .pill.closed { background: #eef1f6; color: #64748b; }
+    .pill.fresh { background: var(--accent-soft); color: var(--accent); }
+    .pill.late { background: var(--rose-soft); color: var(--rose); }
+    .pill.stage { background: #eef2ff; color: #4338ca; }
+    .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 8px 0 10px; color: var(--ink-soft); font-size: .8rem; }
+    .lines { display: grid; gap: 6px; }
+    .line {
+      background: var(--paper); border-radius: 12px; padding: 8px 10px; font-size: .86rem; line-height: 1.45;
+    }
+    .line em { font-style: normal; font-weight: 750; color: var(--ink-soft); margin-right: 6px; font-size: .75rem; }
+    .line em::after { content: "："; }
+    .card-tools { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+    .card-tools button { padding: 7px 10px; font-size: .78rem; }
+    .detail { display: none; border-top: 1px solid var(--line); padding: 12px 16px 16px; background: #fcfbff; }
+    .card.open .detail { display: block; }
+    .timeline { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 12px; }
+    .log {
+      background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; font-size: .82rem;
+    }
+    .log time { display: block; color: var(--muted); font-size: .72rem; margin-bottom: 3px; }
+    .edit { display: grid; grid-template-columns: 160px 180px 1fr auto; gap: 8px; align-items: end; margin-bottom: 12px; }
+    label.fld { display: flex; flex-direction: column; gap: 4px; font-size: .75rem; font-weight: 700; color: var(--ink-soft); }
+    label.fld input, label.fld select, label.fld textarea, .modal input, .modal select, .modal textarea {
+      border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: #fff; width: 100%;
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    .empty, .banner {
+      background: #fff; border-radius: 16px; padding: 28px 16px; text-align: center; color: var(--ink-soft);
+      box-shadow: var(--shadow);
+    }
+    .banner.err { color: var(--rose); }
+    .mask {
+      position: fixed; inset: 0; background: rgba(26, 22, 48, .38);
+      display: none; align-items: center; justify-content: center; padding: 18px; z-index: 20;
+    }
+    .mask.show { display: flex; }
+    .modal {
+      width: min(560px, 100%); background: #fff; border-radius: 20px; padding: 18px;
+      box-shadow: 0 24px 60px rgba(26, 22, 48, .22); max-height: min(92vh, 760px); overflow: auto;
+    }
+    .modal h2 { margin: 0 0 12px; font-size: 1.15rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid .full { grid-column: 1 / -1; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+    .contacts { margin-top: 6px; color: var(--ink-soft); font-size: .8rem; }
+    @media (max-width: 800px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+      .edit { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+      .grid .full { grid-column: auto; }
+      .brand { flex-direction: column; align-items: flex-start; gap: 8px; }
+      h1 { font-size: 1.4rem; }
+    }
+    @media print {
+      body { background: #fff; }
+      .actions, .filters, .card-tools, .detail, .mask { display: none !important; }
+      .card { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <a href="./index.html" title="返回 Case Management"><img src="./images/achiever-logo.png?v=2" alt="Achiever" /></a>
+        <div>
+          <h1>Ricoh 已拜訪</h1>
+          <p class="sub">跟 Case Management 同一套資料。睇到可唔可以跟進、有無新更新、更新咗咩。</p>
+        </div>
+      </div>
+      <div class="actions">
+        <input id="q" class="search" type="search" placeholder="搜尋公司、銷售、情況" />
+        <a class="btn" href="./index.html">Case Management</a>
+        <button type="button" class="btn btn-accent" id="btnAdd">＋ 新增 Case</button>
+      </div>
+    </header>
+    <div class="stats" id="stats"></div>
+    <div class="filters" id="filters"></div>
+    <div id="list" class="list"></div>
+  </div>
+
+  <div class="mask" id="mask">
+    <form class="modal" id="addForm">
+      <h2>新增已拜訪 Case</h2>
+      <div class="grid">
+        <label class="fld full">公司
+          <input name="customer" required placeholder="公司名稱" />
+        </label>
+        <label class="fld">聯絡人
+          <input name="contact" placeholder="姓名" />
+        </label>
+        <label class="fld">電話
+          <input name="phone" placeholder="手提" />
+        </label>
+        <label class="fld">本公司銷售
+          <select name="sales">
+            <option value="">未指派</option>
+            <option>Vincent</option>
+            <option>Tim</option>
+            <option>Andrew</option>
+            <option>Kelly</option>
+            <option>Sophia</option>
+          </select>
+        </label>
+        <label class="fld">Ricoh Sales
+          <input name="ricohSales" placeholder="Partner Sales" />
+        </label>
+        <label class="fld">拜訪日期
+          <input name="visited" type="date" />
+        </label>
+        <label class="fld">下次跟進
+          <input name="next" type="date" />
+        </label>
+        <label class="fld full">可唔可以跟進
+          <select name="follow">
+            <option value="yes">可跟進</option>
+            <option value="no">暫不跟進</option>
+          </select>
+        </label>
+        <label class="fld full">情況
+          <textarea name="note" placeholder="今次拜訪見到咩、下一步"></textarea>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="btnCancel">取消</button>
+        <button type="submit" class="btn btn-accent">儲存</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://xdjzkcqhwamfajsjyclq.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkanprY3Fod2FtZmFqc2p5Y2xxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMTMzNjksImV4cCI6MjA5Mjc4OTM2OX0.-jQ0kcFD5CYWejJsg54BWogvr_upKwKWeDSaungnAo8";
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const NEW_MS = 14 * 24 * 60 * 60 * 1000;
+    const SEEN_KEY = "ricoh_visited_seen_v1";
+    const STAGES = {
+      new_lead: "新客", contacting: "聯絡", unreachable: "失聯", appointment_set: "已約",
+      first_interview: "已會面", quotation: "報價", follow_up: "跟進", final_stage: "最終",
+      confirmation: "確認", closed: "關閉",
+    };
+
+    let cases = [];
+    let logsBy = {};
+    let contactsBy = {};
+    let filter = "all";
+    let openId = "";
+
+    const $ = (id) => document.getElementById(id);
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    function seenMap() {
+      try { return JSON.parse(localStorage.getItem(SEEN_KEY) || "{}"); } catch (_) { return {}; }
+    }
+    function markSeen(id, iso) {
+      const map = seenMap();
+      map[id] = iso || new Date().toISOString();
+      localStorage.setItem(SEEN_KEY, JSON.stringify(map));
+    }
+    function companyParts(name) {
+      const lines = String(name || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+      return { en: lines[0] || "未命名", zh: lines.slice(1).join(" ") };
+    }
+    function parseTime(v) {
+      if (!v) return null;
+      const d = new Date(v);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    function fmtDate(v) {
+      if (!v) return "—";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+        const [y, m, d] = v.split("-");
+        return `${Number(d)}/${Number(m)}/${y}`;
+      }
+      const d = parseTime(v);
+      if (!d) return "—";
+      return new Intl.DateTimeFormat("zh-HK", { day: "numeric", month: "numeric", year: "numeric", timeZone: "Asia/Hong_Kong" }).format(d);
+    }
+    function fmtWhen(v) {
+      const d = parseTime(v);
+      if (!d) return "—";
+      return new Intl.DateTimeFormat("zh-HK", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Hong_Kong" }).format(d);
+    }
+    function todayISO() {
+      return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong" }).format(new Date());
+    }
+    function statusOf(c) {
+      if (c.stage === "confirmation" || c.close_reason === "won") return "won";
+      if (c.stage === "closed") return "closed";
+      if (c.follow_up_opportunity) return "follow";
+      return "hold";
+    }
+    const STATUS_LABEL = { follow: "可跟進", hold: "暫不跟進", won: "已簽單", closed: "已完結" };
+    function latestLog(c) {
+      return (logsBy[c.id] || [])[0] || null;
+    }
+    function activityAt(c) {
+      const log = latestLog(c);
+      return parseTime(log?.created_at || log?.happened_at) || parseTime(c.updated_at);
+    }
+    function isFresh(c) {
+      const at = activityAt(c);
+      if (!at) return false;
+      const created = parseTime(c.created_at);
+      if (created && Math.abs(at - created) < 60 * 1000 && !latestLog(c)) return false;
+      if (Date.now() - at.getTime() > NEW_MS) return false;
+      const seen = seenMap()[c.id];
+      if (seen && parseTime(seen) && parseTime(seen) >= at) return false;
+      return true;
+    }
+    function isLate(c) {
+      if (statusOf(c) !== "follow" || !c.next_follow_up_at) return false;
+      return c.next_follow_up_at < todayISO();
+    }
+    function changeText(content) {
+      const lines = String(content || "").split("\n").map((s) => s.replace(/^·\s*/, "").trim()).filter(Boolean);
+      const changes = lines.filter((s) => s.includes("→"));
+      const notes = lines.filter((s) => !s.startsWith("[") && !s.includes("→"));
+      const picked = changes.slice(0, 2);
+      if (notes.length) picked.push(notes[notes.length - 1]);
+      return (picked.length ? picked : ["有更新"]).slice(0, 3).join(" · ");
+    }
+    function situation(c) {
+      return String(c.meeting_notes || "").trim() || String(c.requirements || "").trim() || "未寫情況";
+    }
+
+    function filtered() {
+      const q = $("q").value.trim().toLowerCase();
+      return cases.filter((c) => {
+        const st = statusOf(c);
+        if (filter === "follow" && st !== "follow") return false;
+        if (filter === "hold" && st !== "hold") return false;
+        if (filter === "done" && st !== "won" && st !== "closed") return false;
+        if (filter === "fresh" && !isFresh(c)) return false;
+        if (!q) return true;
+        const blob = [
+          c.customer_name, c.company_sales, c.ricoh_sales, c.meeting_notes, c.requirements,
+          ...(contactsBy[c.id] || []).map((p) => `${p.name} ${p.mobile}`),
+        ].join(" ").toLowerCase();
+        return blob.includes(q);
+      }).sort((a, b) => {
+        const score = (c) => (isFresh(c) ? 4 : 0) + (isLate(c) ? 2 : 0) + (statusOf(c) === "follow" ? 1 : 0);
+        const d = score(b) - score(a);
+        if (d) return d;
+        return (activityAt(b)?.getTime() || 0) - (activityAt(a)?.getTime() || 0);
+      });
+    }
+
+    function renderStats() {
+      const items = [
+        ["all", "全部", cases.length],
+        ["follow", "可跟進", cases.filter((c) => statusOf(c) === "follow").length],
+        ["fresh", "有新更新", cases.filter(isFresh).length],
+        ["hold", "暫不跟進", cases.filter((c) => statusOf(c) === "hold").length],
+      ];
+      $("stats").innerHTML = items.map(([id, label, n]) =>
+        `<button type="button" class="stat ${filter === id ? "active" : ""}" data-filter="${id}"><b>${n}</b><span>${label}</span></button>`
+      ).join("");
+      const chips = [
+        ["all", "全部"], ["follow", "可跟進"], ["fresh", "有新更新"], ["hold", "暫不跟進"], ["done", "已簽單／完結"],
+      ];
+      $("filters").innerHTML = chips.map(([id, label]) =>
+        `<button type="button" class="chip ${filter === id ? "on" : ""}" data-filter="${id}">${label}</button>`
+      ).join("");
+    }
+
+    function contactLine(c) {
+      const people = contactsBy[c.id] || [];
+      if (!people.length) return "";
+      return `<div class="contacts">${people.map((p) => esc([p.name, p.title, p.mobile].filter(Boolean).join(" · "))).join("<br>")}</div>`;
+    }
+
+    function logHtml(c) {
+      const logs = logsBy[c.id] || [];
+      if (!logs.length) return `<div class="log">未有更新紀錄</div>`;
+      return logs.slice(0, 8).map((l) =>
+        `<div class="log"><time>${esc(fmtWhen(l.created_at || l.happened_at))}</time>${esc(l.content || "").replaceAll("\n", "<br>")}</div>`
+      ).join("");
+    }
+
+    function render() {
+      renderStats();
+      const rows = filtered();
+      if (!cases.length) {
+        $("list").innerHTML = `<div class="empty">未有已拜訪的 Ricoh case。撳「新增 Case」加第一個。</div>`;
+        return;
+      }
+      if (!rows.length) {
+        $("list").innerHTML = `<div class="empty">呢個篩選下面沒有 case。</div>`;
+        return;
+      }
+      $("list").innerHTML = rows.map((c) => {
+        const name = companyParts(c.customer_name);
+        const st = statusOf(c);
+        const fresh = isFresh(c);
+        const late = isLate(c);
+        const log = latestLog(c);
+        const open = openId === c.id;
+        const updateLine = log
+          ? `${fmtWhen(log.created_at || log.happened_at)} · ${changeText(log.content)}`
+          : "未有新更新";
+        return `<article class="card ${fresh ? "new" : ""} ${open ? "open" : ""}" data-id="${esc(c.id)}">
+          <div class="card-main">
+            <div class="card-head">
+              <div>
+                <div class="name">${esc(name.en)}${name.zh ? `<span class="name-zh">${esc(name.zh)}</span>` : ""}</div>
+              </div>
+              <div class="pills">
+                <span class="pill ${st}">${STATUS_LABEL[st]}</span>
+                ${fresh ? `<span class="pill fresh">新更新</span>` : ""}
+                ${late ? `<span class="pill late">跟進已過期</span>` : ""}
+                <span class="pill stage">階段 ${esc(STAGES[c.stage] || c.stage || "")}</span>
+              </div>
+            </div>
+            <div class="meta">
+              <span>銷售 ${esc(c.company_sales || "—")}</span>
+              <span>Ricoh ${esc(c.ricoh_sales || "—")}</span>
+              <span>拜訪 ${esc(c.appointment_at ? fmtDate(c.appointment_at) : "未記")}</span>
+              <span>下次 ${esc(fmtDate(c.next_follow_up_at))}</span>
+              ${Number(c.amount) ? `<span>金額 HK$${Number(c.amount).toLocaleString("en-HK")}</span>` : ""}
+            </div>
+            ${contactLine(c)}
+            <div class="lines">
+              <div class="line"><em>情況</em>${esc(situation(c))}</div>
+              <div class="line"><em>更新了什麼</em>${esc(updateLine)}</div>
+            </div>
+            <div class="card-tools">
+              <button type="button" class="btn" data-toggle="${esc(c.id)}">${open ? "收起" : "跟進／睇晒更新"}</button>
+            </div>
+          </div>
+          <div class="detail">
+            <form class="edit" data-save="${esc(c.id)}">
+              <label class="fld">跟進
+                <select name="status">
+                  <option value="follow" ${st === "follow" ? "selected" : ""}>可跟進</option>
+                  <option value="hold" ${st === "hold" ? "selected" : ""}>暫不跟進</option>
+                  <option value="won" ${st === "won" ? "selected" : ""}>已簽單</option>
+                  <option value="closed" ${st === "closed" ? "selected" : ""}>已完結</option>
+                </select>
+              </label>
+              <label class="fld">下次跟進
+                <input name="next" type="date" value="${esc(c.next_follow_up_at || "")}" />
+              </label>
+              <label class="fld">今次更新
+                <input name="note" placeholder="寫低更新了什麼" />
+              </label>
+              <button class="btn btn-accent" type="submit">儲存</button>
+            </form>
+            <div class="timeline">${logHtml(c)}</div>
+          </div>
+        </article>`;
+      }).join("");
+    }
+
+    async function load() {
+      $("list").innerHTML = `<div class="empty">載入中…</div>`;
+      const { data, error } = await db.from("crm_cases").select("*").eq("meeting_done", true)
+        .or("partner.ilike.%ricoh%,source_event.ilike.%Ricoh%");
+      if (error) {
+        $("list").innerHTML = `<div class="banner err">讀取失敗：${esc(error.message)}</div>`;
+        return;
+      }
+      cases = data || [];
+      logsBy = {};
+      contactsBy = {};
+      const ids = cases.map((c) => c.id);
+      if (ids.length) {
+        const [logsRes, contactsRes] = await Promise.all([
+          db.from("crm_activity_logs").select("id,case_id,log_type,content,happened_at,created_at").in("case_id", ids).order("created_at", { ascending: false }),
+          db.from("crm_contacts").select("id,case_id,name,title,mobile,email").in("case_id", ids),
+        ]);
+        if (logsRes.error) {
+          $("list").innerHTML = `<div class="banner err">讀取更新失敗：${esc(logsRes.error.message)}</div>`;
+          return;
+        }
+        for (const log of logsRes.data || []) (logsBy[log.case_id] ||= []).push(log);
+        for (const person of (contactsRes.data || [])) (contactsBy[person.case_id] ||= []).push(person);
+      }
+      render();
+    }
+
+    function patchForStatus(c, status, next) {
+      const patch = {
+        follow_up_opportunity: status === "follow",
+        next_follow_up_at: next || null,
+        updated_at: new Date().toISOString(),
+      };
+      if (status === "follow") {
+        patch.close_reason = null;
+        if (["closed", "confirmation", "new_lead", "contacting", "unreachable", "appointment_set", "first_interview"].includes(c.stage)) {
+          patch.stage = "follow_up";
+        }
+      } else if (status === "hold") {
+        if (c.stage === "closed" || c.stage === "confirmation") {
+          patch.stage = "first_interview";
+          patch.close_reason = null;
+        }
+      } else if (status === "won") {
+        patch.stage = "confirmation";
+        patch.close_reason = "won";
+        patch.follow_up_opportunity = false;
+      } else if (status === "closed") {
+        patch.stage = "closed";
+        patch.close_reason = c.close_reason === "won" ? "won" : "failed";
+        patch.follow_up_opportunity = false;
+      }
+      return patch;
+    }
+
+    document.body.addEventListener("click", (e) => {
+      const stat = e.target.closest("[data-filter]");
+      if (stat) {
+        filter = stat.dataset.filter;
+        render();
+        return;
+      }
+      const toggle = e.target.closest("[data-toggle]");
+      if (toggle) {
+        const id = toggle.dataset.toggle;
+        openId = openId === id ? "" : id;
+        if (openId) {
+          const c = cases.find((x) => x.id === id);
+          const at = activityAt(c);
+          markSeen(id, at ? at.toISOString() : new Date().toISOString());
+        }
+        render();
+      }
+    });
+    $("q").addEventListener("input", () => render());
+
+    document.body.addEventListener("submit", async (e) => {
+      const form = e.target.closest("[data-save]");
+      if (!form) return;
+      e.preventDefault();
+      const id = form.dataset.save;
+      const c = cases.find((x) => x.id === id);
+      if (!c) return;
+      const status = form.status.value;
+      const next = form.next.value;
+      const note = form.note.value.trim();
+      const before = STATUS_LABEL[statusOf(c)];
+      const patch = patchForStatus(c, status, next);
+      const btn = form.querySelector("button");
+      btn.disabled = true;
+      const { error } = await db.from("crm_cases").update(patch).eq("id", id);
+      if (error) {
+        btn.disabled = false;
+        alert("儲存失敗：" + error.message);
+        return;
+      }
+      const bits = [];
+      const after = STATUS_LABEL[status];
+      if (before !== after) bits.push(`跟進: ${before} → ${after}`);
+      if ((c.next_follow_up_at || "") !== (next || "")) bits.push(`下次跟進: ${fmtDate(c.next_follow_up_at)} → ${fmtDate(next)}`);
+      if (note) bits.push(note);
+      if (bits.length) {
+        const { error: logErr } = await db.from("crm_activity_logs").insert({
+          id: `log-${crypto.randomUUID().slice(0, 10)}`,
+          case_id: id,
+          log_type: note ? "follow_up" : "field_change",
+          content: `[變更] Ricoh 已拜訪\n${bits.map((b) => "· " + b).join("\n")}`,
+          happened_at: new Date().toISOString(),
+        });
+        if (logErr) alert("Case 已儲存，但更新紀錄寫入失敗：" + logErr.message);
+      }
+      openId = id;
+      await load();
+    });
+
+    $("btnAdd").onclick = () => {
+      $("addForm").reset();
+      $("addForm").visited.value = todayISO();
+      $("mask").classList.add("show");
+      $("addForm").customer.focus();
+    };
+    $("btnCancel").onclick = () => $("mask").classList.remove("show");
+    $("mask").addEventListener("click", (e) => { if (e.target === $("mask")) $("mask").classList.remove("show"); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("mask").classList.remove("show"); });
+
+    $("addForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const customer = f.customer.value.trim();
+      if (!customer) return;
+      const follow = f.follow.value === "yes";
+      const id = `visit-${crypto.randomUUID().slice(0, 8)}`;
+      const visited = f.visited.value;
+      const note = f.note.value.trim();
+      const row = {
+        id,
+        customer_name: customer,
+        partner: "RICOH",
+        systems: [],
+        requirements: "",
+        quantity: "",
+        budget: 0,
+        amount: 0,
+        success_rate: follow ? 40 : 20,
+        stage: follow ? "follow_up" : "first_interview",
+        close_reason: null,
+        notes: "Source: Ricoh Visited",
+        ricoh_house: "",
+        ricoh_sales: f.ricohSales.value.trim(),
+        ricoh_consultant: "",
+        appointment_flag: true,
+        appointment_at: visited ? `${visited}T00:00:00+08:00` : null,
+        appointment_confirmed: true,
+        meeting_done: true,
+        meeting_notes: note,
+        follow_up_opportunity: follow,
+        next_follow_up_at: f.next.value || null,
+        lead_status: "Processing",
+        source_event: "Ricoh Visited",
+        team_leader: "",
+        company_sales: f.sales.value,
+        customer_address: "",
+        potential: "",
+        dq_reason: "",
+        updated_at: new Date().toISOString(),
+      };
+      const btn = f.querySelector("button[type=submit]");
+      btn.disabled = true;
+      const { error } = await db.from("crm_cases").insert(row);
+      if (error) {
+        btn.disabled = false;
+        alert("建立失敗：" + error.message);
+        return;
+      }
+      const contact = f.contact.value.trim();
+      const phone = f.phone.value.trim();
+      if (contact || phone) {
+        await db.from("crm_contacts").insert({
+          id: `ct-${crypto.randomUUID().slice(0, 10)}`,
+          case_id: id,
+          name: contact || customer,
+          title: "",
+          tel: "",
+          fax: "",
+          mobile: phone,
+          email: "",
+        });
+      }
+      await db.from("crm_activity_logs").insert({
+        id: `log-${crypto.randomUUID().slice(0, 10)}`,
+        case_id: id,
+        log_type: "meeting_done",
+        content: note || `已拜訪${visited ? " · " + fmtDate(visited) : ""}`,
+        happened_at: visited ? `${visited}T00:00:00+08:00` : new Date().toISOString(),
+      });
+      $("mask").classList.remove("show");
+      btn.disabled = false;
+      filter = "all";
+      openId = id;
+      await load();
+    };
+
+    load();
+  </script>
+</body>
+</html>
