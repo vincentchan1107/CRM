@@ -43,7 +43,7 @@
     button, input, select, textarea { font: inherit; color: inherit; }
     button { cursor: pointer; }
     a { color: inherit; }
-    .wrap { max-width: 1080px; margin: 0 auto; padding: 22px 18px 48px; }
+    .wrap { max-width: none; margin: 0 auto; padding: 16px 16px 28px; }
     header.top {
       display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap;
       margin-bottom: 18px;
@@ -65,50 +65,73 @@
       border: 1px solid var(--line); background: #fff; border-radius: 12px;
       padding: 10px 12px; min-width: min(240px, 70vw);
     }
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
-    .stat {
-      background: rgba(255,255,255,.86); border: 1px solid rgba(255,255,255,.8);
-      border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); text-align: left;
-    }
-    .stat b { display: block; font-size: 1.45rem; line-height: 1.1; }
-    .stat span { color: var(--ink-soft); font-size: .78rem; font-weight: 650; }
-    .stat.active { outline: 2px solid var(--accent); }
-    .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
     .chip {
       border: 1px solid var(--line); background: #fff; border-radius: 999px;
       padding: 7px 12px; font-size: .8rem; font-weight: 700; color: var(--ink-soft);
     }
     .chip.on { background: var(--accent); color: #fff; border-color: transparent; }
-    .list { display: flex; flex-direction: column; gap: 10px; }
-    .card {
-      background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow);
-      border: 1px solid rgba(255,255,255,.7); overflow: hidden;
+    .sheet-wrap {
+      overflow: auto;
+      max-height: calc(100vh - 168px);
+      background: #fff;
+      border: 1px solid #b7c3bc;
+      box-shadow: var(--shadow);
     }
-    .card.new { box-shadow: 0 0 0 2px #c4b5fd, var(--shadow); }
-    .card-main { padding: 14px 16px 12px; }
-    .card-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
-    .name { font-size: 1.05rem; font-weight: 750; line-height: 1.25; }
-    .name-zh { display: block; font-size: .82rem; font-weight: 600; color: var(--ink-soft); margin-top: 2px; }
-    .pills { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-    .pill { border-radius: 999px; padding: 4px 9px; font-size: .72rem; font-weight: 750; white-space: nowrap; }
-    .pill.follow { background: var(--success-soft); color: #0f9f62; }
-    .pill.hold { background: #f1f5f9; color: #64748b; }
-    .pill.won { background: #d1fae5; color: #047857; }
-    .pill.closed { background: #eef1f6; color: #64748b; }
-    .pill.fresh { background: var(--accent-soft); color: var(--accent); }
-    .pill.late { background: var(--rose-soft); color: var(--rose); }
-    .pill.stage { background: #eef2ff; color: #4338ca; }
-    .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 8px 0 10px; color: var(--ink-soft); font-size: .8rem; }
-    .lines { display: grid; gap: 6px; }
-    .line {
-      background: var(--paper); border-radius: 12px; padding: 8px 10px; font-size: .86rem; line-height: 1.45;
+    table.sheet {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+      min-width: 1380px;
+      font-size: 13px;
+      line-height: 1.35;
     }
-    .line em { font-style: normal; font-weight: 750; color: var(--ink-soft); margin-right: 6px; font-size: .75rem; }
-    .line em::after { content: "："; }
-    .card-tools { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
-    .card-tools button { padding: 7px 10px; font-size: .78rem; }
-    .detail { display: none; border-top: 1px solid var(--line); padding: 12px 16px 16px; background: #fcfbff; }
-    .card.open .detail { display: block; }
+    table.sheet th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #217346;
+      color: #fff;
+      font-weight: 700;
+      text-align: left;
+      padding: 8px 10px;
+      border-right: 1px solid #1a5c38;
+      border-bottom: 1px solid #1a5c38;
+      white-space: nowrap;
+    }
+    table.sheet td {
+      padding: 7px 10px;
+      border-right: 1px solid #e1e5ea;
+      border-bottom: 1px solid #e1e5ea;
+      vertical-align: top;
+      background: #fff;
+    }
+    table.sheet tr.data { cursor: pointer; }
+    table.sheet tr.data.band td { background: #f4f8f5; }
+    table.sheet tr.data:hover td { background: #e7f3ec; }
+    table.sheet tr.data.is-open td { background: #e3f3e9; }
+    table.sheet .col-no { width: 36px; text-align: right; color: #6b7280; font-variant-numeric: tabular-nums; }
+    table.sheet th.col-company,
+    table.sheet td.col-company {
+      position: sticky;
+      left: 0;
+      min-width: 190px;
+      max-width: 240px;
+      box-shadow: 1px 0 0 #d5ddd8;
+    }
+    table.sheet th.col-company { z-index: 3; background: #217346; }
+    table.sheet td.col-company { z-index: 1; font-weight: 700; }
+    .co-zh { display: block; font-weight: 600; color: var(--ink-soft); font-size: 12px; margin-top: 1px; }
+    table.sheet td.col-note,
+    table.sheet td.col-update { min-width: 200px; max-width: 280px; }
+    table.sheet td.follow { background: #c6efce !important; color: #006100; font-weight: 750; white-space: nowrap; }
+    table.sheet td.hold { background: #f2f2f2 !important; color: #595959; font-weight: 750; white-space: nowrap; }
+    table.sheet td.won { background: #c6efce !important; color: #006100; font-weight: 750; white-space: nowrap; }
+    table.sheet td.closed { background: #f2f2f2 !important; color: #595959; font-weight: 750; white-space: nowrap; }
+    table.sheet td.col-next.late { color: #c00000; font-weight: 750; }
+    table.sheet td.col-new.yes { background: #fff2cc !important; color: #7a5800; font-weight: 750; white-space: nowrap; }
+    table.sheet tr.detail-row td { background: #fbfbfb; cursor: default; padding: 12px 14px; }
+    .who { color: var(--ink-soft); font-size: 12px; }
     .timeline { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 12px; }
     .log {
       background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; font-size: .82rem;
@@ -140,7 +163,7 @@
     .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
     .contacts { margin-top: 6px; color: var(--ink-soft); font-size: .8rem; }
     @media (max-width: 800px) {
-      .stats { grid-template-columns: 1fr 1fr; }
+      .sheet-wrap { max-height: calc(100vh - 220px); }
       .edit { grid-template-columns: 1fr; }
       .grid { grid-template-columns: 1fr; }
       .grid .full { grid-column: auto; }
@@ -149,8 +172,8 @@
     }
     @media print {
       body { background: #fff; }
-      .actions, .filters, .card-tools, .detail, .mask { display: none !important; }
-      .card { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
+      .actions, .filters, .mask, tr.detail-row { display: none !important; }
+      .sheet-wrap { overflow: visible; max-height: none; box-shadow: none; }
     }
   </style>
 </head>
@@ -161,7 +184,7 @@
         <a href="./index.html" title="返回 Case Management"><img src="./images/achiever-logo.png?v=2" alt="Achiever" /></a>
         <div>
           <h1>Ricoh 已拜訪</h1>
-          <p class="sub">跟 Case Management 同一套資料。睇到可唔可以跟進、有無新更新、更新咗咩。</p>
+          <p class="sub">一行一個 case。跟進、情況、更新咗咩都喺同一行。撳一行就可以寫更新。</p>
         </div>
       </div>
       <div class="actions">
@@ -170,9 +193,8 @@
         <button type="button" class="btn btn-accent" id="btnAdd">＋ 新增 Case</button>
       </div>
     </header>
-    <div class="stats" id="stats"></div>
     <div class="filters" id="filters"></div>
-    <div id="list" class="list"></div>
+    <div id="list"></div>
   </div>
 
   <div class="mask" id="mask">
@@ -344,27 +366,27 @@
     }
 
     function renderStats() {
-      const items = [
+      const chips = [
         ["all", "全部", cases.length],
         ["follow", "可跟進", cases.filter((c) => statusOf(c) === "follow").length],
         ["fresh", "有新更新", cases.filter(isFresh).length],
         ["hold", "暫不跟進", cases.filter((c) => statusOf(c) === "hold").length],
+        ["done", "已簽單／完結", cases.filter((c) => { const s = statusOf(c); return s === "won" || s === "closed"; }).length],
       ];
-      $("stats").innerHTML = items.map(([id, label, n]) =>
-        `<button type="button" class="stat ${filter === id ? "active" : ""}" data-filter="${id}"><b>${n}</b><span>${label}</span></button>`
-      ).join("");
-      const chips = [
-        ["all", "全部"], ["follow", "可跟進"], ["fresh", "有新更新"], ["hold", "暫不跟進"], ["done", "已簽單／完結"],
-      ];
-      $("filters").innerHTML = chips.map(([id, label]) =>
-        `<button type="button" class="chip ${filter === id ? "on" : ""}" data-filter="${id}">${label}</button>`
+      $("filters").innerHTML = chips.map(([id, label, n]) =>
+        `<button type="button" class="chip ${filter === id ? "on" : ""}" data-filter="${id}">${label} ${n}</button>`
       ).join("");
     }
 
-    function contactLine(c) {
+    function contactCell(c) {
       const people = contactsBy[c.id] || [];
-      if (!people.length) return "";
-      return `<div class="contacts">${people.map((p) => esc([p.name, p.title, p.mobile].filter(Boolean).join(" · "))).join("<br>")}</div>`;
+      if (!people.length) return "—";
+      return people.map((p) => esc([p.name, p.mobile].filter(Boolean).join(" "))).join("<br>");
+    }
+
+    function money(n) {
+      const v = Number(n) || 0;
+      return v ? "HK$" + v.toLocaleString("en-HK") : "—";
     }
 
     function logHtml(c) {
@@ -386,46 +408,30 @@
         $("list").innerHTML = `<div class="empty">呢個篩選下面沒有 case。</div>`;
         return;
       }
-      $("list").innerHTML = rows.map((c) => {
+      const body = rows.map((c, i) => {
         const name = companyParts(c.customer_name);
         const st = statusOf(c);
         const fresh = isFresh(c);
         const late = isLate(c);
         const log = latestLog(c);
         const open = openId === c.id;
-        const updateLine = log
-          ? `${fmtWhen(log.created_at || log.happened_at)} · ${changeText(log.content)}`
-          : "未有新更新";
-        return `<article class="card ${fresh ? "new" : ""} ${open ? "open" : ""}" data-id="${esc(c.id)}">
-          <div class="card-main">
-            <div class="card-head">
-              <div>
-                <div class="name">${esc(name.en)}${name.zh ? `<span class="name-zh">${esc(name.zh)}</span>` : ""}</div>
-              </div>
-              <div class="pills">
-                <span class="pill ${st}">${STATUS_LABEL[st]}</span>
-                ${fresh ? `<span class="pill fresh">新更新</span>` : ""}
-                ${late ? `<span class="pill late">跟進已過期</span>` : ""}
-                <span class="pill stage">階段 ${esc(STAGES[c.stage] || c.stage || "")}</span>
-              </div>
-            </div>
-            <div class="meta">
-              <span>銷售 ${esc(c.company_sales || "—")}</span>
-              <span>Ricoh ${esc(c.ricoh_sales || "—")}</span>
-              <span>拜訪 ${esc(c.appointment_at ? fmtDate(c.appointment_at) : "未記")}</span>
-              <span>下次 ${esc(fmtDate(c.next_follow_up_at))}</span>
-              ${Number(c.amount) ? `<span>金額 HK$${Number(c.amount).toLocaleString("en-HK")}</span>` : ""}
-            </div>
-            ${contactLine(c)}
-            <div class="lines">
-              <div class="line"><em>情況</em>${esc(situation(c))}</div>
-              <div class="line"><em>更新了什麼</em>${esc(updateLine)}</div>
-            </div>
-            <div class="card-tools">
-              <button type="button" class="btn" data-toggle="${esc(c.id)}">${open ? "收起" : "跟進／睇晒更新"}</button>
-            </div>
-          </div>
-          <div class="detail">
+        const updateLine = log ? `${fmtWhen(log.created_at || log.happened_at)} · ${changeText(log.content)}` : "—";
+        return `<tr class="data ${i % 2 ? "band" : ""} ${open ? "is-open" : ""}" data-id="${esc(c.id)}" data-toggle="${esc(c.id)}">
+            <td class="col-no">${i + 1}</td>
+            <td class="col-company">${esc(name.en)}${name.zh ? `<span class="co-zh">${esc(name.zh)}</span>` : ""}</td>
+            <td>${contactCell(c)}</td>
+            <td>${esc(c.company_sales || "—")}</td>
+            <td>${esc(c.ricoh_sales || "—")}</td>
+            <td>${esc(c.appointment_at ? fmtDate(c.appointment_at) : "未記")}</td>
+            <td class="${st}">${STATUS_LABEL[st]}</td>
+            <td class="col-next ${late ? "late" : ""}">${esc(fmtDate(c.next_follow_up_at))}${late ? "<br><span class=\"who\">已過期</span>" : ""}</td>
+            <td>${esc(STAGES[c.stage] || c.stage || "—")}</td>
+            <td>${money(c.amount)}</td>
+            <td class="col-note">${esc(situation(c))}</td>
+            <td class="col-new ${fresh ? "yes" : ""}">${fresh ? "有" : "—"}</td>
+            <td class="col-update">${esc(updateLine)}</td>
+          </tr>
+          ${open ? `<tr class="detail-row"><td colspan="13">
             <form class="edit" data-save="${esc(c.id)}">
               <label class="fld">跟進
                 <select name="status">
@@ -444,9 +450,26 @@
               <button class="btn btn-accent" type="submit">儲存</button>
             </form>
             <div class="timeline">${logHtml(c)}</div>
-          </div>
-        </article>`;
+          </td></tr>` : ""}`;
       }).join("");
+      $("list").innerHTML = `<div class="sheet-wrap"><table class="sheet">
+        <thead><tr>
+          <th class="col-no">#</th>
+          <th class="col-company">公司</th>
+          <th>聯絡人</th>
+          <th>銷售</th>
+          <th>Ricoh Sales</th>
+          <th>拜訪</th>
+          <th>跟進</th>
+          <th>下次跟進</th>
+          <th>階段</th>
+          <th>金額</th>
+          <th>情況</th>
+          <th>新更新</th>
+          <th>更新了什麼</th>
+        </tr></thead>
+        <tbody>${body}</tbody>
+      </table></div>`;
     }
 
     async function load() {
